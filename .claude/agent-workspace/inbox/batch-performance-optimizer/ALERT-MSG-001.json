@@ -1,0 +1,28 @@
+{
+  "message_id": "ALERT-MSG-2025-08-25-001",
+  "timestamp": "2025-08-25T10:33:30.000Z",
+  "from_agent": "agent-orchestrator",
+  "to_agent": "batch-performance-optimizer",
+  "message_type": "ALERT",
+  "priority": "HIGH",
+  "correlation_id": "SESSION-2025-08-25-001",
+  "payload": {
+    "alert_type": "PERFORMANCE_THRESHOLD_EXCEEDED",
+    "alert_level": "WARNING",
+    "metric_name": "batch_processing_time",
+    "current_value": 75000,
+    "threshold_value": 60000,
+    "threshold_type": "MAX_DURATION_MS",
+    "context": {
+      "batch_size": 1000,
+      "processing_stage": "user_scoring",
+      "affected_components": ["scoring_engine", "database_queries"]
+    },
+    "recommended_action": "OPTIMIZE_QUERIES"
+  },
+  "metadata": {
+    "retry_count": 0,
+    "timeout_ms": 30000,
+    "requires_ack": true
+  }
+}

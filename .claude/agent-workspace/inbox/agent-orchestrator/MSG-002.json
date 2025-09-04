@@ -1,0 +1,28 @@
+{
+  "message_id": "MSG-2025-08-25-002",
+  "timestamp": "2025-08-25T10:31:00.456Z",
+  "from_agent": "thorough-todo-executor",
+  "to_agent": "agent-orchestrator",
+  "message_type": "RESULT",
+  "priority": "NORMAL",
+  "correlation_id": "SESSION-2025-08-25-001",
+  "payload": {
+    "task_id": "TEST-001",
+    "status": "SUCCESS",
+    "execution_time_ms": 1234,
+    "output_location": "/agent-workspace/shared-data/test-result.json",
+    "metrics": {
+      "files_processed": 1,
+      "success_rate": 1.0,
+      "memory_usage_mb": 64
+    },
+    "errors": [],
+    "warnings": [],
+    "next_recommended_action": "Continue to next test"
+  },
+  "metadata": {
+    "retry_count": 0,
+    "timeout_ms": 30000,
+    "requires_ack": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "project_name": "Kiroスタイル仕様駆動開発プロジェクト",
+  "development_style": "specification-driven",
+  "specs_directory": "specs",
+  "required_files": [
+    "specs/requirements.md",
+    "specs/design.md",
+    "specs/tasks.md"
+  ],
+  "workflow": {
+    "1": "要件定義 (requirements.md)",
+    "2": "技術設計 (design.md)",
+    "3": "タスク分割 (tasks.md)",
+    "4": "実装"
+  },
+  "auto_create_specs": true,
+  "template_language": "ja"
+}

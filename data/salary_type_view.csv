@@ -1,0 +1,7 @@
+salary_type_cd,json_ld_type,name
+1,HOUR,時給
+2,DAY,日給
+3,WEEK,週給
+4,MONTH,月給
+,,
+GPT指示,読み込んで欲しい,

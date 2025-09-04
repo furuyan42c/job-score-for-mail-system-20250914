@@ -1,0 +1,11 @@
+employment_type_cd,group_cd,json_ld_type,name
+1,parttime,PART_TIME,アルバイト
+2,parttime,INTERN,インターン
+3,parttime,PART_TIME,パート
+4,fulltime,FULL_TIME,正社員
+5,fulltime,CONTRACTOR,契約社員
+6,temp,TEMPORARY,派遣
+7,temp,TEMPORARY,紹介
+8,outsource,OTHER,業務委託
+9,temp,TEMPORARY,紹介予定派遣
+10,others,FULL_TIME,その他

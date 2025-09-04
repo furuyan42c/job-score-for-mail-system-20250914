@@ -1,0 +1,44 @@
+{
+  "dashboard_type": "real_time_performance_monitoring",
+  "timestamp": "2025-08-25T10:33:00.000Z",
+  "session_id": "SESSION-2025-08-25-001",
+  "system_status": {
+    "overall_health": "HEALTHY",
+    "active_agents": 1,
+    "total_tasks_processed": 3,
+    "current_throughput": 0.2,
+    "error_rate": 0.0
+  },
+  "agent_metrics": {
+    "agent-orchestrator": {
+      "status": "ACTIVE",
+      "cpu_usage_percent": 12,
+      "memory_usage_mb": 128,
+      "tasks_completed": 3,
+      "avg_response_time_ms": 2555,
+      "last_activity": "2025-08-25T10:33:00.000Z"
+    },
+    "thorough-todo-executor": {
+      "status": "IDLE",
+      "cpu_usage_percent": 0,
+      "memory_usage_mb": 64,
+      "tasks_completed": 1,
+      "avg_response_time_ms": 1234,
+      "last_activity": "2025-08-25T10:31:00.456Z"
+    }
+  },
+  "performance_thresholds": {
+    "cpu_warning": 70,
+    "cpu_critical": 85,
+    "memory_warning": 1024,
+    "memory_critical": 2048,
+    "response_time_warning": 5000,
+    "response_time_critical": 10000
+  },
+  "alerts": [],
+  "trends": {
+    "task_completion_rate": "STABLE",
+    "resource_utilization": "LOW",
+    "error_frequency": "NONE"
+  }
+}

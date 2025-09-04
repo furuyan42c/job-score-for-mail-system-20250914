@@ -1,0 +1,65 @@
+{
+  "escalation_id": "ESC-2025-08-25-001",
+  "escalation_type": "AGENT-ORCHESTRATOR-DIRECTOR",
+  "initiated_at": "2025-08-25T10:35:00.000Z",
+  "severity": "CRITICAL",
+  "project_status": {
+    "name": "Baito Job Matching System",
+    "current_phase": 3,
+    "total_progress_percent": 57.4,
+    "critical_failures": 2
+  },
+  "critical_issues": [
+    {
+      "issue_id": "PERF-001",
+      "type": "PERFORMANCE_FAILURE",
+      "description": "Batch processing time exceeds target by 50%",
+      "current_value": "90 minutes",
+      "target_value": "60 minutes",
+      "impact": "CRITICAL",
+      "affected_tasks": ["Task 3.10", "Task 5.3"],
+      "root_cause_analysis_required": true
+    },
+    {
+      "issue_id": "QUAL-001",
+      "type": "QUALITY_FAILURE",
+      "description": "Code coverage below minimum threshold",
+      "current_value": "75%",
+      "target_value": "80%",
+      "impact": "MODERATE",
+      "affected_tasks": ["Task 5.1"],
+      "immediate_action_required": true
+    }
+  ],
+  "required_actions": {
+    "immediate": [
+      "Halt all non-critical Phase 3 work",
+      "Reassess Phase 2 completion status",
+      "Activate batch-performance-optimizer for emergency optimization",
+      "Activate data-quality-guardian for coverage analysis"
+    ],
+    "strategic": [
+      "Implement parallel processing optimization",
+      "Add critical path unit tests",
+      "Optimize database queries and indexing",
+      "Consider algorithm optimization for matching engine"
+    ]
+  },
+  "agent_reallocation": {
+    "supabase-specialist": "EMERGENCY_OPTIMIZATION",
+    "batch-performance-optimizer": "PERFORMANCE_RECOVERY",
+    "data-quality-guardian": "QUALITY_RECOVERY",
+    "thorough-todo-executor": "STANDBY"
+  },
+  "recovery_timeline": {
+    "phase1_analysis": "30 minutes",
+    "emergency_fixes": "2 hours",
+    "validation": "1 hour",
+    "total_recovery_estimate": "3.5 hours"
+  },
+  "success_criteria": {
+    "performance_target": "60 minutes or less batch processing",
+    "quality_target": "80% or higher code coverage",
+    "verification_required": true
+  }
+}

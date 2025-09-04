@@ -1,0 +1,107 @@
+{
+  "emergency_session_id": "EMERGENCY-SESSION-2025-08-25-001",
+  "activated_at": "2025-08-25T10:35:30.000Z",
+  "escalation_level": "AGENT-ORCHESTRATOR-DIRECTOR",
+  "coordinator": "agent-orchestrator",
+
+  "agent_assignments": {
+    "batch-performance-optimizer": {
+      "priority": "CRITICAL",
+      "assignment": "PERFORMANCE_RECOVERY",
+      "tasks": [
+        "Analyze current 90-minute batch processing bottlenecks",
+        "Identify top 3 performance critical paths",
+        "Implement database query optimization",
+        "Add parallel processing for user matching",
+        "Target: Reduce processing time to 60 minutes"
+      ],
+      "deadline": "2025-08-25T14:00:00.000Z",
+      "resources": {
+        "memory_limit": "2GB",
+        "cpu_priority": "HIGH",
+        "database_connections": "10"
+      }
+    },
+
+    "data-quality-guardian": {
+      "priority": "HIGH",
+      "assignment": "QUALITY_RECOVERY",
+      "tasks": [
+        "Analyze current 75% code coverage gaps",
+        "Identify untested critical code paths",
+        "Generate missing unit tests for core scoring functions",
+        "Add integration tests for matching pipeline",
+        "Target: Achieve 80%+ code coverage"
+      ],
+      "deadline": "2025-08-25T13:30:00.000Z",
+      "resources": {
+        "memory_limit": "1.5GB",
+        "cpu_priority": "NORMAL",
+        "test_environment_access": true
+      }
+    },
+
+    "supabase-specialist": {
+      "priority": "CRITICAL",
+      "assignment": "EMERGENCY_OPTIMIZATION",
+      "tasks": [
+        "Review and optimize all database indexes",
+        "Analyze slow query logs from batch processing",
+        "Implement connection pooling optimization",
+        "Add database performance monitoring",
+        "Support batch-performance-optimizer with DB insights"
+      ],
+      "deadline": "2025-08-25T13:00:00.000Z",
+      "resources": {
+        "memory_limit": "1.5GB",
+        "cpu_priority": "HIGH",
+        "database_admin_access": true
+      }
+    },
+
+    "thorough-todo-executor": {
+      "priority": "STANDBY",
+      "assignment": "EMERGENCY_SUPPORT",
+      "tasks": [
+        "Monitor other agents' progress",
+        "Assist with implementation tasks as directed",
+        "Prepare Phase 3 continuation plan post-recovery",
+        "Document all emergency fixes for future reference"
+      ],
+      "deadline": "ONGOING",
+      "resources": {
+        "memory_limit": "1GB",
+        "cpu_priority": "LOW",
+        "coordination_mode": true
+      }
+    }
+  },
+
+  "coordination_protocol": {
+    "status_update_interval": "15 minutes",
+    "sync_meetings": ["T+30min", "T+90min", "T+150min"],
+    "progress_tracking": "/Users/furuyanaoki/Project/claude-code-mailsocre-app/.claude/agents/shared/emergency-progress.json",
+    "communication_channel": "/Users/furuyanaoki/Project/claude-code-mailsocre-app/.claude/agents/shared/emergency-comms.json"
+  },
+
+  "success_metrics": {
+    "performance_recovery": {
+      "metric": "batch_processing_time",
+      "current": 90,
+      "target": 60,
+      "unit": "minutes"
+    },
+    "quality_recovery": {
+      "metric": "code_coverage",
+      "current": 75,
+      "target": 80,
+      "unit": "percent"
+    }
+  },
+
+  "rollback_plan": {
+    "if_failed": "Escalate to Expert Consultation",
+    "checkpoint": "Phase 2 completed state",
+    "recovery_time": "1 hour"
+  }
+}

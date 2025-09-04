@@ -1,0 +1,80 @@
+{
+  "report_type": "resource_management_optimization",
+  "timestamp": "2025-08-25T10:36:00.000Z",
+  "session_id": "SESSION-2025-08-25-001",
+  "resource_utilization": {
+    "cpu": {
+      "current_usage_percent": 15,
+      "peak_usage_percent": 25,
+      "average_usage_percent": 12,
+      "optimization_status": "OPTIMAL"
+    },
+    "memory": {
+      "current_usage_mb": 256,
+      "peak_usage_mb": 384,
+      "available_mb": 1664,
+      "optimization_status": "OPTIMAL"
+    },
+    "disk_io": {
+      "read_operations": 45,
+      "write_operations": 32,
+      "average_latency_ms": 2.1,
+      "optimization_status": "OPTIMAL"
+    },
+    "network": {
+      "active_connections": 3,
+      "bandwidth_usage_kbps": 12.5,
+      "optimization_status": "OPTIMAL"
+    }
+  },
+  "agent_resource_allocation": {
+    "agent-orchestrator": {
+      "cpu_allocated_percent": 25,
+      "memory_allocated_mb": 512,
+      "priority": "HIGH",
+      "status": "ACTIVE"
+    },
+    "thorough-todo-executor": {
+      "cpu_allocated_percent": 30,
+      "memory_allocated_mb": 1024,
+      "priority": "HIGH",
+      "status": "READY"
+    },
+    "supabase-specialist": {
+      "cpu_allocated_percent": 20,
+      "memory_allocated_mb": 256,
+      "priority": "MEDIUM",
+      "status": "READY"
+    },
+    "batch-performance-optimizer": {
+      "cpu_allocated_percent": 15,
+      "memory_allocated_mb": 128,
+      "priority": "MEDIUM",
+      "status": "READY"
+    },
+    "data-quality-guardian": {
+      "cpu_allocated_percent": 10,
+      "memory_allocated_mb": 128,
+      "priority": "LOW",
+      "status": "READY"
+    }
+  },
+  "optimization_recommendations": [
+    "Current resource allocation is optimal for test workload",
+    "Scale CPU allocation by 3x for production workload (10K users)",
+    "Increase memory pool to 6GB for 1-hour batch processing target",
+    "Implement connection pooling for database operations",
+    "Consider horizontal scaling for parallel processing"
+  ],
+  "scalability_analysis": {
+    "current_capacity": "1K users, 10K jobs",
+    "target_capacity": "10K users, 100K jobs",
+    "scaling_factor": "10x",
+    "required_resources": {
+      "cpu_cores": 8,
+      "memory_gb": 6,
+      "db_connections": 20,
+      "parallel_workers": 10
+    }
+  }
+}
