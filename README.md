@@ -1,100 +1,117 @@
-# バイト求人マッチングシステム
+# 🚀 Super Claude + Spec-Kit Base Development Environment
 
-## 🎯 概要
-1万人のユーザーに対して、10万件の求人データから毎日40件を自動選定し、パーソナライズされたメールを配信するマッチングシステム。
+## 概要
+Super ClaudeフレームワークとSpec-Kitを統合したチーム開発のベース環境です。
 
-## 🚀 クイックスタート
+## 📁 ディレクトリ構造
 
-### 前提条件
-- Docker Desktop
+```
+.
+├── .000.MANUAL/          # Super Claudeマニュアルディレクトリ
+│   ├── SEO/
+│   ├── develop/
+│   └── marketing/
+├── .claude/commands/     # Spec-Kitコマンド定義
+│   ├── specify.md
+│   ├── plan.md
+│   ├── tasks.md
+│   └── verify-and-pr.md
+├── .devcontainer/        # VS Code開発コンテナ設定
+├── memory/               # セッション永続化
+├── scripts/              # 開発支援スクリプト
+│   └── create-new-feature.sh
+├── specs/                # プロジェクト仕様書（新規作成用）
+├── templates/            # プロジェクトテンプレート
+├── .eslintrc.json        # ESLint設定
+├── .gitignore            # Git除外設定
+├── .prettierrc.json      # Prettier設定
+├── AGENT.md              # Claude Codeエージェント説明
+├── CLAUDE.md             # Claude Code運用ガイド
+├── mcp-config.json       # MCPサーバー設定
+└── tsconfig.json         # TypeScript設定
+```
+
+## 🚀 Quick Start
+
+### 新プロジェクトの開始
+
+```bash
+# 1. 新機能のブランチと仕様ディレクトリを作成
+./scripts/create-new-feature.sh "機能名"
+
+# 2. Claude Codeで仕様作成
+/specify
+
+# 3. 実装計画作成
+/plan
+
+# 4. タスク分解
+/tasks
+
+# 5. 実装開始
+# Claude Codeが自動的にTodoWriteでタスク管理
+```
+
+## 📚 利用可能なコマンド
+
+### Spec-Kit コマンド（✅ 実装済み）
+- `/specify` - 仕様書生成
+- `/plan` - 実装計画作成
+- `/tasks` - タスク分解
+- `/verify-and-pr` - 検証とPR作成
+
+### Super Claude コマンド（✅ 実装済み）
+- `/sc:load` - プロジェクトコンテキスト読み込み
+- `/sc:save` - セッション保存
+- `/sc:checkpoint` - チェックポイント作成
+- `/sc:business-panel` - ビジネス価値分析
+
+詳細は CLAUDE.md ファイルを参照
+
+## 🛠️ 開発環境設定
+
+### 必要なツール
 - Node.js 18+
-- PostgreSQL 15+ (Supabase)
+- Git
+- VS Code（推奨）
 
-### セットアップ
+### 初期セットアップ
+
 ```bash
-# 1. リポジトリのクローン
-git clone [repository-url]
-cd new.mail.score
-
-# 2. 環境変数の設定
-cp .env.example .env
-# .envファイルを編集して必要な値を設定
-
-# 3. Dockerコンテナの起動
-docker-compose up -d
-
-# 4. フロントエンドの起動
-cd front
+# 依存関係のインストール（プロジェクトごと）
 npm install
-npm run dev
+
+# ESLint/Prettier設定の確認
+npm run lint
+npm run format
 ```
 
-アプリケーション: http://localhost:3000
+## 📖 ドキュメント
 
-## 📚 主要ドキュメント
+- [Super Claude Framework設定](CLAUDE.md)
+- [Claude Code 運用ガイド](CLAUDE.md)
+- [エージェント説明](AGENT.md)
 
-| ドキュメント | 説明 |
-|------------|------|
-| [CLAUDE.md](CLAUDE.md) | Claude Code用の作業ガイド |
-| [システム仕様](specs/20250905_system_spec_v2.0.md) | 詳細なシステム仕様書 |
-| [ビジネス仕様](specs/20250905_business_spec_v1.0.md) | ビジネス要件 |
-| [ER図](specs/ER/20250904_er_complete_v2.0.mmd) | データベース設計 |
+## 🎯 特徴
 
-## 🛠 技術スタック
+- **仕様駆動開発**: Spec-Kitによる要件定義から実装まで
+- **セッション管理**: 作業状態の永続化と再開
+- **MCP統合**: 高度な分析とコード生成
+- **品質保証**: 自動検証とPR作成
+- **並列処理**: タスクの自動並列化
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Python 3.11+ (予定)
-- **Database**: PostgreSQL 15+ (Supabase)
-- **Email**: SendGrid / Amazon SES
-- **AI/ML**: OpenAI GPT-4, Claude API
+## 📋 プロジェクトテンプレート
 
-## 📁 プロジェクト構造
+`templates/` ディレクトリに各種プロジェクトテンプレートが用意されています。
 
-```
-new.mail.score/
-├── front/              # Next.jsフロントエンド
-├── data/              # サンプルデータ・CSV
-├── specs/             # 仕様書
-│   ├── ER/           # ER図（Mermaid）
-│   └── *.md          # 各種仕様書
-├── docs/              # 開発ドキュメント
-├── docker-compose.yml # Docker設定
-└── .env.example       # 環境変数テンプレート
-```
+## 🤝 チーム開発
 
-## 🔧 主要コマンド
-
-```bash
-# 開発
-npm run dev          # 開発サーバー起動
-npm run build        # ビルド
-npm run test         # テスト実行
-npm run lint         # Lint実行
-npm run typecheck    # TypeScript型チェック
-
-# Docker
-docker-compose up    # サービス起動
-docker-compose down  # サービス停止
-docker-compose logs  # ログ確認
-```
-
-## 📝 開発の始め方
-
-1. **仕様確認**: `specs/system_specification_v2.md`を読む
-2. **環境構築**: 上記クイックスタートを実行
-3. **開発**: `front/`ディレクトリで作業
-4. **テスト**: `npm run test`でテスト実行
-
-## 🚨 注意事項
-
-- `.env`ファイルは絶対にコミットしない
-- APIキーは環境変数で管理
-- 大きな変更前は仕様書を確認
-
-## 📞 お問い合わせ
-
-[プロジェクト管理者の連絡先]
+1. このベース環境をクローン
+2. プロジェクト固有の設定を追加
+3. `specs/` にプロジェクト仕様を作成
+4. Spec-Kitワークフローに従って開発
 
 ---
 
-最終更新: 2025-01-05
+**Version**: 1.0.0  
+**Last Updated**: 2025-09-13

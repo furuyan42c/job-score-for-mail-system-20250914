@@ -1,37 +1,16 @@
 {
-  "name": "Mail Score Dev Container",
-  "dockerComposeFile": [
-    "../docker-compose.yml",
-    "docker-compose.yml"
-  ],
-  "service": "app",
-  "workspaceFolder": "/workspace",
+  "name": "Hybrid AI Dev",
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    }
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "ms-azuretools.vscode-docker",
-        "ms-vscode.vscode-typescript-next",
-        "prisma.prisma",
-        "bradlc.vscode-tailwindcss"
-      ],
-      "settings": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": true
-        }
-      }
+        "anthropic.claude-code",
+        "github.copilot"
+      ]
     }
   },
-  "forwardPorts": [3000, 5432, 54321, 54322, 54323, 54324],
-  "postCreateCommand": "npm install",
-  "remoteUser": "node"
+  "postCreateCommand": "npm install && git config --global user.name 'Dev Team' && git config --global user.email 'dev@example.com'"
 }

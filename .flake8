@@ -1,0 +1,45 @@
+[flake8]
+# Maximum line length
+max-line-length = 100
+
+# Ignore certain errors
+ignore = 
+    # E203: whitespace before ':' (conflicts with Black)
+    E203,
+    # W503: line break before binary operator (conflicts with Black)
+    W503,
+    # E501: line too long (handled by Black)
+    E501
+
+# Exclude directories
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    build,
+    dist,
+    *.egg-info,
+    .pytest_cache,
+    .mypy_cache,
+    .tox,
+    migrations,
+    node_modules
+
+# Max complexity for McCabe checker
+max-complexity = 10
+
+# Import order style
+import-order-style = google
+
+# Application directories
+application-import-names = src,app,lib
+
+# Per file ignores
+per-file-ignores =
+    # __init__.py files can have unused imports
+    __init__.py:F401
+    # Test files can have longer lines and use assert
+    test_*.py:E501,S101
+    *_test.py:E501,S101
