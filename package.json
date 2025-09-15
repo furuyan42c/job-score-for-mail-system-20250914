@@ -13,8 +13,12 @@
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "dev": "node --watch index.js"
+    "build": "cd front && npm run build",
+    "dev": "cd front && npm run dev",
+    "front:install": "cd front && npm install",
+    "front:dev": "cd front && npm run dev",
+    "front:build": "cd front && npm run build",
+    "front:start": "cd front && npm run start"
   },
   "keywords": [
     "super-claude",
