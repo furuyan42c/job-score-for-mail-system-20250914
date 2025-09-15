@@ -1,0 +1,561 @@
+openapi: 3.0.3
+info:
+  title: Job Matching System API
+  description: バイト求人マッチングシステムのAPI仕様
+  version: 1.0.0
+  contact:
+    name: System Admin
+    email: admin@job-matching.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.job-matching.com
+    description: Production server
+
+tags:
+  - name: Jobs
+    description: 求人データ管理
+  - name: Matching
+    description: マッチング処理
+  - name: Email
+    description: メール生成
+  - name: Monitoring
+    description: SQL監視
+
+paths:
+  /jobs/import:
+    post:
+      tags: [Jobs]
+      summary: CSV求人データインポート
+      description: 10万件の求人データを一括インポート
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing job data
+                batch_size:
+                  type: integer
+                  default: 1000
+                  description: バッチ処理サイズ
+      responses:
+        '202':
+          description: Import process started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /jobs/scoring:
+    post:
+      tags: [Jobs]
+      summary: 求人スコアリング実行
+      description: 基礎スコア、SEOスコア、パーソナライズスコアを計算
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: スコアリング対象の求人ID（空の場合は全件）
+                scoring_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [basic, seo, personalized]
+                  default: [basic, seo, personalized]
+      responses:
+        '200':
+          description: Scoring completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoringResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /jobs/categorize:
+    post:
+      tags: [Jobs]
+      summary: 求人カテゴリ分類
+      description: 14ニーズカテゴリと12職種カテゴリに分類
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_ids:
+                  type: array
+                  items:
+                    type: integer
+                force_recategorize:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Categorization completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategorizationResponse'
+
+  /matching/execute:
+    post:
+      tags: [Matching]
+      summary: マッチング処理実行
+      description: 1万ユーザー × 10万求人のマッチング実行
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_date:
+                  type: string
+                  format: date
+                  description: バッチ処理日
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 対象ユーザーID（空の場合は全員）
+                parallel_workers:
+                  type: integer
+                  default: 4
+                  minimum: 1
+                  maximum: 8
+      responses:
+        '202':
+          description: Matching process started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /matching/results/{user_id}:
+    get:
+      tags: [Matching]
+      summary: ユーザーマッチング結果取得
+      description: 特定ユーザーの40件の推薦求人を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: batch_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 取得対象日（デフォルトは最新）
+      responses:
+        '200':
+          description: Matching results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMatchingResults'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /email/generate:
+    post:
+      tags: [Email]
+      summary: メールコンテンツ生成
+      description: 選定された求人からHTMLメールを生成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                batch_date:
+                  type: string
+                  format: date
+                template_id:
+                  type: string
+                  default: "default"
+      responses:
+        '200':
+          description: Email content generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /email/batch-generate:
+    post:
+      tags: [Email]
+      summary: バッチメール生成
+      description: 全ユーザー分のメールを一括生成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_date:
+                  type: string
+                  format: date
+                parallel_workers:
+                  type: integer
+                  default: 4
+      responses:
+        '202':
+          description: Batch generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchEmailResponse'
+
+  /monitoring/query:
+    post:
+      tags: [Monitoring]
+      summary: SQLクエリ実行
+      description: 読み取り専用SQLクエリを実行
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: SELECT文のみ許可
+                limit:
+                  type: integer
+                  default: 100
+                  maximum: 1000
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResults'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Forbidden (non-SELECT query)
+
+  /monitoring/stats:
+    get:
+      tags: [Monitoring]
+      summary: システム統計取得
+      description: 処理状況と統計情報を取得
+      responses:
+        '200':
+          description: System statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStats'
+
+  /monitoring/health:
+    get:
+      tags: [Monitoring]
+      summary: ヘルスチェック
+      description: システムの健全性確認
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  database:
+                    type: string
+                    enum: [connected, disconnected]
+                  last_batch_date:
+                    type: string
+                    format: date
+
+components:
+  schemas:
+    ImportResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: インポートジョブID
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        total_records:
+          type: integer
+        processed_records:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    ScoringResponse:
+      type: object
+      properties:
+        processed_count:
+          type: integer
+        scores:
+          type: object
+          properties:
+            basic_avg:
+              type: number
+            seo_avg:
+              type: number
+            personalized_avg:
+              type: number
+        processing_time_ms:
+          type: integer
+
+    CategorizationResponse:
+      type: object
+      properties:
+        processed_count:
+          type: integer
+        categories:
+          type: object
+          properties:
+            needs_distribution:
+              type: object
+              additionalProperties:
+                type: integer
+            occupation_distribution:
+              type: object
+              additionalProperties:
+                type: integer
+
+    MatchingResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        total_users:
+          type: integer
+        processed_users:
+          type: integer
+        estimated_completion_time:
+          type: string
+          format: date-time
+
+    UserMatchingResults:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        batch_date:
+          type: string
+          format: date
+        sections:
+          type: object
+          properties:
+            top5:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            regional:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            nearby:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            benefits:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            new:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+
+    JobRecommendation:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        company_name:
+          type: string
+        title:
+          type: string
+        salary:
+          type: string
+        location:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        match_score:
+          type: number
+        match_reasons:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+
+    EmailContent:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        subject:
+          type: string
+        html_content:
+          type: string
+        text_content:
+          type: string
+        job_count:
+          type: integer
+        sections:
+          type: array
+          items:
+            type: string
+
+    BatchEmailResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+        total_emails:
+          type: integer
+        generated_count:
+          type: integer
+        failed_count:
+          type: integer
+
+    QueryResults:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+        row_count:
+          type: integer
+        execution_time_ms:
+          type: integer
+
+    SystemStats:
+      type: object
+      properties:
+        total_jobs:
+          type: integer
+        active_jobs:
+          type: integer
+        total_users:
+          type: integer
+        active_users:
+          type: integer
+        last_batch_date:
+          type: string
+          format: date
+        last_batch_stats:
+          type: object
+          properties:
+            matches_generated:
+              type: integer
+            emails_queued:
+              type: integer
+            processing_time_minutes:
+              type: number
+        daily_stats:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              matches:
+                type: integer
+              emails:
+                type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: array
+                items:
+                  type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              trace_id:
+                type: string
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []
