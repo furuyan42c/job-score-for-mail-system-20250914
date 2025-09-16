@@ -1,8 +1,9 @@
 # データモデル定義: バイト求人マッチングシステム
 
 **作成日**: 2025-09-15  
-**データベース**: Supabase (PostgreSQL)  
-**スキーマバージョン**: 1.0.0
+**更新日**: 2025-09-16（v5.1仕様書準拠）  
+**データベース**: Supabase (PostgreSQL 15)  
+**スキーマバージョン**: 1.1.0
 
 ## 1. エンティティ関係図（ER図）概要
 
@@ -16,70 +17,74 @@ erDiagram
     user_job_mapping ||--o{ daily_job_picks : "selected"
     daily_job_picks ||--o{ daily_email_queue : "generates"
     
-    jobs }o--|| m_prefectures : "located_in"
-    jobs }o--|| m_cities : "located_in"
-    jobs }o--|| m_job_categories : "categorized_as"
-    jobs }o--|| m_employment_types : "has_type"
+    jobs }o--|| prefecture_master : "located_in"
+    jobs }o--|| city_master : "located_in"
+    jobs }o--|| occupation_master : "categorized_as"
+    jobs }o--|| employment_type_master : "has_type"
 ```
 
 ## 2. コアエンティティ
 
 ### 2.1 jobs（求人情報）
-**説明**: 10万件の求人マスターデータ
+**説明**: 10万件の求人マスターデータ（100+フィールド）
 
 ```sql
 CREATE TABLE jobs (
-    job_id SERIAL PRIMARY KEY,
+    job_id BIGINT PRIMARY KEY,
+    endcl_cd VARCHAR(20) NOT NULL,  -- エンドクライアントコード（企業識別）
     company_name VARCHAR(255) NOT NULL,
-    application_name VARCHAR(500) NOT NULL,
+    application_name TEXT NOT NULL,  -- 求人タイトル
     
     -- 場所情報
-    prefecture_code CHAR(2) REFERENCES m_prefectures(code),
-    city_code VARCHAR(5) REFERENCES m_cities(code),
+    pref_cd CHAR(2) REFERENCES prefecture_master(code),
+    city_cd VARCHAR(5) REFERENCES city_master(code),
+    station_name_eki VARCHAR(100),
     address VARCHAR(500),
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     
     -- 給与情報
     salary_type VARCHAR(20) CHECK (salary_type IN ('hourly', 'daily', 'monthly')),
-    salary_min INTEGER,
-    salary_max INTEGER,
+    min_salary INTEGER,  -- v5.1仕様書準拠
+    max_salary INTEGER,  -- v5.1仕様書準拠
+    fee INTEGER CHECK (fee >= 0 AND fee <= 5000),  -- 応募促進費用（0-5000円）
     
     -- 勤務条件
-    work_hours VARCHAR(200),
+    hours TEXT,  -- 勤務時間（HTML含む可能性）
     work_days VARCHAR(200),
     shift_flexibility VARCHAR(100),
     
     -- カテゴリ
-    job_category_code VARCHAR(4) REFERENCES m_job_categories(code),
-    occupation_code VARCHAR(4) REFERENCES m_occupations(code),
+    occupation_cd1 INTEGER,  -- 大分類
+    occupation_cd2 INTEGER,  -- 中分類
+    employment_type_cd INTEGER,  -- 雇用形態
     
-    -- 特徴フラグ（100+フィールド）
-    feature_daily_payment BOOLEAN DEFAULT FALSE,
-    feature_weekly_payment BOOLEAN DEFAULT FALSE,
-    feature_short_term BOOLEAN DEFAULT FALSE,
-    feature_single_day BOOLEAN DEFAULT FALSE,
-    feature_no_experience BOOLEAN DEFAULT FALSE,
-    feature_remote_work BOOLEAN DEFAULT FALSE,
-    feature_student_welcome BOOLEAN DEFAULT FALSE,
-    feature_senior_welcome BOOLEAN DEFAULT FALSE,
-    feature_transportation BOOLEAN DEFAULT FALSE,
+    -- 特徴
+    feature_codes TEXT,  -- カンマ区切りのfeatureコード
+    -- 派生フラグ（feature_codesから生成）
+    has_daily_payment BOOLEAN DEFAULT FALSE,
+    has_weekly_payment BOOLEAN DEFAULT FALSE,
+    has_no_experience BOOLEAN DEFAULT FALSE,
+    has_student_welcome BOOLEAN DEFAULT FALSE,
+    has_remote_work BOOLEAN DEFAULT FALSE,
+    has_transportation BOOLEAN DEFAULT FALSE,
     
     -- メタデータ
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
-    posting_date DATE,
-    expiry_date DATE,
+    posting_date TIMESTAMPTZ,
+    end_at TIMESTAMPTZ,  -- v5.1仕様書準拠（expiry_dateから変更）
     
     -- SEO関連
     search_keywords TEXT[],
     description TEXT,
     benefits TEXT,
     
-    INDEX idx_jobs_location (prefecture_code, city_code),
-    INDEX idx_jobs_category (job_category_code, occupation_code),
-    INDEX idx_jobs_active_date (is_active, posting_date)
+    INDEX idx_jobs_location (pref_cd, city_cd, posting_date),
+    INDEX idx_jobs_category (occupation_cd1, employment_type_cd),
+    INDEX idx_jobs_active_date (is_active, posting_date),
+    INDEX idx_jobs_endcl (endcl_cd, posting_date)
 );
 ```
 
@@ -88,7 +93,7 @@ CREATE TABLE jobs (
 
 ```sql
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
+    user_id INTEGER PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     
     -- 基本情報
@@ -96,8 +101,8 @@ CREATE TABLE users (
     gender VARCHAR(10),
     
     -- 居住地
-    prefecture_code CHAR(2) REFERENCES m_prefectures(code),
-    city_code VARCHAR(5) REFERENCES m_cities(code),
+    pref_cd CHAR(2) REFERENCES prefecture_master(code),
+    city_cd VARCHAR(5) REFERENCES city_master(code),
     
     -- 希望条件
     preferred_work_style VARCHAR(50)[],
@@ -106,14 +111,14 @@ CREATE TABLE users (
     
     -- ステータス
     registration_date DATE,
-    last_login_date TIMESTAMP,
+    last_login_date TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT TRUE,
     email_subscription BOOLEAN DEFAULT TRUE,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     
-    INDEX idx_users_location (prefecture_code, city_code),
+    INDEX idx_users_location (pref_cd, city_cd),
     INDEX idx_users_active (is_active, email_subscription)
 );
 ```
@@ -304,9 +309,9 @@ CREATE TABLE daily_email_queue (
 
 ## 4. マスターデータ
 
-### 4.1 m_prefectures（都道府県マスター）
+### 4.1 prefecture_master（都道府県マスター）
 ```sql
-CREATE TABLE m_prefectures (
+CREATE TABLE prefecture_master (
     code CHAR(2) PRIMARY KEY,
     name VARCHAR(10) NOT NULL,
     region VARCHAR(20),
@@ -314,52 +319,42 @@ CREATE TABLE m_prefectures (
 );
 ```
 
-### 4.2 m_cities（市区町村マスター）
+### 4.2 city_master（市区町村マスター）
 ```sql
-CREATE TABLE m_cities (
+CREATE TABLE city_master (
     code VARCHAR(5) PRIMARY KEY,
-    prefecture_code CHAR(2) REFERENCES m_prefectures(code),
+    pref_cd CHAR(2) REFERENCES prefecture_master(code),
     name VARCHAR(50) NOT NULL,
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     
-    INDEX idx_cities_prefecture (prefecture_code)
+    INDEX idx_cities_prefecture (pref_cd)
 );
 ```
 
-### 4.3 m_job_categories（求人カテゴリマスター）
+### 4.3 occupation_master（職種マスター）
 ```sql
-CREATE TABLE m_job_categories (
-    code VARCHAR(4) PRIMARY KEY,
+CREATE TABLE occupation_master (
+    code INTEGER PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    parent_code VARCHAR(4),
-    level INTEGER,
-    sort_order INTEGER
-);
-```
-
-### 4.4 m_occupations（職種マスター）
-```sql
-CREATE TABLE m_occupations (
-    code VARCHAR(4) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    major_category_code VARCHAR(4),
+    major_category_code INTEGER,
+    minor_category_code INTEGER,
     description TEXT
 );
 ```
 
-### 4.5 m_employment_types（雇用形態マスター）
+### 4.4 employment_type_master（雇用形態マスター）
 ```sql
-CREATE TABLE m_employment_types (
-    code VARCHAR(2) PRIMARY KEY,
+CREATE TABLE employment_type_master (
+    code INTEGER PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     description TEXT
 );
 ```
 
-### 4.6 m_features（特徴マスター）
+### 4.5 feature_master（特徴マスター）
 ```sql
-CREATE TABLE m_features (
+CREATE TABLE feature_master (
     feature_code VARCHAR(3) PRIMARY KEY,
     feature_name VARCHAR(100) NOT NULL,
     category VARCHAR(50),
@@ -367,7 +362,7 @@ CREATE TABLE m_features (
 );
 ```
 
-### 4.7 semrush_keywords（SEOキーワードマスター）
+### 4.6 semrush_keywords（SEOキーワードマスター）
 ```sql
 CREATE TABLE semrush_keywords (
     keyword_id SERIAL PRIMARY KEY,
@@ -403,8 +398,8 @@ daily_email_queue: pending → sent/failed → archived
 ## 6. インデックス戦略
 
 ### 6.1 高頻度クエリ用インデックス
-- 地域検索: (prefecture_code, city_code, is_active)
-- カテゴリ検索: (job_category_code, is_active)
+- 地域検索: (pref_cd, city_cd, is_active)
+- カテゴリ検索: (occupation_cd1, occupation_cd2, is_active)
 - ユーザーマッチング: (user_id, batch_date)
 
 ### 6.2 集計用インデックス
