@@ -182,7 +182,7 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 
 - [ ] **T015** `[P]` GET /matching/results契約テスト `[M: 1時間]` `--seq`
   - `tests/contract/test_matching_results.py`
-  - 40件選定、5セクション分類
+  - 40件選定、6セクション分類（editorial_picks追加）
 
 #### メール生成API
 - [ ] **T016** `[P]` POST /email/generate契約テスト `[M: 1時間]` `--seq`
@@ -220,7 +220,7 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 
 - [ ] **T024** `[P]` メール生成統合テスト `[M: 1時間]` `--seq`
   - `tests/integration/test_email_flow.py`
-  - 5セクション構成、HTML生成
+  - 6セクション構成、HTML生成
 
 - [ ] **T025** `[P]` パフォーマンステスト `[M: 1時間]` `--seq`
   - `tests/integration/test_performance.py`
@@ -336,12 +336,12 @@ pytest tests/ --tb=short
   FROM daily_job_picks 
   WHERE user_id = 1 
   GROUP BY section_type;
-  -- TOP5:5件, regional:10件, nearby:10件, benefits:10件, new:5件
+  -- editorial_picks:5件, TOP5:5件, regional:10件, nearby:8件, high_income:7件, new:5件
   ```
 
 - [ ] **T040** メール生成処理実装 `[L: 2時間]` `--serena`
   - `backend/src/batch/email_generation.py`
-  - HTMLテンプレート、5セクション
+  - HTMLテンプレート、6セクション
 
 - [ ] **T040-CHECK** 🔍 検証: メール生成確認 `[S: 30分]`
   ```sql
