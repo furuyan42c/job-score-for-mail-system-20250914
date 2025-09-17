@@ -1,0 +1,531 @@
+openapi: 3.1.0
+info:
+  title: バイト求人マッチングシステムAPI
+  version: 1.0.0
+  description: 10万件の求人から1万人に最適な40件を選定するマッチングシステムのAPI
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+  - url: https://api.job-matching.example.com/v1
+    description: Production server
+
+paths:
+  /batch/trigger:
+    post:
+      summary: バッチ処理の手動実行
+      operationId: triggerBatch
+      tags:
+        - Batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - batch_type
+              properties:
+                batch_type:
+                  type: string
+                  enum: ['daily_matching', 'scoring', 'email_generation']
+                  description: 実行するバッチタイプ
+                force:
+                  type: boolean
+                  default: false
+                  description: 既存の実行中ジョブを無視して強制実行
+      responses:
+        '202':
+          description: バッチ処理開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJob'
+        '409':
+          description: 既に実行中のバッチが存在
+        '500':
+          description: サーバーエラー
+
+  /batch/status/{batch_id}:
+    get:
+      summary: バッチ処理状態の取得
+      operationId: getBatchStatus
+      tags:
+        - Batch
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: バッチ状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJob'
+        '404':
+          description: バッチジョブが見つからない
+
+  /jobs/import:
+    post:
+      summary: 求人データのCSVインポート
+      operationId: importJobs
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSVファイル
+                validate_only:
+                  type: boolean
+                  default: false
+                  description: バリデーションのみ実行
+      responses:
+        '200':
+          description: インポート完了
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                    description: インポートされた件数
+                  skipped:
+                    type: integer
+                    description: スキップされた件数
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row:
+                          type: integer
+                        message:
+                          type: string
+        '400':
+          description: 不正なCSVフォーマット
+
+  /scoring/calculate:
+    post:
+      summary: スコアリング計算の実行
+      operationId: calculateScores
+      tags:
+        - Scoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 対象ユーザーID（省略時は全ユーザー）
+                score_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: ['basic', 'seo', 'personalized']
+                  default: ['basic', 'seo', 'personalized']
+      responses:
+        '202':
+          description: スコアリング開始
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  estimated_time:
+                    type: integer
+                    description: 推定処理時間（秒）
+
+  /matching/generate:
+    post:
+      summary: マッチング結果の生成
+      operationId: generateMatching
+      tags:
+        - Matching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 対象ユーザーID
+                limit:
+                  type: integer
+                  default: 40
+                  description: ユーザーあたりの求人数
+      responses:
+        '200':
+          description: マッチング結果
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserMatching'
+
+  /matching/user/{user_id}:
+    get:
+      summary: ユーザー別マッチング結果の取得
+      operationId: getUserMatching
+      tags:
+        - Matching
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: マッチング結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMatching'
+        '404':
+          description: ユーザーが見つからない
+
+  /email/generate:
+    post:
+      summary: メール生成
+      operationId: generateEmail
+      tags:
+        - Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+              properties:
+                user_id:
+                  type: integer
+                use_gpt5:
+                  type: boolean
+                  default: true
+                  description: GPT-5 nanoを使用するか
+      responses:
+        '200':
+          description: 生成されたメール
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailContent'
+
+  /email/preview/{user_id}:
+    get:
+      summary: メールプレビュー
+      operationId: previewEmail
+      tags:
+        - Email
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: メールプレビューHTML
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /sql/execute:
+    post:
+      summary: SQL実行（読み取り専用）
+      operationId: executeSql
+      tags:
+        - Monitoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: 実行するSQLクエリ（SELECTのみ）
+                limit:
+                  type: integer
+                  default: 1000
+                  maximum: 10000
+                  description: 結果の最大行数
+      responses:
+        '200':
+          description: クエリ実行結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  rows:
+                    type: array
+                    items:
+                      type: array
+                  row_count:
+                    type: integer
+                  execution_time:
+                    type: number
+                    description: 実行時間（ミリ秒）
+        '400':
+          description: 不正なクエリ
+        '403':
+          description: 許可されていない操作
+
+  /monitoring/metrics:
+    get:
+      summary: システムメトリクスの取得
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: メトリクス情報
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+
+  /monitoring/errors:
+    get:
+      summary: エラーログの取得
+      operationId: getErrorLogs
+      tags:
+        - Monitoring
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: ['warning', 'error', 'critical']
+      responses:
+        '200':
+          description: エラーログ一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorLog'
+
+components:
+  schemas:
+    BatchJob:
+      type: object
+      properties:
+        batch_id:
+          type: integer
+        job_type:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: ['pending', 'running', 'completed', 'failed']
+        total_records:
+          type: integer
+          nullable: true
+        processed_records:
+          type: integer
+        error_count:
+          type: integer
+        error_logs:
+          type: array
+          items:
+            type: object
+
+    Job:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        endcl_cd:
+          type: string
+        application_name:
+          type: string
+        min_salary:
+          type: integer
+        max_salary:
+          type: integer
+        fee:
+          type: integer
+        pref_cd:
+          type: integer
+        city_cd:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    Score:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        user_id:
+          type: integer
+        basic_score:
+          type: number
+        seo_score:
+          type: number
+        personalized_score:
+          type: number
+        total_score:
+          type: number
+
+    UserMatching:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+        sections:
+          type: object
+          properties:
+            editorial_picks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            top5:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            regional:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            nearby:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            high_income:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            new:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+
+    EmailContent:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        subject:
+          type: string
+        html_body:
+          type: string
+        plain_body:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              section_type:
+                type: string
+              title:
+                type: string
+              jobs:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+
+    SystemMetrics:
+      type: object
+      properties:
+        active_users:
+          type: integer
+        total_jobs:
+          type: integer
+        daily_emails_sent:
+          type: integer
+        avg_processing_time:
+          type: number
+          description: 平均処理時間（分）
+        last_batch_status:
+          type: string
+        system_health:
+          type: string
+          enum: ['healthy', 'degraded', 'critical']
+
+    ErrorLog:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+        message:
+          type: string
+        context:
+          type: object
+        stack_trace:
+          type: string
+          nullable: true
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []
