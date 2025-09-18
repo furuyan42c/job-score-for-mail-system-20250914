@@ -155,7 +155,7 @@ export function EmailPreviewExample() {
   return (
     <div className="h-screen">
       <EmailPreview
-        emailTemplate={emailTemplate}
+        emailTemplate={emailTemplate || undefined}
         users={users}
         selectedUserId={selectedUserId}
         onUserChange={handleUserChange}
@@ -163,7 +163,7 @@ export function EmailPreviewExample() {
         onSendTestEmail={handleSendTestEmail}
         onSubjectChange={handleSubjectChange}
         isLoading={isLoading}
-        error={error}
+        error={error || undefined}
       />
     </div>
   );
