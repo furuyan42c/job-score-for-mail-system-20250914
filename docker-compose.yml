@@ -1,0 +1,308 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: job-matching-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-job_matching}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=ja_JP.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - job-matching-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-job_matching}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+          cpus: '1.0'
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: job-matching-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword}
+    volumes:
+      - redis_data:/data
+      - ./backend/config/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - job-matching-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+          cpus: '0.5'
+
+  # Main FastAPI Application
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: base
+    container_name: job-matching-api
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-job_matching}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PROMETHEUS_METRICS=true
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./data/imports:/app/data/imports
+      - ./data/exports:/app/data/exports
+    ports:
+      - "${API_PORT:-8000}:8000"
+    networks:
+      - job-matching-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+          cpus: '1.0'
+
+  # Batch Processing Service
+  batch-processor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: batch-processor
+    container_name: job-matching-batch
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-job_matching}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - BATCH_MODE=true
+      - BATCH_SCHEDULE_ENABLED=true
+      - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-587}
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - PROMETHEUS_PORT=8001
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./data/imports:/app/data/imports
+      - ./data/exports:/app/data/exports
+      - batch_temp:/app/temp
+    ports:
+      - "8001:8001"  # Prometheus metrics
+    networks:
+      - job-matching-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/metrics')"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+          cpus: '2.0'
+        reservations:
+          memory: 1GB
+          cpus: '1.0'
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: job-matching-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ./backend/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./backend/monitoring/alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - job-matching-network
+    depends_on:
+      - batch-processor
+      - api
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: job-matching-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-grafana123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./backend/monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./backend/monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3001:3000"
+    networks:
+      - job-matching-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # AlertManager for notifications
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: job-matching-alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+    volumes:
+      - ./backend/monitoring/alertmanager.yml:/etc/alertmanager/config.yml
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - job-matching-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: job-matching-node-exporter
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    networks:
+      - job-matching-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128MB
+          cpus: '0.2'
+
+  # Log aggregation with ELK
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: job-matching-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - job-matching-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+          cpus: '1.0'
+
+  # Logstash for log processing
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.0
+    container_name: job-matching-logstash
+    volumes:
+      - ./backend/monitoring/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./backend/logs:/var/log/app:ro
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    networks:
+      - job-matching-network
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  # Kibana for log visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    container_name: job-matching-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - job-matching-network
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+networks:
+  job-matching-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  batch_temp:
+    driver: local

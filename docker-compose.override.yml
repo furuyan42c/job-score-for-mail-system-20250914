@@ -1,0 +1,61 @@
+# Docker Compose Override for Development
+# This file is automatically loaded by docker-compose
+# Use for development-specific configurations
+
+version: '3.8'
+
+services:
+  # Development overrides for API service
+  api:
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      - RELOAD=true
+    volumes:
+      - ./backend:/app:delegated  # Enable hot reload
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debugger port
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+
+  # Development overrides for batch processor
+  batch-processor:
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      - BATCH_SCHEDULE_ENABLED=false  # Disable automatic scheduling in dev
+    volumes:
+      - ./backend:/app:delegated
+
+  # Development database with exposed port
+  postgres:
+    ports:
+      - "5433:5432"  # Expose on different port to avoid conflicts
+    environment:
+      - POSTGRES_DB=job_matching_dev
+    volumes:
+      - ./database/dev-data:/docker-entrypoint-initdb.d
+
+  # Development Redis with exposed port
+  redis:
+    ports:
+      - "6380:6379"  # Expose on different port
+    command: redis-server --requirepass devpassword --loglevel verbose
+
+  # Lightweight monitoring for development
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=dev123
+      - GF_USERS_ALLOW_SIGN_UP=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+
+  # Skip resource-intensive services in development
+  elasticsearch:
+    profiles: ["full-stack"]
+
+  logstash:
+    profiles: ["full-stack"]
+
+  kibana:
+    profiles: ["full-stack"]

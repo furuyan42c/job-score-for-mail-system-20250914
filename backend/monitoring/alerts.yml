@@ -1,0 +1,257 @@
+# Alert rules for job matching batch monitoring
+groups:
+  - name: batch_alerts
+    rules:
+      # Critical batch failure alert
+      - alert: BatchJobFailed
+        expr: increase(batch_job_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: batch_processor
+          team: backend
+        annotations:
+          summary: "Batch job failed in {{ $labels.instance }}"
+          description: |
+            Batch processing job has failed.
+            Instance: {{ $labels.instance }}
+            Job Type: {{ $labels.job_type }}
+            Error Count: {{ $value }}
+            Check logs immediately for root cause analysis.
+          runbook_url: "https://docs.company.com/runbooks/batch-failure"
+
+      # Batch performance degradation
+      - alert: BatchPerformanceDegraded
+        expr: histogram_quantile(0.95, rate(batch_job_duration_seconds_bucket[10m])) > 2700  # 45 minutes
+        for: 5m
+        labels:
+          severity: warning
+          component: batch_processor
+          team: backend
+        annotations:
+          summary: "Batch processing taking longer than expected"
+          description: |
+            95th percentile batch processing time is {{ $value }}s (>45 minutes)
+            This indicates performance degradation that may affect SLA.
+            Consider checking:
+            - Database query performance
+            - Memory usage
+            - CPU utilization
+            - Network latency
+
+      # Memory usage alert
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{name="job-matching-batch"} / container_spec_memory_limit_bytes{name="job-matching-batch"}) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          component: batch_processor
+          team: backend
+        annotations:
+          summary: "High memory usage in batch processor"
+          description: |
+            Memory usage is {{ $value }}% of allocated limit.
+            Current usage: {{ humanize $value }}%
+            Consider:
+            - Checking for memory leaks
+            - Optimizing batch size
+            - Scaling resources
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhausted
+        expr: db_connection_pool_active_connections / db_connection_pool_max_connections > 0.9
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          team: backend
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: |
+            Active connections: {{ $value | humanizePercentage }}
+            This may cause application timeouts and failures.
+            Immediate action required:
+            - Check for connection leaks
+            - Review long-running queries
+            - Consider scaling connection pool
+
+      # Email queue backlog alert
+      - alert: EmailQueueBacklog
+        expr: email_queue_size > 10000
+        for: 5m
+        labels:
+          severity: warning
+          component: email_service
+          team: backend
+        annotations:
+          summary: "Large email queue backlog detected"
+          description: |
+            Email queue size: {{ $value }} messages
+            This indicates email processing is falling behind.
+            Check:
+            - SMTP server connectivity
+            - Email service health
+            - Processing rate vs. incoming rate
+
+      # Disk space warning
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 2m
+        labels:
+          severity: warning
+          component: infrastructure
+          team: devops
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: |
+            Available disk space: {{ $value }}%
+            Immediate action required to prevent service disruption:
+            - Clean up old log files
+            - Archive processed batch files
+            - Scale storage if needed
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: (100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          team: devops
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: |
+            CPU usage: {{ $value }}%
+            This may impact batch processing performance.
+            Consider scaling resources or optimizing workload.
+
+      # Database query performance
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: database
+          team: backend
+        annotations:
+          summary: "Slow database queries detected"
+          description: |
+            95th percentile query time: {{ $value }}s
+            Review slow query log and consider:
+            - Index optimization
+            - Query optimization
+            - Database resource scaling
+
+      # Redis connectivity issues
+      - alert: RedisConnectionFailure
+        expr: redis_connected_clients == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+          team: backend
+        annotations:
+          summary: "Redis connection failure"
+          description: |
+            No Redis clients connected. This will impact:
+            - Session management
+            - Caching performance
+            - Background task processing
+            Immediate intervention required.
+
+      # Batch processing rate decline
+      - alert: BatchProcessingRateDecline
+        expr: rate(batch_users_processed_total[10m]) < 100  # Less than 100 users per minute
+        for: 10m
+        labels:
+          severity: warning
+          component: batch_processor
+          team: backend
+        annotations:
+          summary: "Batch processing rate has declined"
+          description: |
+            Current processing rate: {{ $value }} users/minute
+            Expected rate: >100 users/minute
+            This may indicate performance issues or system bottlenecks.
+
+      # API health check failure
+      - alert: APIHealthCheckFailing
+        expr: up{job="job-matching-api"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: api
+          team: backend
+        annotations:
+          summary: "API health check failing"
+          description: |
+            The main API service is not responding to health checks.
+            This indicates a critical service outage.
+            Immediate investigation and remediation required.
+
+  - name: business_alerts
+    rules:
+      # Job matching accuracy decline
+      - alert: JobMatchingAccuracyDecline
+        expr: avg(job_match_score) < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          component: algorithm
+          team: data_science
+        annotations:
+          summary: "Job matching accuracy has declined"
+          description: |
+            Average matching score: {{ $value }}
+            This may indicate issues with:
+            - ML model performance
+            - Data quality
+            - Algorithm parameters
+
+      # User engagement drop
+      - alert: UserEngagementDrop
+        expr: rate(user_actions_total[1h]) < 50
+        for: 30m
+        labels:
+          severity: warning
+          component: application
+          team: product
+        annotations:
+          summary: "User engagement has dropped significantly"
+          description: |
+            User actions per hour: {{ $value }}
+            This significant drop may indicate:
+            - Application issues
+            - UX problems
+            - External factors affecting usage
+
+  - name: security_alerts
+    rules:
+      # Suspicious login attempts
+      - alert: SuspiciousLoginAttempts
+        expr: increase(failed_login_attempts_total[5m]) > 20
+        for: 0m
+        labels:
+          severity: warning
+          component: authentication
+          team: security
+        annotations:
+          summary: "High number of failed login attempts"
+          description: |
+            Failed login attempts in 5 minutes: {{ $value }}
+            This may indicate a brute force attack.
+            Consider implementing rate limiting or IP blocking.
+
+      # Database connection from unexpected source
+      - alert: UnauthorizedDatabaseConnection
+        expr: increase(db_connections_total{source!~"api|batch-processor"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: database
+          team: security
+        annotations:
+          summary: "Unauthorized database connection detected"
+          description: |
+            Database connection from unexpected source: {{ $labels.source }}
+            This requires immediate security investigation.
