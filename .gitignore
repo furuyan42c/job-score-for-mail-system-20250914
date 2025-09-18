@@ -57,3 +57,6 @@ venv/
 # Logs
 logs/
 *.log
+# Environment Variables
+.env.local
+.env
