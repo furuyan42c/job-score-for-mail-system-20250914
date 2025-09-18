@@ -1,267 +1,34 @@
-/**
- * Root Layout for Job Matching System
- * Next.js 14 App Router with TypeScript
- */
+import type { Metadata } from "next";
+import localFont from "next/font/local";
+import "./globals.css";
 
-import type { Metadata, Viewport } from 'next';
-import { Inter, Geist_Sans, Geist_Mono } from 'next/font/google';
-import { ThemeProvider } from 'next-themes';
-import { Toaster } from 'sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-
-import { cn } from '@/lib/utils';
-import { AuthProvider } from '@/components/providers/auth-provider';
-import { Analytics } from '@vercel/analytics/react';
-
-import './globals.css';
-
-// Font configurations
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+});
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
 });
 
-const geistSans = Geist_Sans({
-  subsets: ['latin'],
-  variable: '--font-geist-sans',
-  display: 'swap',
-});
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-  display: 'swap',
-});
-
-// Metadata configuration
 export const metadata: Metadata = {
-  title: {
-    default: 'JobMatch Pro - AI-Powered Job Matching Platform',
-    template: '%s | JobMatch Pro',
-  },
-  description: 'Find your perfect job match with our AI-powered platform. Advanced job scoring, personalized recommendations, and seamless application tracking.',
-  keywords: [
-    'job matching',
-    'career opportunities',
-    'AI recruitment',
-    'job search',
-    'talent acquisition',
-    'personalized recommendations',
-    'job scoring',
-  ],
-  authors: [{ name: 'JobMatch Pro Team' }],
-  creator: 'JobMatch Pro',
-  publisher: 'JobMatch Pro',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://jobmatch.pro',
-    siteName: 'JobMatch Pro',
-    title: 'JobMatch Pro - AI-Powered Job Matching Platform',
-    description: 'Find your perfect job match with our AI-powered platform.',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'JobMatch Pro - AI-Powered Job Matching Platform',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'JobMatch Pro - AI-Powered Job Matching Platform',
-    description: 'Find your perfect job match with our AI-powered platform.',
-    creator: '@jobmatchpro',
-    images: ['/images/twitter-image.jpg'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-  },
-  alternates: {
-    canonical: 'https://jobmatch.pro',
-    languages: {
-      'en-US': 'https://jobmatch.pro/en',
-      'ja-JP': 'https://jobmatch.pro/ja',
-      'es-ES': 'https://jobmatch.pro/es',
-      'fr-FR': 'https://jobmatch.pro/fr',
-      'de-DE': 'https://jobmatch.pro/de',
-    },
-  },
-  manifest: '/manifest.json',
-  icons: {
-    icon: [
-      { url: '/icons/icon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-    shortcut: '/icons/shortcut-icon.png',
-  },
+  title: "Database Management System - メールスコアリングシステム",
+  description: "Supabase Database Management Interface",
 };
 
-// Viewport configuration
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
-  colorScheme: 'light dark',
-};
-
-// React Query client configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: (failureCount, error: any) => {
-        if (error?.status === 404) return false;
-        return failureCount < 3;
-      },
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
-
-interface RootLayoutProps {
+export default function RootLayout({
+  children,
+}: Readonly<{
   children: React.ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+}>) {
   return (
-    <html
-      lang="en"
-      className={cn(
-        'min-h-screen bg-background font-sans antialiased',
-        inter.variable,
-        geistSans.variable,
-        geistMono.variable
-      )}
-      suppressHydrationWarning
-    >
-      <head>
-        {/* Preload critical resources */}
-        <link
-          rel="preload"
-          href="/fonts/inter-var.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        {/* DNS prefetch for external domains */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//api.jobmatch.pro" />
-
-        {/* Structured data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'JobMatch Pro',
-              url: 'https://jobmatch.pro',
-              description: 'AI-Powered Job Matching Platform',
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: 'https://jobmatch.pro/jobs/search?q={search_term_string}',
-                'query-input': 'required name=search_term_string',
-              },
-            }),
-          }}
-        />
-      </head>
+    <html lang="en">
       <body
-        className={cn(
-          'min-h-screen bg-background font-sans antialiased',
-          inter.className
-        )}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange={false}
-          >
-            <AuthProvider>
-              {/* Skip to main content link for accessibility */}
-              <a
-                href="#main-content"
-                className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md"
-              >
-                Skip to main content
-              </a>
-
-              {/* Main application content */}
-              <div id="main-content" className="relative flex min-h-screen flex-col">
-                {children}
-              </div>
-
-              {/* Toast notifications */}
-              <Toaster
-                position="top-right"
-                expand
-                richColors
-                closeButton
-                toastOptions={{
-                  duration: 4000,
-                  className: 'rounded-lg border',
-                }}
-              />
-
-              {/* React Query DevTools (development only) */}
-              {process.env.NODE_ENV === 'development' && (
-                <ReactQueryDevtools initialIsOpen={false} />
-              )}
-            </AuthProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-
-        {/* Analytics */}
-        <Analytics />
-
-        {/* Service Worker Registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
+        {children}
       </body>
     </html>
   );

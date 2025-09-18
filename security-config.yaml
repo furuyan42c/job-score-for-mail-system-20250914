@@ -1,0 +1,278 @@
+# Security Testing Configuration
+# Configuration file for comprehensive security testing
+
+# Security Test Thresholds
+thresholds:
+  vulnerabilities:
+    critical: 0      # No critical vulnerabilities allowed
+    high: 2          # Maximum 2 high-severity vulnerabilities
+    moderate: 10     # Maximum 10 moderate vulnerabilities
+    low: 50          # Maximum 50 low-severity vulnerabilities
+
+  dependencies:
+    outdated_days: 365     # Maximum age for dependencies (days)
+    critical_vulns: 0      # No critical dependency vulnerabilities
+    high_vulns: 2          # Maximum high-severity dependency vulnerabilities
+
+  code_quality:
+    complexity_threshold: 10    # Maximum cyclomatic complexity
+    duplication_threshold: 5    # Maximum code duplication percentage
+
+# Security Tools Configuration
+tools:
+  # OWASP ZAP Configuration
+  zap:
+    enabled: true
+    api_key: "${ZAP_API_KEY:-test-api-key}"
+    proxy_url: "${ZAP_URL:-http://localhost:8080}"
+    target_url: "${TARGET_URL:-http://localhost:3000}"
+    scan_types:
+      - baseline
+      - full_scan
+    output_formats:
+      - json
+      - html
+      - xml
+
+  # Python Security Tools
+  python:
+    bandit:
+      enabled: true
+      confidence_level: "LOW"
+      severity_level: "LOW"
+      excluded_paths:
+        - "*/tests/*"
+        - "*/venv/*"
+
+    safety:
+      enabled: true
+      ignore_ids: []  # Add vulnerability IDs to ignore if needed
+
+    semgrep:
+      enabled: true
+      rulesets:
+        - "auto"
+        - "p/security-audit"
+        - "p/secrets"
+
+  # JavaScript Security Tools
+  javascript:
+    npm_audit:
+      enabled: true
+      audit_level: "moderate"
+      production_only: false
+
+    retire:
+      enabled: true
+      severity: "medium"
+
+    audit_ci:
+      enabled: true
+      allowlist: []  # Package names to allow despite vulnerabilities
+
+# Test Categories Configuration
+test_categories:
+  sql_injection:
+    enabled: true
+    test_endpoints:
+      - "/users/"
+      - "/jobs/"
+      - "/scores/"
+      - "/auth/login"
+    payloads:
+      - "'; DROP TABLE users; --"
+      - "1' OR '1'='1"
+      - "admin'--"
+      - "1' UNION SELECT * FROM users--"
+
+  authentication:
+    enabled: true
+    password_requirements:
+      min_length: 12
+      require_uppercase: true
+      require_lowercase: true
+      require_numbers: true
+      require_special: true
+      bcrypt_cost: 12
+
+    jwt_security:
+      allowed_algorithms: ["HS256", "RS256", "ES256"]
+      forbidden_algorithms: ["none", "HS1"]
+      max_token_lifetime: 3600  # seconds
+
+  data_encryption:
+    enabled: true
+    encryption_requirements:
+      pii_fields: ["email", "name", "phone", "address"]
+      encryption_algorithm: "AES-256"
+      key_management: "secure"
+
+  xss_prevention:
+    enabled: true
+    test_payloads:
+      - "<script>alert('xss')</script>"
+      - "<img src=x onerror=alert('xss')>"
+      - "<svg onload=alert('xss')>"
+      - "javascript:alert('xss')"
+
+  csrf_protection:
+    enabled: true
+    protected_methods: ["POST", "PUT", "DELETE", "PATCH"]
+    token_validation: true
+
+# Compliance Testing Configuration
+compliance:
+  gdpr:
+    enabled: true
+    data_subject_rights:
+      - "access"           # Article 15
+      - "rectification"    # Article 16
+      - "erasure"          # Article 17
+      - "portability"      # Article 20
+      - "restriction"      # Article 18
+
+    retention_policies:
+      user_data: 2555      # days (7 years)
+      application_data: 1095  # days (3 years)
+      logs: 365            # days (1 year)
+
+    consent_management:
+      purposes:
+        - "service_provision"
+        - "marketing"
+        - "analytics"
+        - "third_party_sharing"
+
+  security_headers:
+    required_headers:
+      - "X-Content-Type-Options: nosniff"
+      - "X-Frame-Options: DENY"
+      - "X-XSS-Protection: 1; mode=block"
+      - "Strict-Transport-Security: max-age=31536000"
+      - "Content-Security-Policy: default-src 'self'"
+      - "Referrer-Policy: strict-origin-when-cross-origin"
+
+# License Compliance
+license_compliance:
+  forbidden_licenses:
+    - "GPL-3.0"
+    - "AGPL-3.0"
+    - "LGPL-3.0"
+    - "UNLICENSED"
+
+  allowed_licenses:
+    - "MIT"
+    - "Apache-2.0"
+    - "BSD-2-Clause"
+    - "BSD-3-Clause"
+    - "ISC"
+
+# Reporting Configuration
+reporting:
+  output_directory: "./reports/security"
+  formats:
+    - "json"
+    - "xml"
+    - "html"
+    - "markdown"
+
+  notifications:
+    email:
+      enabled: false
+      recipients: []
+      smtp_server: ""
+
+    slack:
+      enabled: false
+      webhook_url: ""
+      channel: "#security"
+
+  archive:
+    enabled: true
+    retention_days: 90
+
+# Test Environment Configuration
+test_environment:
+  database:
+    type: "postgresql"
+    url: "${TEST_DATABASE_URL:-postgresql://test:test@localhost/security_test}"
+    isolation: true  # Use isolated test database
+
+  application:
+    base_url: "${TEST_APP_URL:-http://localhost:3000}"
+    api_base_url: "${TEST_API_URL:-http://localhost:8000}"
+
+  authentication:
+    test_users:
+      admin:
+        email: "admin@test.example.com"
+        password: "SecureTestPassword123!"
+        role: "admin"
+
+      user:
+        email: "user@test.example.com"
+        password: "SecureTestPassword123!"
+        role: "user"
+
+      guest:
+        email: "guest@test.example.com"
+        password: "SecureTestPassword123!"
+        role: "guest"
+
+# CI/CD Integration
+ci_cd:
+  fail_on:
+    critical_vulnerabilities: true
+    high_vulnerabilities: false  # Allow up to threshold
+    test_failures: true
+    compliance_violations: true
+
+  artifacts:
+    - "reports/security/*"
+    - "logs/security-test.log"
+
+  cache:
+    dependency_scan_results: 24  # hours
+    zap_session_data: 1         # hours
+
+# Performance Considerations
+performance:
+  parallel_execution: true
+  max_concurrent_tests: 4
+  timeout:
+    sql_injection_tests: 300    # seconds
+    zap_scan: 1800              # seconds
+    dependency_check: 600       # seconds
+
+# Security Test Data
+test_data:
+  sample_users: 10
+  sample_jobs: 20
+  sample_applications: 50
+
+  malicious_files:
+    - "shell.php"
+    - "malware.exe"
+    - "script.js"
+
+  attack_vectors:
+    - "sql_injection"
+    - "xss"
+    - "csrf"
+    - "directory_traversal"
+    - "file_upload"
+
+# Monitoring and Alerting
+monitoring:
+  enabled: true
+  metrics:
+    - "test_execution_time"
+    - "vulnerability_count"
+    - "false_positive_rate"
+    - "coverage_percentage"
+
+  alerts:
+    critical_vulnerability_found: true
+    test_suite_failure: true
+    dependency_vulnerability: true
+    compliance_violation: true

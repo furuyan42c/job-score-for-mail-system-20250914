@@ -8,7 +8,7 @@ FastAPI メインアプリケーション
 - CORS設定
 """
 
-from fastapi import FastAPI, Request, status, Depends
+from fastapi import FastAPI, Request, status, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -27,7 +27,9 @@ from app.dependencies import (
     health_check_dependencies,
     close_redis
 )
-from app.routers import jobs, users, matching, analytics, batch, scores, actions, health
+from app.utils.error_tracker import init_error_tracking, error_tracker, ErrorCategory, ErrorSeverity
+from app.utils.openapi import custom_openapi
+from app.routers import jobs, users, matching, analytics, batch, scores, actions, health, tdd_endpoints, sql_routes, auth, rate_limit_admin
 
 
 # ログ設定
@@ -45,6 +47,13 @@ async def lifespan(app: FastAPI):
     logger.info("Starting job matching system...")
 
     try:
+        # エラー追跡初期化（最初に実行）
+        error_tracking_enabled = init_error_tracking()
+        if error_tracking_enabled:
+            logger.info("Error tracking with Sentry initialized")
+        else:
+            logger.warning("Error tracking disabled (SENTRY_DSN not configured)")
+
         # データベース初期化
         await init_db()
         logger.info("Database connection initialized")
@@ -59,6 +68,13 @@ async def lifespan(app: FastAPI):
 
     except Exception as e:
         logger.error(f"Failed to initialize system: {e}")
+        # エラー追跡にも送信
+        error_tracker.capture_exception(
+            e,
+            category=ErrorCategory.UNKNOWN,
+            severity=ErrorSeverity.CRITICAL,
+            extra_context={"phase": "application_startup"}
+        )
         raise
 
     yield
@@ -89,6 +105,8 @@ app = FastAPI(
     * **マッチング**: AIベースのスコアリングシステム
     * **バッチ処理**: 大規模データ処理とメール配信
     * **分析**: リアルタイム分析とKPIダッシュボード
+    * **セキュリティ**: JWT認証、レート制限、構造化ログ
+    * **監視**: Sentryエラー追跡、パフォーマンスモニタリング
 
     ## 技術スタック
 
@@ -97,16 +115,84 @@ app = FastAPI(
     * SQLAlchemy ORM
     * Redis キャッシュ
     * Celery バッチ処理
+    * Sentry エラー追跡
+
+    ## セキュリティ
+
+    * JWT Bearer認証
+    * レート制限（IP/User/Endpoint別）
+    * SQLインジェクション防止
+    * 機密データマスキング
+
+    ## APIバージョニング
+
+    現在のバージョン: v1.0.0
+    ベースURL: `/api/v1`
     """,
     version="1.0.0",
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
-    lifespan=lifespan
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    lifespan=lifespan,
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+        "filter": True,
+        "showExtensions": True,
+        "showCommonExtensions": True
+    }
 )
 
 # ミドルウェア設定（高並行性対応）
 # Gzip圧縮（パフォーマンス向上）
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# OpenAPIカスタムタグ定義
+tags_metadata = [
+    {
+        "name": "authentication",
+        "description": "認証・認可関連のエンドポイント",
+        "externalDocs": {
+            "description": "JWT認証の詳細",
+            "url": "https://jwt.io/introduction",
+        },
+    },
+    {
+        "name": "jobs",
+        "description": "求人データ管理API",
+    },
+    {
+        "name": "users",
+        "description": "ユーザー管理API",
+    },
+    {
+        "name": "matching",
+        "description": "AIマッチングエンジンAPI",
+    },
+    {
+        "name": "batch",
+        "description": "バッチ処理管理API",
+    },
+    {
+        "name": "scores",
+        "description": "スコアリングエンジンAPI",
+    },
+    {
+        "name": "analytics",
+        "description": "分析・レポートAPI",
+    },
+    {
+        "name": "monitoring",
+        "description": "システム監視・ヘルスチェック",
+    },
+    {
+        "name": "admin",
+        "description": "管理者用API",
+    },
+]
+
+# タグメタデータをアプリに追加
+app.openapi_tags = tags_metadata
 
 # CORS設定
 app.add_middleware(
@@ -125,12 +211,116 @@ if not settings.DEBUG:
     )
 
 
+# 認証ミドルウェア
+from app.middleware.auth import AuthenticationMiddleware
+from app.middleware.rate_limit import rate_limit_middleware
+from app.middleware.logging import request_logging_middleware
+
+auth_middleware = AuthenticationMiddleware()
+
+@app.middleware("http")
+async def rate_limiting_middleware(request: Request, call_next: Callable):
+    """レート制限ミドルウェア（認証前に実行）"""
+    start_time = time.time()
+
+    # レート制限チェック
+    rate_limit_response = await rate_limit_middleware.check_rate_limit(request)
+    if rate_limit_response:
+        return rate_limit_response
+
+    # リクエスト処理
+    response = await call_next(request)
+
+    # レスポンス時間記録
+    response_time = time.time() - start_time
+
+    # レート制限ヘッダー追加
+    await rate_limit_middleware.add_response_headers(response, request)
+
+    # リクエスト記録（統計用）
+    client_ip = rate_limit_middleware._get_client_ip(request)
+    user_id = getattr(request.state, 'user_id', None)
+
+    from app.middleware.rate_limit import RequestRecord
+    record = RequestRecord(
+        timestamp=start_time,
+        endpoint=request.url.path,
+        method=request.method,
+        status_code=response.status_code,
+        response_time=response_time
+    )
+
+    key = f"ip:{client_ip}" if not user_id else f"user:{user_id}"
+    await rate_limit_middleware.storage.add_request_record(key, record)
+
+    return response
+
+
+@app.middleware("http")
+async def structured_logging_middleware(request: Request, call_next: Callable):
+    """構造化ログミドルウェア（リクエスト/レスポンス/セキュリティイベント）"""
+    return await request_logging_middleware.log_request_response(request, call_next)
+
+
+@app.middleware("http")
+async def authentication_middleware(request: Request, call_next: Callable):
+    """認証ミドルウェア（全リクエストに適用）"""
+    try:
+        # 認証チェック（認証不要パスは自動でスキップされる）
+        await auth_middleware.authenticate_request(request)
+
+        # 認証成功時にエラー追跡のユーザーコンテキスト設定
+        if hasattr(request.state, 'user_id') and request.state.user_id:
+            error_tracker.set_user_context(
+                user_id=request.state.user_id,
+                email=getattr(request.state, 'user_email', None)
+            )
+
+    except HTTPException as auth_error:
+        # 認証エラーをエラー追跡に記録
+        error_tracker.capture_exception(
+            auth_error,
+            category=ErrorCategory.AUTHENTICATION,
+            severity=ErrorSeverity.MEDIUM,
+            extra_context={
+                "path": request.url.path,
+                "method": request.method,
+                "status_code": auth_error.status_code
+            }
+        )
+
+        # 認証エラーの場合、パブリックパス以外はエラーを返す
+        if not auth_middleware.is_public_path(request.url.path):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=auth_error.status_code,
+                content={"detail": auth_error.detail},
+                headers=auth_error.headers or {}
+            )
+
+    # 認証通過または認証不要の場合は次のミドルウェアへ
+    response = await call_next(request)
+    return response
+
+
 # リクエストトラッキング・パフォーマンス監視ミドルウェア
 @app.middleware("http")
 async def request_tracking_middleware(request: Request, call_next: Callable):
     """リクエストトラッキングとパフォーマンス監視（高並行性対応）"""
     # リクエストID生成
     request_id = await get_request_id(request)
+
+    # エラー追跡用ブレッドクラム追加
+    error_tracker.add_breadcrumb(
+        message=f"Request started: {request.method} {request.url.path}",
+        category="request",
+        level="info",
+        data={
+            "method": request.method,
+            "path": request.url.path,
+            "request_id": request_id
+        }
+    )
 
     start_time = time.time()
 
@@ -152,6 +342,34 @@ async def request_tracking_middleware(request: Request, call_next: Callable):
                 f"took {process_time:.2f}s [Request ID: {request_id}]"
             )
 
+            # 遅いリクエストをエラー追跡に記録
+            error_tracker.capture_message(
+                f"Slow request detected: {request.method} {request.url.path}",
+                level=ErrorSeverity.MEDIUM,
+                category=ErrorCategory.PERFORMANCE,
+                extra_context={
+                    "duration_ms": process_time * 1000,
+                    "threshold_ms": settings.SLOW_QUERY_THRESHOLD * 1000,
+                    "request_id": request_id
+                },
+                tags={
+                    "endpoint": request.url.path,
+                    "method": request.method
+                }
+            )
+
+        # レスポンス完了ブレッドクラム
+        error_tracker.add_breadcrumb(
+            message=f"Request completed: {response.status_code}",
+            category="response",
+            level="info",
+            data={
+                "status_code": response.status_code,
+                "duration_ms": process_time * 1000,
+                "request_id": request_id
+            }
+        )
+
         # 統計情報（非同期で記録）
         asyncio.create_task(_log_request_stats(request, response, process_time))
 
@@ -159,6 +377,20 @@ async def request_tracking_middleware(request: Request, call_next: Callable):
 
     except Exception as e:
         process_time = time.time() - start_time
+
+        # エラーブレッドクラム追加
+        error_tracker.add_breadcrumb(
+            message=f"Request failed: {type(e).__name__}",
+            category="error",
+            level="error",
+            data={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "duration_ms": process_time * 1000,
+                "request_id": request_id
+            }
+        )
+
         logger.error(
             f"Request failed: {request.method} {request.url} "
             f"after {process_time:.2f}s [Request ID: {request_id}] - {str(e)}"
@@ -190,13 +422,44 @@ async def _log_request_stats(request: Request, response, process_time: float):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """グローバル例外処理"""
-    logger.error(f"Global exception: {exc}", exc_info=True)
+    request_id = getattr(request.state, "request_id", None)
+
+    # エラー追跡にキャプチャ
+    user_context = {}
+    if hasattr(request.state, 'user_id') and request.state.user_id:
+        user_context = {"id": request.state.user_id}
+
+    event_id = error_tracker.capture_exception(
+        exc,
+        category=ErrorCategory.API,
+        severity=ErrorSeverity.HIGH,
+        user_context=user_context if user_context else None,
+        extra_context={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "headers": dict(request.headers),
+            "phase": "request_processing"
+        },
+        tags={
+            "endpoint": request.url.path,
+            "method": request.method
+        }
+    )
+
+    # ローカルログ
+    logger.error(f"Global exception: {exc}", exc_info=True, extra={
+        "request_id": request_id,
+        "sentry_event_id": event_id
+    })
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "内部サーバーエラーが発生しました",
             "detail": str(exc) if settings.DEBUG else "サーバーエラー",
-            "request_id": getattr(request.state, "request_id", None)
+            "request_id": request_id,
+            "event_id": event_id if settings.DEBUG else None
         }
     )
 
@@ -276,6 +539,13 @@ async def system_info():
 
 
 # APIエンドポイントルーター登録
+# 認証関連エンドポイント（認証不要パスとして設定済み）
+app.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["authentication"]
+)
+
 app.include_router(
     jobs.router,
     prefix="/api/v1/jobs",
@@ -324,6 +594,26 @@ app.include_router(
     tags=["health", "monitoring"]
 )
 
+app.include_router(
+    rate_limit_admin.router,
+    prefix="/admin/rate-limit",
+    tags=["admin", "rate-limiting"]
+)
+
+app.include_router(
+    sql_routes.router,
+    prefix="/api/v1/sql",
+    tags=["sql", "administration"]
+)
+
+# TDD Phase 2: GREEN - 契約テスト用エンドポイント（最小実装）
+# これらは後でリファクタリングフェーズで適切な場所に移動する
+app.include_router(
+    tdd_endpoints.router,
+    prefix="/api/v1",
+    tags=["tdd_endpoints"]
+)
+
 
 # ルートエンドポイント
 @app.get("/", tags=["root"])
@@ -335,6 +625,13 @@ async def root():
         "docs": "/docs",
         "health": "/health"
     }
+
+
+# カスタムOpenAPIスキーマを適用
+def get_custom_openapi():
+    return custom_openapi(app)
+
+app.openapi = get_custom_openapi
 
 
 if __name__ == "__main__":

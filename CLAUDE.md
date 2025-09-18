@@ -1,12 +1,13 @@
-# 🚀 Claude Code 統合開発コマンドセンター v2.3
-> **最終更新**: 2025-09-12 | **Super Claude Framework**: v2.3対応 | **自動検証**: 有効
+# 🚀 Claude Code 統合開発コマンドセンター v2.4
+> **最終更新**: 2025-09-18 | **Super Claude Framework**: v2.4対応 | **TDD**: 完全準拠
 
 ## 📊 現在のプロジェクト状況
 <!-- このセクションは自動更新されます -->
-- **Git Branch**: 001-think-hard-manual
-- **作業ディレクトリ**: /Users/naoki/000_PROJECT/作業用
+- **Git Branch**: 003-implementation-start
+- **作業ディレクトリ**: /Users/furuyanaoki/Project/new.mail.score/backend
 - **セッション状態**: アクティブ
-- **利用可能MCP**: Sequential ✅ Context7 ✅ Serena ✅ Magic ✅ Playwright ✅ IDE ✅
+- **TDD実装状態**: Phase 2 (GREEN) 完了 / Phase 3 (REFACTOR) 進行中
+- **利用可能MCP**: Sequential ✅ Context7 ✅ Serena ✅ Magic ✅ Playwright ✅
 
 ## 🎯 Claude Codeの拡張役割
 
@@ -16,7 +17,8 @@
 - コードレビューとフィードバック
 - マニュアル検証と最適化
 
-### v2.3 強化役割
+### v2.4 強化役割
+- **TDD完全準拠**: RED→GREEN→REFACTORサイクルの厳密な実行
 - **深層分析**: `--think-hard`による複雑な要件の多角的分析
 - **ビジネス価値評価**: 9名の専門家パネルによる戦略的分析
 - **並列処理最適化**: タスクの自動並列化と効率化
@@ -51,9 +53,26 @@
 
 ### 🔍 マニュアル検証コマンド
 ```markdown
-/validate-manual [--version 2.3] [--scope full|commands|mcp]  # マニュアル検証
+/validate-manual [--version 2.4] [--scope full|commands|mcp]  # マニュアル検証
 /check-mcp-servers [--servers sequential,context7,...]  # MCP可用性チェック
-/update-manual --validation-id <UUID> --target-version 2.3  # マニュアル最適化
+/update-manual --validation-id <UUID> --target-version 2.4  # マニュアル最適化
+```
+
+### 🧪 TDD開発支援コマンド（v2.4新機能）
+```markdown
+# TDDサイクル管理
+/tdd:red <task-id>                # REDフェーズ：失敗するテストを作成
+/tdd:green <task-id>              # GREENフェーズ：最小実装でテストをパス
+/tdd:refactor <task-id>           # REFACTORフェーズ：コード品質改善
+
+# TDD検証
+/tdd:verify [--phase red|green|refactor]  # 現在のフェーズ検証
+/tdd:status                       # 全タスクのTDD状態確認
+/tdd:report                       # TDD準拠レポート生成
+
+# TDD自動化
+/tdd:cycle <task-id> [--auto]     # 完全なTDDサイクル実行
+/tdd:batch <task-ids> [--parallel]  # 複数タスクの並列TDD実行
 ```
 
 ## 🏗️ 現在の技術スタック
@@ -73,14 +92,22 @@ mcp_servers:
 ```
 
 ## 📈 品質メトリクス（自動更新）
-<!-- 最終更新: 2025-09-12 14:00 -->
+<!-- 最終更新: 2025-09-18 -->
 | メトリクス | 現在値 | 目標値 | ステータス |
 |-----------|--------|--------|-----------|
-| テストカバレッジ | - | >90% | ⏳ |
+| テストカバレッジ | 70% | >90% | 🚧 |
+| TDD準拠率 | 30% | 100% | 🚧 |
 | コード複雑度 | - | <8 | ⏳ |
 | セキュリティスコア | - | A | ⏳ |
 | パフォーマンススコア | - | >8.5 | ⏳ |
-| 技術負債インデックス | - | <0.15 | ⏳ |
+| 技術負債インデックス | 0.35 | <0.15 | ⚠️ |
+
+## 🔴 TDD実装状況
+| フェーズ | 完了タスク | 総タスク | 達成率 |
+|---------|-----------|----------|--------|
+| RED (テスト作成) | 13 | 65 | 20% |
+| GREEN (最小実装) | 13 | 65 | 20% |
+| REFACTOR (改善) | 0 | 65 | 0% |
 
 ## 🚀 並列実行とMCP統合戦略
 
@@ -137,29 +164,61 @@ mcp_servers:
 ```
 
 ## 📊 タスク進捗状況
-<!-- tasks.mdから自動更新 -->
+<!-- tasks_tdd.mdから自動更新 -->
 ```markdown
-総タスク数: -
-✅ 完了: - (-%）
-🚧 進行中: -
-🚫 ブロック: -
-⏳ 未着手: -
+総タスク数: 195 (65タスク × 3フェーズ)
+✅ RED完了: 13 (20%）
+✅ GREEN完了: 13 (20%）
+⏳ REFACTOR待機: 13
+🚧 進行中: 0
+⏳ 未着手: 169
 
-次の優先タスク:
-1. [タスク読込中...]
-2. [タスク読込中...]
-3. [タスク読込中...]
+次の優先タスク（TDDサイクル）:
+1. T005-T013のREFACTORフェーズ（ハードコード除去）
+2. T014-T016のREDフェーズ（ユーザー管理テスト作成）
+3. T046-T049のREDフェーズ（統合テスト作成）
+```
+
+## 🧪 TDDワークフロー（v2.4必須）
+
+### TDD実装フロー
+```bash
+# 1. REDフェーズ（テストファースト）
+/tdd:red T014
+→ テスト作成（必ず失敗することを確認）
+→ git commit -m "test(users): add failing test for user registration [T014-RED]"
+
+# 2. GREENフェーズ（最小実装）
+/tdd:green T014
+→ 最小限のコードでテストをパス
+→ git commit -m "feat(users): minimal implementation for user registration [T014-GREEN]"
+
+# 3. REFACTORフェーズ（品質改善）
+/tdd:refactor T014
+→ コード品質改善（テストは常にパス）
+→ git commit -m "refactor(users): improve user registration implementation [T014-REFACTOR]"
+```
+
+### TDDアンチパターン検出
+```yaml
+violations:
+  - テストなしで実装開始 → 自動検出・警告
+  - テストを後から追加 → TDD違反として記録
+  - テストをスキップ → ビルド失敗
+  - ハードコードのまま放置 → 技術負債として追跡
 ```
 
 ## 🔄 GitHub統合とコミット戦略
 
-### コミット戦略
+### TDD準拠コミット戦略
 ```bash
-# タスクレベルコミット（推奨）
-T001完了 → git commit -m "feat(auth): implement JWT token [T001]"
+# TDDフェーズ別コミット（必須）
+REDフェーズ → git commit -m "test(<scope>): <description> [<task-id>-RED]"
+GREENフェーズ → git commit -m "feat(<scope>): <description> [<task-id>-GREEN]"
+REFACTORフェーズ → git commit -m "refactor(<scope>): <description> [<task-id>-REFACTOR]"
 
-# グループレベルコミット  
-Group A完了 → git commit -m "feat(auth): complete backend implementation"
+# 従来のコミット（非推奨）
+タスク完了 → git commit -m "feat(<scope>): <description> [<task-id>]"  # ⚠️ TDD違反
 
 # チェックポイントコミット（30分ごと）
 /sc:checkpoint → git commit -m "WIP: checkpoint $(date +%H:%M)"
@@ -195,14 +254,42 @@ reports/                   # レポート群
 
 ## 🎯 Quick Actions（よく使うコマンド組み合わせ）
 
-### 新機能開発の最速パス
+### TDD開発の標準フロー（v2.4推奨）
 ```bash
+# 1. セッション開始とTDD準備
+/sc:load
+/tdd:status  # 現在のTDD実装状態確認
+
+# 2. タスクのTDDサイクル実行
+/tdd:red T014  # 失敗するテストを作成
+pytest tests/test_users.py::test_user_registration -v  # 失敗確認
+git commit -m "test(users): add failing test for user registration [T014-RED]"
+
+/tdd:green T014  # 最小実装
+pytest tests/test_users.py::test_user_registration -v  # パス確認
+git commit -m "feat(users): minimal implementation [T014-GREEN]"
+
+/tdd:refactor T014  # リファクタリング
+pytest tests/ -v  # 全テストパス確認
+git commit -m "refactor(users): improve implementation [T014-REFACTOR]"
+
+# 3. 並列TDD実行（独立タスク）
+/tdd:batch T015,T016,T017 --parallel
+
+# 4. 検証とPR
+/tdd:report  # TDD準拠レポート生成
+/verify-and-pr <slug> "feat: TDD implementation" --tdd-compliant
+```
+
+### 従来の開発フロー（非推奨）
+```bash
+# ⚠️ TDD違反：実装ファーストアプローチ
 # 1. セッション開始
 /sc:load
 
 # 2. 仕様から実装まで一気通貫
 /specify --think-hard
-/plan --optimize-parallel  
+/plan --optimize-parallel
 /tasks --parallel-optimization --mcp-strategy
 
 # 3. 実装（TodoWrite自動管理）
@@ -259,19 +346,25 @@ quality_gates:
 
 ## 💡 ベストプラクティス
 
-### ✅ 推奨事項
-1. **セッション管理**: 必ず`/sc:load`で開始、`/sc:save`で終了
-2. **深層分析**: 複雑な要件は`--think-hard`を使用
-3. **並列処理**: 独立タスクは常に並列実行
-4. **継続的検証**: 各タスク完了時にテスト実行
-5. **ビジネス価値**: 重要機能は`/sc:business-panel`で分析
+### ✅ v2.4推奨事項
+1. **TDD厳守**: 必ずRED→GREEN→REFACTORサイクルを守る
+2. **テストファースト**: 実装前に必ずテストを作成
+3. **セッション管理**: 必ず`/sc:load`で開始、`/sc:save`で終了
+4. **深層分析**: 複雑な要件は`--think-hard`を使用
+5. **並列処理**: 独立タスクは常に並列実行
+6. **継続的検証**: 各フェーズでテスト実行
+7. **ビジネス価値**: 重要機能は`/sc:business-panel`で分析
 
-### ❌ アンチパターン
-1. Morphllm MCPの使用（v2.3で廃止）
-2. セッション管理なしでの長時間作業
-3. 順次実行のみでの実装
-4. テストを最後にまとめて実行
-5. ビジネス価値の検討なしでの実装
+### ❌ v2.4アンチパターン
+1. **実装ファースト開発**（最重要違反）
+2. テストを後から追加する
+3. テストをスキップ・無効化する
+4. ハードコードのまま放置する
+5. Morphllm MCPの使用（v2.3で廃止）
+6. セッション管理なしでの長時間作業
+7. 順次実行のみでの実装
+8. テストを最後にまとめて実行
+9. ビジネス価値の検討なしでの実装
 
 ## 🆘 トラブルシューティング
 
@@ -312,11 +405,24 @@ tail -f logs/validation.log
 - `/enhance-tasks-for-codex <slug>` → 削除済み
 - `/handoff-to-codex` → 未実装
 
-### v2.3→v2.4 移行準備
-- エージェント並列協調の準備
-- 段階的検証パイプラインの設計
-- GitHub統合の強化
-- リアルタイム最適化の実装
+### v2.3→v2.4 移行ガイド
+#### 主要変更点
+- **TDD必須化**: すべての新規開発はTDDサイクル準拠
+- **コマンド追加**: `/tdd:*` コマンド群の追加
+- **メトリクス追加**: TDD準拠率の追跡開始
+- **コミット規約変更**: フェーズ別コミットメッセージ必須
+
+#### 移行手順
+1. 既存コードのTDD準拠率を測定: `/tdd:status`
+2. 技術負債の可視化: `/tdd:report`
+3. 段階的リファクタリング計画: `/plan --tdd-migration`
+4. 並列TDD実行で効率化: `/tdd:batch --parallel`
+
+### v2.4→v2.5 ロードマップ
+- TDD自動化の完全統合
+- AIペアプログラミング強化
+- リアルタイムコード品質分析
+- 自己修復型テストシステム
 
 ---
 *このファイルは自動検証システムにより品質管理されています*

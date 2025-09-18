@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{user_name}}様への求人おすすめ - JobMatch</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; line-height: 1.6; color: #333333; background-color: #f5f7fa;">
+
+<!-- Main Container -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f7fa;">
+    <tr>
+        <td align="center" style="padding: 20px 0;">
+
+            <!-- Email Container -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+
+                <!-- Header -->
+                <tr>
+                    <td style="padding: 30px 30px 20px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
+                        <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+                            {{user_name}}様への求人おすすめ
+                        </h1>
+                        <p style="margin: 10px 0 0 0; color: #e8f0fe; font-size: 16px;">
+                            あなたにぴったりの求人をお届けします
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Personal Message -->
+                <tr>
+                    <td style="padding: 30px 30px 20px 30px;">
+                        <p style="margin: 0; font-size: 16px; color: #555555;">
+                            こんにちは、{{user_name}}様<br>
+                            本日は{{total_jobs}}件の求人をご紹介いたします。あなたのスキルや経験にマッチした厳選求人をお楽しみください。
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Section 1: Editorial Picks -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        ✨ エディターズピック
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        専門チームが厳選した特別な求人
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#editorial_picks}}
+                            <tr>
+                                <td style="padding: 15px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="70">
+                                                <div style="width: 50px; height: 50px; background-color: #667eea; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">
+                                                    {{company_initial}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 15px;">
+                                                <h3 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 5px 0; font-size: 14px; color: #667eea; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 13px; color: #666666;">
+                                                    {{location}} • {{salary_range}} • {{employment_type}}
+                                                </p>
+                                                <div style="margin-top: 8px;">
+                                                    <span style="display: inline-block; background-color: #fef3c7; color: #d97706; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                                        マッチ度: {{match_score}}%
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/editorial_picks}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Section 2: Top 5 Recommendations -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #10b981; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        🏆 トップ5おすすめ
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        あなたに最もマッチする求人TOP5
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#top5_recommendations}}
+                            <tr>
+                                <td style="padding: 15px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="70">
+                                                <div style="width: 50px; height: 50px; background-color: #10b981; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">
+                                                    {{rank}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 15px;">
+                                                <h3 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 5px 0; font-size: 14px; color: #10b981; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 13px; color: #666666;">
+                                                    {{location}} • {{salary_range}} • {{employment_type}}
+                                                </p>
+                                                <div style="margin-top: 8px;">
+                                                    <span style="display: inline-block; background-color: #d1fae5; color: #059669; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                                        マッチ度: {{match_score}}%
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/top5_recommendations}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Section 3: Trending Jobs -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #f59e0b; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        🔥 トレンド求人
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        今注目の人気求人10選
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#trending_jobs}}
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="60">
+                                                <div style="width: 40px; height: 40px; background-color: #f59e0b; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
+                                                    {{company_initial}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 12px;">
+                                                <h3 style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 3px 0; font-size: 13px; color: #f59e0b; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 12px; color: #666666;">
+                                                    {{location}} • {{salary_range}}
+                                                </p>
+                                                <div style="margin-top: 5px;">
+                                                    <span style="display: inline-block; background-color: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500;">
+                                                        人気度: {{popularity_score}}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/trending_jobs}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Section 4: Near You -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #8b5cf6; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        📍 お近くの求人
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        {{user_location}}周辺の求人10選
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#near_you_jobs}}
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="60">
+                                                <div style="width: 40px; height: 40px; background-color: #8b5cf6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
+                                                    {{company_initial}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 12px;">
+                                                <h3 style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 3px 0; font-size: 13px; color: #8b5cf6; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 12px; color: #666666;">
+                                                    {{location}} • {{distance}}km • {{salary_range}}
+                                                </p>
+                                                <div style="margin-top: 5px;">
+                                                    <span style="display: inline-block; background-color: #ede9fe; color: #7c3aed; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500;">
+                                                        距離: {{distance}}km
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/near_you_jobs}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Section 5: High Paying -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        💰 高給与求人
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        高収入を目指せる求人5選
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#high_paying_jobs}}
+                            <tr>
+                                <td style="padding: 15px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="70">
+                                                <div style="width: 50px; height: 50px; background-color: #dc2626; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
+                                                    {{company_initial}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 15px;">
+                                                <h3 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 5px 0; font-size: 14px; color: #dc2626; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 13px; color: #666666;">
+                                                    {{location}} • {{employment_type}}
+                                                </p>
+                                                <div style="margin-top: 8px;">
+                                                    <span style="display: inline-block; background-color: #fee2e2; color: #dc2626; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                                        年収: {{salary_range}}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/high_paying_jobs}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Section 6: New Arrivals -->
+                <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="border-bottom: 3px solid #06b6d4; padding-bottom: 10px; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #333333;">
+                                        🆕 新着求人
+                                    </h2>
+                                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">
+                                        この1週間に追加された新着求人5選
+                                    </p>
+                                </td>
+                            </tr>
+                            {{#new_arrival_jobs}}
+                            <tr>
+                                <td style="padding: 15px 0; border-bottom: 1px solid #e5e7eb;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="70">
+                                                <div style="width: 50px; height: 50px; background-color: #06b6d4; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">
+                                                    {{company_initial}}
+                                                </div>
+                                            </td>
+                                            <td style="padding-left: 15px;">
+                                                <h3 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 600; color: #333333;">
+                                                    <a href="{{job_url}}" style="color: #333333; text-decoration: none;">{{job_title}}</a>
+                                                </h3>
+                                                <p style="margin: 0 0 5px 0; font-size: 14px; color: #06b6d4; font-weight: 500;">
+                                                    {{company_name}}
+                                                </p>
+                                                <p style="margin: 0; font-size: 13px; color: #666666;">
+                                                    {{location}} • {{salary_range}} • {{employment_type}}
+                                                </p>
+                                                <div style="margin-top: 8px;">
+                                                    <span style="display: inline-block; background-color: #cffafe; color: #0891b2; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                                        {{days_since_posted}}日前掲載
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            {{/new_arrival_jobs}}
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Call to Action -->
+                <tr>
+                    <td style="padding: 30px 30px 20px 30px; text-align: center; background-color: #f8fafc; border-radius: 8px; margin: 0 30px 30px 30px;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #333333;">
+                            もっと多くの求人を見つけませんか？
+                        </h3>
+                        <p style="margin: 0 0 20px 0; font-size: 14px; color: #666666;">
+                            あなたにぴったりの求人がまだまだあります
+                        </p>
+                        <a href="{{website_url}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                            求人をもっと見る
+                        </a>
+                    </td>
+                </tr>
+
+                <!-- Personalization Info -->
+                <tr>
+                    <td style="padding: 20px 30px; background-color: #f1f5f9; border-radius: 6px; margin: 0 30px 30px 30px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #333333; font-weight: 600;">
+                            📊 この推薦について
+                        </h4>
+                        <p style="margin: 0; font-size: 12px; color: #666666; line-height: 1.5;">
+                            この求人リストは、あなたのスキル「{{user_skills}}」、希望勤務地「{{user_preferred_location}}」、および過去の応募履歴に基づいてカスタマイズされています。<br>
+                            最終更新日: {{recommendation_date}}
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="padding: 30px; text-align: center; background-color: #374151; color: #d1d5db; border-radius: 0 0 8px 8px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td style="text-align: center; padding-bottom: 20px;">
+                                    <img src="{{logo_url}}" alt="JobMatch Logo" style="height: 30px;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center; font-size: 14px; padding-bottom: 15px;">
+                                    <strong>JobMatch</strong><br>
+                                    あなたのキャリアを応援します
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center; font-size: 12px; line-height: 1.5;">
+                                    <p style="margin: 0 0 10px 0;">
+                                        このメールは {{user_email}} 宛てに送信されました。<br>
+                                        求人アラートの設定を変更するには <a href="{{settings_url}}" style="color: #60a5fa;">こちら</a>
+                                    </p>
+                                    <p style="margin: 0 0 15px 0;">
+                                        <a href="{{unsubscribe_url}}" style="color: #9ca3af;">配信停止</a> |
+                                        <a href="{{privacy_url}}" style="color: #9ca3af; margin-left: 10px;">プライバシーポリシー</a> |
+                                        <a href="{{terms_url}}" style="color: #9ca3af; margin-left: 10px;">利用規約</a>
+                                    </p>
+                                    <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+                                        © 2024 JobMatch. All rights reserved.<br>
+                                        〒100-0001 東京都千代田区千代田1-1-1
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+<!-- Tracking Pixel -->
+<img src="{{tracking_pixel_url}}" alt="" width="1" height="1" style="display: block;" />
+
+</body>
+</html>

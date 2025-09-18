@@ -1,0 +1,57 @@
+{
+  "name": "performance-tests",
+  "version": "1.0.0",
+  "description": "Performance tests for job matching system",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --verbose --detectOpenHandles",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "load-test": "./run-load-test.sh",
+    "load-test:parallel": "./run-load-test.sh --parallel",
+    "load-test:quick": "./run-load-test.sh --parallel --no-stress",
+    "generate-data": "npx ts-node generate-test-data.ts",
+    "generate-data:small": "npx ts-node generate-test-data.ts --small",
+    "benchmark": "npx jest scoring_engine_benchmark.test.ts --verbose",
+    "memory-test": "node --expose-gc --max-old-space-size=4096 node_modules/.bin/jest memory_usage.test.ts",
+    "stress-test": "npx jest database_stress.test.ts --verbose --maxWorkers=1",
+    "batch-test": "npx jest batch_processing_load.test.ts --verbose --runInBand"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "form-data": "^4.0.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.test.ts",
+      "!**/node_modules/**"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "testTimeout": 300000
+  },
+  "keywords": [
+    "performance",
+    "load-testing",
+    "benchmarking",
+    "job-matching",
+    "stress-testing"
+  ],
+  "author": "Performance Engineering Team",
+  "license": "MIT"
+}

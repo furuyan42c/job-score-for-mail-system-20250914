@@ -1,78 +1,284 @@
-/**
- * API Client Implementation
- *
- * Comprehensive API client for the job matching system with methods for
- * batch operations, job management, scoring, monitoring, and email operations.
- * Includes error handling, retry logic, caching, and real-time updates.
- */
+import { ApiResponse, PaginatedResponse } from '../types';
 
-import { supabase, createServerSupabaseClient, realtimeManager } from './supabase';
-import {
-  ApiResponse,
-  Job,
-  User,
-  Score,
-  BatchExecution,
-  BatchType,
-  BatchStatus,
-  ScoringParams,
-  ScoringCalculationResult,
-  ImportJobsParams,
-  ImportResult,
-  JobSearchParams,
-  UserSearchParams,
-  QueryResult,
-  SystemMetrics,
-  SystemLog,
-  LogFilters,
-  EmailPreview,
-  EmailJob,
-  APIError,
-  ValidationError,
-  AuthenticationError,
-  NotFoundError,
-  RateLimitError,
-  PaginationParams,
-} from './types';
+// API Client Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+const API_TIMEOUT = 30000; // 30 seconds
 
-/**
- * Cache configuration and management
- */
-interface CacheItem<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
+// Custom error class for API errors
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+    public details?: any
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
-class CacheManager {
-  private cache = new Map<string, CacheItem<any>>();
-  private defaultTTL = 5 * 60 * 1000; // 5 minutes
+// Request configuration interface
+interface RequestConfig {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  withAuth?: boolean;
+  retries?: number;
+  cache?: boolean;
+}
 
-  set<T>(key: string, data: T, ttl?: number): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL,
+// Token management
+class TokenManager {
+  private static instance: TokenManager;
+  private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+  private tokenExpiresAt: Date | null = null;
+  private refreshPromise: Promise<string | null> | null = null;
+
+  static getInstance(): TokenManager {
+    if (!TokenManager.instance) {
+      TokenManager.instance = new TokenManager();
+    }
+    return TokenManager.instance;
+  }
+
+  setTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.tokenExpiresAt = new Date(expiresAt);
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  isTokenExpired(): boolean {
+    if (!this.tokenExpiresAt) return true;
+    return new Date() >= this.tokenExpiresAt;
+  }
+
+  async getValidToken(): Promise<string | null> {
+    if (!this.accessToken) return null;
+
+    if (!this.isTokenExpired()) {
+      return this.accessToken;
+    }
+
+    // If already refreshing, wait for that promise
+    if (this.refreshPromise) {
+      return await this.refreshPromise;
+    }
+
+    // Start refresh process
+    this.refreshPromise = this.refreshTokens();
+    const newToken = await this.refreshPromise;
+    this.refreshPromise = null;
+
+    return newToken;
+  }
+
+  private async refreshTokens(): Promise<string | null> {
+    if (!this.refreshToken) return null;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: this.refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+      this.setTokens(data.accessToken, data.refreshToken, data.expiresAt);
+      return data.accessToken;
+    } catch (error) {
+      // Clear tokens on refresh failure
+      this.clearTokens();
+      return null;
+    }
+  }
+
+  clearTokens(): void {
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.tokenExpiresAt = null;
+    this.refreshPromise = null;
+  }
+}
+
+// HTTP Client class
+class HttpClient {
+  private tokenManager = TokenManager.getInstance();
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+  async request<T>(
+    endpoint: string,
+    config: RequestConfig = {}
+  ): Promise<ApiResponse<T>> {
+    const {
+      method = 'GET',
+      headers = {},
+      body,
+      timeout = API_TIMEOUT,
+      withAuth = true,
+      retries = 3,
+      cache = false,
+    } = config;
+
+    // Check cache for GET requests
+    if (method === 'GET' && cache) {
+      const cacheKey = this.getCacheKey(endpoint, config);
+      const cached = this.cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        return cached.data;
+      }
+    }
+
+    // Prepare headers
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers,
+    };
+
+    // Add authentication header
+    if (withAuth) {
+      const token = await this.tokenManager.getValidToken();
+      if (token) {
+        requestHeaders.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    // Prepare request configuration
+    const requestConfig: RequestInit = {
+      method,
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+    };
+
+    // Add timeout using AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    requestConfig.signal = controller.signal;
+
+    let lastError: Error;
+
+    // Retry logic
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, requestConfig);
+        clearTimeout(timeoutId);
+
+        // Handle different response statuses
+        if (response.ok) {
+          const data = await response.json();
+
+          // Cache successful GET requests
+          if (method === 'GET' && cache) {
+            const cacheKey = this.getCacheKey(endpoint, config);
+            this.cache.set(cacheKey, {
+              data,
+              timestamp: Date.now(),
+              ttl: 5 * 60 * 1000, // 5 minutes default TTL
+            });
+          }
+
+          return data;
+        }
+
+        // Handle authentication errors
+        if (response.status === 401) {
+          this.tokenManager.clearTokens();
+          throw new ApiError('Authentication required', 401, 'UNAUTHORIZED');
+        }
+
+        // Handle other HTTP errors
+        const errorData = await response.json().catch(() => ({}));
+        throw new ApiError(
+          errorData.message || `HTTP ${response.status}`,
+          response.status,
+          errorData.code,
+          errorData.details
+        );
+      } catch (error) {
+        lastError = error as Error;
+
+        // Don't retry on certain errors
+        if (
+          error instanceof ApiError ||
+          error instanceof TypeError ||
+          attempt === retries
+        ) {
+          throw error;
+        }
+
+        // Exponential backoff for retries
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError!;
+  }
+
+  // Helper methods for common HTTP methods
+  async get<T>(endpoint: string, config?: Omit<RequestConfig, 'method'>): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...config, method: 'GET' });
+  }
+
+  async post<T>(endpoint: string, body?: any, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...config, method: 'POST', body });
+  }
+
+  async put<T>(endpoint: string, body?: any, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...config, method: 'PUT', body });
+  }
+
+  async patch<T>(endpoint: string, body?: any, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...config, method: 'PATCH', body });
+  }
+
+  async delete<T>(endpoint: string, config?: Omit<RequestConfig, 'method'>): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...config, method: 'DELETE' });
+  }
+
+  // Paginated request helper
+  async getPaginated<T>(
+    endpoint: string,
+    params?: Record<string, any>,
+    config?: Omit<RequestConfig, 'method'>
+  ): Promise<PaginatedResponse<T>> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request<T[]>(`${endpoint}${queryString}`, { ...config, method: 'GET' }) as Promise<PaginatedResponse<T>>;
+  }
+
+  // Upload file helper
+  async uploadFile<T>(
+    endpoint: string,
+    file: File,
+    config?: Omit<RequestConfig, 'method' | 'body' | 'headers'>
+  ): Promise<ApiResponse<T>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.request<T>(endpoint, {
+      ...config,
+      method: 'POST',
+      headers: {}, // Let browser set Content-Type for FormData
+      body: formData,
     });
   }
 
-  get<T>(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-
-    if (Date.now() - item.timestamp > item.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return item.data;
-  }
-
-  invalidate(pattern?: string): void {
+  // Cache management
+  clearCache(pattern?: RegExp): void {
     if (pattern) {
-      const regex = new RegExp(pattern);
-      for (const key of this.cache.keys()) {
-        if (regex.test(key)) {
+      for (const [key] of this.cache.entries()) {
+        if (pattern.test(key)) {
           this.cache.delete(key);
         }
       }
@@ -81,921 +287,176 @@ class CacheManager {
     }
   }
 
-  clear(): void {
-    this.cache.clear();
+  private getCacheKey(endpoint: string, config: RequestConfig): string {
+    return `${endpoint}-${JSON.stringify(config)}`;
+  }
+
+  // Set authentication tokens
+  setAuthTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
+    this.tokenManager.setTokens(accessToken, refreshToken, expiresAt);
+  }
+
+  // Clear authentication tokens
+  clearAuthTokens(): void {
+    this.tokenManager.clearTokens();
+    this.clearCache(); // Clear cache when logging out
   }
 }
 
-/**
- * Retry configuration
- */
-interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number;
-  maxDelay: number;
-  backoffMultiplier: number;
-}
+// Create and export singleton instance
+export const apiClient = new HttpClient();
 
-const DEFAULT_RETRY_CONFIG: RetryConfig = {
-  maxAttempts: 3,
-  baseDelay: 1000,
-  maxDelay: 10000,
-  backoffMultiplier: 2,
-};
+// Export token manager for use in stores
+export const tokenManager = TokenManager.getInstance();
 
-/**
- * Main API Client Class
- */
-export class ApiClient {
-  private cache = new CacheManager();
-  private isServer: boolean;
+// Request interceptor for global error handling
+export const setupGlobalErrorHandling = (onError?: (error: ApiError) => void) => {
+  const originalRequest = apiClient.request.bind(apiClient);
 
-  constructor(isServer = false) {
-    this.isServer = isServer;
-  }
-
-  /**
-   * Get the appropriate Supabase client
-   */
-  private getSupabaseClient() {
-    return this.isServer ? createServerSupabaseClient() : supabase;
-  }
-
-  /**
-   * Utility method for retry logic with exponential backoff
-   */
-  private async withRetry<T>(
-    operation: () => Promise<T>,
-    config: Partial<RetryConfig> = {}
-  ): Promise<T> {
-    const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
-    let lastError: Error;
-
-    for (let attempt = 1; attempt <= retryConfig.maxAttempts; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error as Error;
-
-        // Don't retry certain errors
-        if (error instanceof AuthenticationError ||
-            error instanceof ValidationError ||
-            error instanceof NotFoundError) {
-          throw error;
-        }
-
-        if (attempt === retryConfig.maxAttempts) {
-          break;
-        }
-
-        const delay = Math.min(
-          retryConfig.baseDelay * Math.pow(retryConfig.backoffMultiplier, attempt - 1),
-          retryConfig.maxDelay
-        );
-
-        await new Promise(resolve => setTimeout(resolve, delay));
+  apiClient.request = async function<T>(
+    endpoint: string,
+    config: RequestConfig = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      return await originalRequest(endpoint, config);
+    } catch (error) {
+      if (error instanceof ApiError && onError) {
+        onError(error);
       }
-    }
-
-    throw lastError!;
-  }
-
-  /**
-   * Standardized error handling
-   */
-  private handleError(error: any): never {
-    if (error instanceof APIError) {
       throw error;
     }
+  };
+};
 
-    // Supabase error handling
-    if (error?.code) {
-      switch (error.code) {
-        case 'PGRST301':
-          throw new AuthenticationError('Invalid credentials');
-        case 'PGRST116':
-          throw new NotFoundError('Resource');
-        case '23505':
-          throw new ValidationError('Duplicate entry', error.details);
-        case '23503':
-          throw new ValidationError('Foreign key constraint violation', error.details);
-        case '23514':
-          throw new ValidationError('Check constraint violation', error.details);
-        default:
-          throw new APIError(error.code, error.message || 'Database error', 500, error);
+// WebSocket client for real-time features
+export class WebSocketClient {
+  private ws: WebSocket | null = null;
+  private url: string;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
+  private listeners = new Map<string, Set<(data: any) => void>>();
+  private connectionState: 'connecting' | 'connected' | 'disconnected' | 'error' = 'disconnected';
+
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
       }
+
+      this.connectionState = 'connecting';
+      this.ws = new WebSocket(this.url);
+
+      this.ws.onopen = () => {
+        this.connectionState = 'connected';
+        this.reconnectAttempts = 0;
+
+        // Send authentication token if available
+        const token = tokenManager.getAccessToken();
+        if (token) {
+          this.send({ type: 'auth', token });
+        }
+
+        resolve();
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          this.handleMessage(message);
+        } catch (error) {
+          console.error('WebSocket message parse error:', error);
+        }
+      };
+
+      this.ws.onclose = () => {
+        this.connectionState = 'disconnected';
+        this.handleReconnect();
+      };
+
+      this.ws.onerror = (error) => {
+        this.connectionState = 'error';
+        console.error('WebSocket error:', error);
+        reject(error);
+      };
+    });
+  }
+
+  private handleMessage(message: any): void {
+    const { type, payload } = message;
+    const typeListeners = this.listeners.get(type);
+
+    if (typeListeners) {
+      typeListeners.forEach(listener => listener(payload));
     }
 
-    // Network errors
-    if (error?.name === 'AbortError') {
-      throw new APIError('REQUEST_TIMEOUT', 'Request timeout', 408);
-    }
-
-    if (error?.name === 'NetworkError') {
-      throw new APIError('NETWORK_ERROR', 'Network error', 503);
-    }
-
-    // Generic error
-    throw new APIError(
-      'UNKNOWN_ERROR',
-      error?.message || 'An unexpected error occurred',
-      500,
-      error
-    );
-  }
-
-  // =====================================================================================
-  // BATCH OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Trigger a new batch execution
-   */
-  async triggerBatch(
-    type: BatchType,
-    config?: Record<string, any>
-  ): Promise<BatchExecution> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('batch_executions')
-        .insert({
-          batch_type: type,
-          status: 'pending' as BatchStatus,
-          phase: 'import',
-          progress_percentage: 0,
-          config: config || {},
-        })
-        .select()
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      // Subscribe to batch updates
-      realtimeManager.subscribeToBatchStatus(data.batch_id, (payload) => {
-        this.cache.invalidate(`batch-${data.batch_id}`);
-      });
-
-      return data;
-    });
-  }
-
-  /**
-   * Get batch execution status
-   */
-  async getBatchStatus(batchId: string): Promise<BatchExecution> {
-    const cacheKey = `batch-${batchId}`;
-    const cached = this.cache.get<BatchExecution>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('batch_executions')
-        .select('*')
-        .eq('batch_id', batchId)
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      // Cache for 30 seconds for completed/failed batches, 5 seconds for running
-      const ttl = ['completed', 'failed', 'cancelled'].includes(data.status)
-        ? 30000
-        : 5000;
-
-      this.cache.set(cacheKey, data, ttl);
-      return data;
-    });
-  }
-
-  /**
-   * Cancel a running batch
-   */
-  async cancelBatch(batchId: string): Promise<void> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { error } = await client
-        .from('batch_executions')
-        .update({
-          status: 'cancelled' as BatchStatus,
-          completed_at: new Date().toISOString(),
-        })
-        .eq('batch_id', batchId)
-        .in('status', ['pending', 'running']);
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.invalidate(`batch-${batchId}`);
-    });
-  }
-
-  /**
-   * Get all batch executions with pagination
-   */
-  async getBatchExecutions(params: PaginationParams = {}): Promise<ApiResponse<BatchExecution[]>> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-      const { page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = params;
-
-      let query = client
-        .from('batch_executions')
-        .select('*', { count: 'exact' })
-        .order(sort_by, { ascending: sort_order === 'asc' })
-        .range((page - 1) * per_page, page * per_page - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      return {
-        success: true,
-        data: data || [],
-        meta: {
-          page,
-          per_page,
-          total: count || 0,
-          total_pages: Math.ceil((count || 0) / per_page),
-        },
-      };
-    });
-  }
-
-  // =====================================================================================
-  // JOB OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Import jobs from CSV file
-   */
-  async importJobs(params: ImportJobsParams): Promise<ImportResult> {
-    return this.withRetry(async () => {
-      const formData = new FormData();
-      formData.append('file', params.file);
-      formData.append('batch_size', (params.batch_size || 1000).toString());
-      formData.append('validate_only', (params.validate_only || false).toString());
-      formData.append('update_existing', (params.update_existing || false).toString());
-
-      const response = await fetch('/api/jobs/import', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new APIError(
-          errorData.code || 'IMPORT_ERROR',
-          errorData.message || `Import failed: ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
-
-      return await response.json();
-    });
-  }
-
-  /**
-   * Search jobs with filters and pagination
-   */
-  async searchJobs(params: JobSearchParams): Promise<ApiResponse<Job[]>> {
-    const cacheKey = `jobs-search-${JSON.stringify(params)}`;
-    const cached = this.cache.get<ApiResponse<Job[]>>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-      const { page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = params;
-
-      let query = client
-        .from('jobs')
-        .select('*', { count: 'exact' })
-        .order(sort_by, { ascending: sort_order === 'asc' });
-
-      // Apply filters
-      if (params.title) {
-        query = query.ilike('title', `%${params.title}%`);
-      }
-      if (params.company) {
-        query = query.ilike('company_name', `%${params.company}%`);
-      }
-      if (params.location?.pref_cd) {
-        query = query.eq('location->>pref_cd', params.location.pref_cd);
-      }
-      if (params.location?.city_cd) {
-        query = query.eq('location->>city_cd', params.location.city_cd);
-      }
-      if (params.salary?.min_amount) {
-        query = query.gte('salary->>min_amount', params.salary.min_amount);
-      }
-      if (params.salary?.max_amount) {
-        query = query.lte('salary->>max_amount', params.salary.max_amount);
-      }
-      if (params.employment_types?.length) {
-        query = query.in('employment_type', params.employment_types);
-      }
-      if (params.occupation_codes?.length) {
-        query = query.in('occupation_cd', params.occupation_codes);
-      }
-      if (params.industry_codes?.length) {
-        query = query.in('industry_cd', params.industry_codes);
-      }
-      if (params.remote_work !== undefined) {
-        query = query.eq('features->>remote_work_available', params.remote_work);
-      }
-      if (params.posted_after) {
-        query = query.gte('posted_date', params.posted_after);
-      }
-      if (params.is_active !== undefined) {
-        query = query.eq('is_active', params.is_active);
-      }
-
-      query = query.range((page - 1) * per_page, page * per_page - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      const result = {
-        success: true,
-        data: data || [],
-        meta: {
-          page,
-          per_page,
-          total: count || 0,
-          total_pages: Math.ceil((count || 0) / per_page),
-        },
-      };
-
-      this.cache.set(cacheKey, result, 60000); // Cache for 1 minute
-      return result;
-    });
-  }
-
-  /**
-   * Get job by ID
-   */
-  async getJobById(jobId: number): Promise<Job> {
-    const cacheKey = `job-${jobId}`;
-    const cached = this.cache.get<Job>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('jobs')
-        .select('*')
-        .eq('job_id', jobId)
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.set(cacheKey, data, 300000); // Cache for 5 minutes
-      return data;
-    });
-  }
-
-  /**
-   * Update job
-   */
-  async updateJob(jobId: number, updates: Partial<Job>): Promise<Job> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('jobs')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('job_id', jobId)
-        .select()
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.invalidate(`job-${jobId}`);
-      this.cache.invalidate('jobs-search');
-      return data;
-    });
-  }
-
-  /**
-   * Delete job (soft delete)
-   */
-  async deleteJob(jobId: number): Promise<void> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { error } = await client
-        .from('jobs')
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('job_id', jobId);
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.invalidate(`job-${jobId}`);
-      this.cache.invalidate('jobs-search');
-    });
-  }
-
-  // =====================================================================================
-  // USER OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Search users with filters and pagination
-   */
-  async searchUsers(params: UserSearchParams): Promise<ApiResponse<User[]>> {
-    const cacheKey = `users-search-${JSON.stringify(params)}`;
-    const cached = this.cache.get<ApiResponse<User[]>>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-      const { page = 1, per_page = 20, sort_by = 'created_at', sort_order = 'desc' } = params;
-
-      let query = client
-        .from('users')
-        .select('*', { count: 'exact' })
-        .order(sort_by, { ascending: sort_order === 'asc' });
-
-      // Apply filters
-      if (params.email) {
-        query = query.ilike('email', `%${params.email}%`);
-      }
-      if (params.name) {
-        query = query.or(`first_name.ilike.%${params.name}%,last_name.ilike.%${params.name}%`);
-      }
-      if (params.age_range?.min) {
-        query = query.gte('age', params.age_range.min);
-      }
-      if (params.age_range?.max) {
-        query = query.lte('age', params.age_range.max);
-      }
-      if (params.location?.pref_cd) {
-        query = query.eq('current_location->>pref_cd', params.location.pref_cd);
-      }
-      if (params.skills?.length) {
-        query = query.contains('skills', params.skills);
-      }
-      if (params.experience_years?.min) {
-        query = query.gte('experience_years', params.experience_years.min);
-      }
-      if (params.experience_years?.max) {
-        query = query.lte('experience_years', params.experience_years.max);
-      }
-      if (params.is_active !== undefined) {
-        query = query.eq('is_active', params.is_active);
-      }
-
-      query = query.range((page - 1) * per_page, page * per_page - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      const result = {
-        success: true,
-        data: data || [],
-        meta: {
-          page,
-          per_page,
-          total: count || 0,
-          total_pages: Math.ceil((count || 0) / per_page),
-        },
-      };
-
-      this.cache.set(cacheKey, result, 60000); // Cache for 1 minute
-      return result;
-    });
-  }
-
-  /**
-   * Get user by ID
-   */
-  async getUserById(userId: number): Promise<User> {
-    const cacheKey = `user-${userId}`;
-    const cached = this.cache.get<User>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('users')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.set(cacheKey, data, 300000); // Cache for 5 minutes
-      return data;
-    });
-  }
-
-  // =====================================================================================
-  // SCORING OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Calculate scores for users and jobs
-   */
-  async calculateScores(params: ScoringParams = {}): Promise<ScoringCalculationResult> {
-    return this.withRetry(async () => {
-      const response = await fetch('/api/scoring/calculate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new APIError(
-          errorData.code || 'SCORING_ERROR',
-          errorData.message || `Scoring failed: ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
-
-      const result = await response.json();
-      this.cache.invalidate('scores');
-      return result;
-    });
-  }
-
-  /**
-   * Get scores for a user
-   */
-  async getUserScores(
-    userId: number,
-    params: PaginationParams = {}
-  ): Promise<ApiResponse<Score[]>> {
-    const cacheKey = `user-scores-${userId}-${JSON.stringify(params)}`;
-    const cached = this.cache.get<ApiResponse<Score[]>>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-      const { page = 1, per_page = 20, sort_by = 'total_score', sort_order = 'desc' } = params;
-
-      const { data, error, count } = await client
-        .from('scores')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .order(sort_by, { ascending: sort_order === 'asc' })
-        .range((page - 1) * per_page, page * per_page - 1);
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      const result = {
-        success: true,
-        data: data || [],
-        meta: {
-          page,
-          per_page,
-          total: count || 0,
-          total_pages: Math.ceil((count || 0) / per_page),
-        },
-      };
-
-      this.cache.set(cacheKey, result, 120000); // Cache for 2 minutes
-      return result;
-    });
-  }
-
-  /**
-   * Get recommended jobs for a user
-   */
-  async getRecommendedJobs(
-    userId: number,
-    limit: number = 10,
-    minScore: number = 0.5
-  ): Promise<Job[]> {
-    const cacheKey = `recommended-jobs-${userId}-${limit}-${minScore}`;
-    const cached = this.cache.get<Job[]>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('scores')
-        .select(`
-          *,
-          jobs (*)
-        `)
-        .eq('user_id', userId)
-        .eq('is_recommended', true)
-        .gte('total_score', minScore)
-        .order('total_score', { ascending: false })
-        .limit(limit);
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      const jobs = data?.map(score => score.jobs).filter(Boolean) || [];
-      this.cache.set(cacheKey, jobs, 300000); // Cache for 5 minutes
-      return jobs;
-    });
-  }
-
-  // =====================================================================================
-  // MONITORING OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Execute raw SQL query (admin only)
-   */
-  async executeSQL(query: string): Promise<QueryResult> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-      const startTime = Date.now();
-
-      const { data, error } = await client.rpc('execute_sql', {
-        query_text: query,
-      });
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      const executionTime = Date.now() - startTime;
-
-      // Transform data to match QueryResult interface
-      const result: QueryResult = {
-        columns: data?.columns || [],
-        rows: data?.rows || [],
-        rowCount: data?.rows?.length || 0,
-        executionTime,
-      };
-
-      return result;
-    });
-  }
-
-  /**
-   * Get system metrics
-   */
-  async getSystemMetrics(
-    startDate?: string,
-    endDate?: string
-  ): Promise<SystemMetrics[]> {
-    const cacheKey = `system-metrics-${startDate || 'all'}-${endDate || 'all'}`;
-    const cached = this.cache.get<SystemMetrics[]>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      let query = client
-        .from('system_metrics')
-        .select('*')
-        .order('recorded_at', { ascending: false });
-
-      if (startDate) {
-        query = query.gte('recorded_at', startDate);
-      }
-      if (endDate) {
-        query = query.lte('recorded_at', endDate);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      this.cache.set(cacheKey, data || [], 60000); // Cache for 1 minute
-      return data || [];
-    });
-  }
-
-  /**
-   * Get system logs with filters
-   */
-  async getLogs(filters: LogFilters = {}): Promise<SystemLog[]> {
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      let query = client
-        .from('system_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (filters.level?.length) {
-        query = query.in('level', filters.level);
-      }
-      if (filters.component?.length) {
-        query = query.in('component', filters.component);
-      }
-      if (filters.start_date) {
-        query = query.gte('created_at', filters.start_date);
-      }
-      if (filters.end_date) {
-        query = query.lte('created_at', filters.end_date);
-      }
-      if (filters.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
-      if (filters.operation) {
-        query = query.ilike('operation', `%${filters.operation}%`);
-      }
-      if (filters.limit) {
-        query = query.limit(filters.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      return data || [];
-    });
-  }
-
-  /**
-   * Stream logs in real-time
-   */
-  subscribeToLogs(callback: (log: SystemLog) => void) {
-    return realtimeManager.subscribeToLogs((payload) => {
-      if (payload.eventType === 'INSERT' && payload.new) {
-        callback(payload.new as SystemLog);
-      }
-    });
-  }
-
-  // =====================================================================================
-  // EMAIL OPERATIONS
-  // =====================================================================================
-
-  /**
-   * Preview email for a user
-   */
-  async previewEmail(userId: number): Promise<EmailPreview> {
-    return this.withRetry(async () => {
-      const response = await fetch(`/api/email/preview/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new APIError(
-          errorData.code || 'EMAIL_PREVIEW_ERROR',
-          errorData.message || `Email preview failed: ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
-
-      return await response.json();
-    });
-  }
-
-  /**
-   * Send email to user
-   */
-  async sendEmail(userId: number, scheduleTime?: string): Promise<EmailJob> {
-    return this.withRetry(async () => {
-      const response = await fetch('/api/email/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          scheduled_send_at: scheduleTime,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new APIError(
-          errorData.code || 'EMAIL_SEND_ERROR',
-          errorData.message || `Email send failed: ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
-
-      return await response.json();
-    });
-  }
-
-  /**
-   * Get email job status
-   */
-  async getEmailJob(emailId: string): Promise<EmailJob> {
-    const cacheKey = `email-job-${emailId}`;
-    const cached = this.cache.get<EmailJob>(cacheKey);
-    if (cached) return cached;
-
-    return this.withRetry(async () => {
-      const client = this.getSupabaseClient();
-
-      const { data, error } = await client
-        .from('email_jobs')
-        .select('*')
-        .eq('email_id', emailId)
-        .single();
-
-      if (error) {
-        this.handleError(error);
-      }
-
-      // Cache completed/failed emails longer
-      const ttl = ['sent', 'failed'].includes(data.send_status) ? 300000 : 30000;
-      this.cache.set(cacheKey, data, ttl);
-      return data;
-    });
-  }
-
-  // =====================================================================================
-  // UTILITY METHODS
-  // =====================================================================================
-
-  /**
-   * Get health check status
-   */
-  async getHealthStatus(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
-    try {
-      const client = this.getSupabaseClient();
-      const { data, error } = await client.rpc('get_database_health');
-
-      if (error) {
-        return {
-          status: 'unhealthy',
-          details: { error: error.message },
-        };
-      }
-
-      return {
-        status: 'healthy',
-        details: data,
-      };
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        details: { error: (error as Error).message },
-      };
+    // Emit to global listeners
+    const globalListeners = this.listeners.get('*');
+    if (globalListeners) {
+      globalListeners.forEach(listener => listener(message));
     }
   }
 
-  /**
-   * Clear all caches
-   */
-  clearCache(): void {
-    this.cache.clear();
+  private handleReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+
+      setTimeout(() => {
+        console.log(`Reconnecting WebSocket... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        this.connect().catch(console.error);
+      }, delay);
+    }
   }
 
-  /**
-   * Invalidate specific cache patterns
-   */
-  invalidateCache(pattern: string): void {
-    this.cache.invalidate(pattern);
+  subscribe(type: string, listener: (data: any) => void): () => void {
+    if (!this.listeners.has(type)) {
+      this.listeners.set(type, new Set());
+    }
+
+    this.listeners.get(type)!.add(listener);
+
+    return () => {
+      const typeListeners = this.listeners.get(type);
+      if (typeListeners) {
+        typeListeners.delete(listener);
+        if (typeListeners.size === 0) {
+          this.listeners.delete(type);
+        }
+      }
+    };
+  }
+
+  send(message: any): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket not connected. Message not sent:', message);
+    }
+  }
+
+  disconnect(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.connectionState = 'disconnected';
+  }
+
+  getConnectionState(): string {
+    return this.connectionState;
+  }
+
+  isConnected(): boolean {
+    return this.connectionState === 'connected';
   }
 }
 
-// Singleton instances
-export const apiClient = new ApiClient(false); // Browser client
-export const serverApiClient = new ApiClient(true); // Server client
-
-// Export the class for custom instances
-export default ApiClient;
+// Create WebSocket client instance
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
+export const wsClient = new WebSocketClient(WS_URL);

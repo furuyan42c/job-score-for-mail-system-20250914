@@ -1,20 +1,31 @@
-import '@testing-library/jest-dom';
+// Optional: configure or set up a testing framework before each test.
+// If you delete this file, remove `setupFilesAfterEnv` from `jest.config.js`
+
+// Used for __tests__/testing-library.js
+// Learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom'
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
+
   disconnect() {}
+
   observe() {}
+
   unobserve() {}
-};
+}
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
+
   disconnect() {}
+
   observe() {}
+
   unobserve() {}
-};
+}
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -29,47 +40,34 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-});
+})
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.localStorage = localStorageMock;
+// Mock window.open
+Object.defineProperty(window, 'open', {
+  writable: true,
+  value: jest.fn(),
+})
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.sessionStorage = sessionStorageMock;
+// Suppress console errors for tests
+const originalError = console.error
+beforeAll(() => {
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: ReactDOM.render is no longer supported')
+    ) {
+      return
+    }
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: An invalid form control')
+    ) {
+      return
+    }
+    originalError.call(console, ...args)
+  }
+})
 
-// Mock fetch
-global.fetch = jest.fn();
-
-// Mock console methods to reduce noise during testing
-global.console = {
-  ...console,
-  // Uncomment to ignore specific console methods during tests
-  // log: jest.fn(),
-  // debug: jest.fn(),
-  // info: jest.fn(),
-  // warn: jest.fn(),
-  // error: jest.fn(),
-};
-
-// Mock environment variables
-process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000';
-process.env.NODE_ENV = 'test';
-
-// Clean up after each test
-afterEach(() => {
-  localStorageMock.clear();
-  sessionStorageMock.clear();
-  jest.clearAllMocks();
-});
+afterAll(() => {
+  console.error = originalError
+})

@@ -1,0 +1,1 @@
+export { JobBenefits } from '../placeholder';

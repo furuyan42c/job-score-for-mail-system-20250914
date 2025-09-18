@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     SEMRUSH_API_KEY: Optional[str] = None
 
+    # 監視・エラー追跡設定
+    SENTRY_DSN: Optional[str] = None
+    VERSION: str = "1.0.0"
+
     # ファイルアップロード設定
     UPLOAD_DIR: str = "./uploads"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB

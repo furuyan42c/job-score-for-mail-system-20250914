@@ -1,0 +1,1 @@
+export { JobRequirements } from '../placeholder';

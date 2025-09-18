@@ -21,6 +21,9 @@ from app.models.matching import MatchingScore, ScoringConfiguration
 from app.models.jobs import Job
 from app.models.users import User, UserProfile
 from app.core.config import settings
+from app.services.basic_scoring import BasicScoringEngine  # T021統合
+from app.services.seo_scoring import SEOScoringEngine  # T022統合
+from app.services.personalized_scoring import PersonalizedScoringEngine  # T023統合
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,11 +41,32 @@ class ScoringEngine:
         self.db = db
         self.config = config or self._get_default_config()
 
-        # キャッシュ用辞書
+        # T021統合: BasicScoringEngineの初期化
+        self._basic_engine = BasicScoringEngine(db)
+        self._use_t021_scoring = getattr(config, 'use_t021_basic_scoring', True) if config else True
+        self._t021_fallback_enabled = getattr(config, 't021_fallback_enabled', True) if config else True
+
+        # T022統合: SEOScoringEngineの初期化
+        self._seo_engine = SEOScoringEngine(db)
+
+        # T023統合: PersonalizedScoringEngineの初期化
+        self._personalized_engine = PersonalizedScoringEngine(db)
+        # ALSモデルの初期化
+        asyncio.create_task(self._init_personalized_model())
+
+        # キャッシュ用辞書（T021エンジンと共有）
         self._prefecture_cache = {}
         self._city_cache = {}
         self._occupation_cache = {}
         self._company_popularity_cache = {}
+
+    async def _init_personalized_model(self):
+        """パーソナライズモデルの非同期初期化"""
+        try:
+            await self._personalized_engine.initialize_als_model()
+            await self._personalized_engine.train_model()
+        except Exception as e:
+            logger.warning(f"Failed to initialize personalized model: {e}")
 
     def _get_default_config(self) -> ScoringConfiguration:
         """デフォルトスコアリング設定"""
@@ -94,7 +118,7 @@ class ScoringEngine:
             MatchingScore: 詳細なスコア情報
         """
         try:
-            # 並列でスコア計算
+            # 並列でスコア計算（T022, T023追加）
             tasks = [
                 self._calculate_basic_score(user, job),
                 self._calculate_location_score(user, job),
@@ -102,13 +126,16 @@ class ScoringEngine:
                 self._calculate_salary_score(user, job, user_profile),
                 self._calculate_feature_score(user, job, user_profile),
                 self._calculate_preference_score(user, job, user_profile),
-                self._calculate_popularity_score(user, job)
+                self._calculate_popularity_score(user, job),
+                self._calculate_seo_score(job),  # T022
+                self._calculate_personalized_score(user, job, user_profile)  # T023
             ]
 
             scores = await asyncio.gather(*tasks)
 
             basic_score, location_score, category_score, salary_score, \
-            feature_score, preference_score, popularity_score = scores
+            feature_score, preference_score, popularity_score, seo_score, \
+            personalized_score = scores
 
             # ボーナス・ペナルティ計算
             bonus_points = await self._calculate_bonus_points(user, job, user_profile)
@@ -139,10 +166,14 @@ class ScoringEngine:
                 feature_score=feature_score,
                 preference_score=preference_score,
                 popularity_score=popularity_score,
+                seo_score=seo_score,  # T022
+                personalized_score=personalized_score,  # T023
                 composite_score=composite_score,
                 score_breakdown=weighted_scores,
                 bonus_points=bonus_points,
-                penalty_points=penalty_points
+                penalty_points=penalty_points,
+                matched_keywords=getattr(self, '_last_matched_keywords', None),  # T022 keywords
+                als_prediction=None  # T023 ALS prediction (if available)
             )
 
         except Exception as e:
@@ -163,7 +194,40 @@ class ScoringEngine:
             )
 
     async def _calculate_basic_score(self, user: User, job: Job) -> float:
-        """基本スコア計算（求人の基本的な魅力度）"""
+        """
+        基本スコア計算（T021統合版）
+
+        T021仕様準拠の基礎スコア計算を使用し、
+        フォールバック機構により安定性を確保
+        """
+        if self._use_t021_scoring:
+            try:
+                # T021実装を使用
+                user_location = None
+                if user.estimated_pref_cd:
+                    user_location = {
+                        'pref_code': user.estimated_pref_cd,
+                        'city_code': user.estimated_city_cd
+                    }
+
+                return await self._basic_engine.calculate_basic_score(
+                    job=job,
+                    user_location=user_location
+                )
+            except Exception as e:
+                logger.warning(f"T021 basic scoring failed for job {job.job_id}: {e}")
+
+                if self._t021_fallback_enabled:
+                    # レガシー実装にフォールバック
+                    return await self._calculate_basic_score_legacy(user, job)
+                else:
+                    raise
+        else:
+            # レガシー実装を使用
+            return await self._calculate_basic_score_legacy(user, job)
+
+    async def _calculate_basic_score_legacy(self, user: User, job: Job) -> float:
+        """レガシー基本スコア計算（フォールバック用）"""
         score = 50.0  # ベーススコア
 
         # 給与レベル評価
@@ -435,6 +499,59 @@ class ScoringEngine:
             score += 5
 
         return min(100.0, max(0.0, score))
+
+    async def _calculate_seo_score(self, job: Job) -> float:
+        """
+        T022: SEOスコア計算（semrush_keywordsとのマッチング）
+
+        Args:
+            job: 求人情報
+
+        Returns:
+            SEOスコア (0-100)
+        """
+        try:
+            seo_score, matched_keywords = await self._seo_engine.calculate_seo_score(job)
+
+            # マッチしたキーワードを保存（MatchingScore用）
+            self._last_matched_keywords = matched_keywords
+
+            # マッチしたキーワードをDBに保存（非同期で実行）
+            if matched_keywords and hasattr(job, 'job_id'):
+                asyncio.create_task(
+                    self._seo_engine.save_keyword_scoring(job.job_id, matched_keywords)
+                )
+
+            return seo_score
+        except Exception as e:
+            logger.warning(f"SEO scoring failed for job {job.job_id}: {e}")
+            self._last_matched_keywords = None
+            return 30.0  # デフォルト値
+
+    async def _calculate_personalized_score(
+        self,
+        user: User,
+        job: Job,
+        user_profile: Optional[UserProfile]
+    ) -> float:
+        """
+        T023: パーソナライズスコア計算（implicit ALSによる協調フィルタリング）
+
+        Args:
+            user: ユーザー情報
+            job: 求人情報
+            user_profile: ユーザープロファイル
+
+        Returns:
+            パーソナライズスコア (0-100)
+        """
+        try:
+            return await self._personalized_engine.calculate_personalized_score(
+                user, job, user_profile
+            )
+        except Exception as e:
+            logger.warning(f"Personalized scoring failed for user {user.user_id}, job {job.job_id}: {e}")
+            return 40.0  # デフォルト値
 
     async def _calculate_bonus_points(
         self,
