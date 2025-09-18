@@ -1,987 +1,886 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
-  Activity,
-  AlertCircle,
-  BarChart3,
-  Clock,
   Database,
-  Download,
-  Eye,
-  Filter,
-  Mail,
-  Monitor,
-  Pause,
   Play,
-  RefreshCw,
+  Download,
+  Clock,
+  BarChart3,
+  AlertCircle,
+  CheckCircle,
+  Copy,
+  History,
+  Trash2,
   Settings,
-  TrendingDown,
+  RefreshCw,
+  Terminal,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  StopCircle,
+  Activity,
   TrendingUp,
   Users,
-  Zap,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Server
+  Server,
+  MonitorIcon,
+  ZapIcon,
 } from 'lucide-react';
 
-// Mock data interfaces
-interface SystemMetrics {
-  totalJobs: number;
-  totalUsers: number;
-  totalMatches: number;
-  emailsSent: number;
-  jobsTrend: number;
-  usersTrend: number;
-  matchesTrend: number;
-  emailsTrend: number;
-}
-
-interface BatchJob {
-  id: string;
-  name: string;
-  status: 'running' | 'completed' | 'failed' | 'pending';
-  progress: number;
-  startTime: string;
-  duration: number;
-  type: string;
-}
-
-interface PerformanceMetric {
+// Types for SQL execution
+interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount: number;
+  executionTime: number;
   timestamp: string;
-  apiResponseTime: number;
-  dbQueryTime: number;
-  memoryUsage: number;
-  cpuUsage: number;
+}
+
+interface QueryHistory {
+  id: string;
+  query: string;
+  timestamp: string;
+  executionTime: number;
+  status: 'success' | 'error';
+  rowCount?: number;
+  error?: string;
+}
+
+interface DatabaseMetrics {
+  activeConnections: number;
+  totalQueries: number;
+  avgQueryTime: number;
+  slowQueries: number;
   errorRate: number;
-  throughput: number;
+  uptime: string;
 }
 
-interface EmailStats {
-  sent: number;
-  opened: number;
-  clicked: number;
-  bounced: number;
-  openRate: number;
-  clickRate: number;
-  bounceRate: number;
-}
-
-interface Alert {
-  id: string;
-  type: 'error' | 'warning' | 'info';
-  message: string;
-  timestamp: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  source: string;
+interface QueryExecutionMetrics {
+  totalExecuted: number;
+  successfulQueries: number;
+  failedQueries: number;
+  avgExecutionTime: number;
+  totalRowsReturned: number;
+  lastExecutionTime: string;
 }
 
 // Mock data generators
-const generateMockSystemMetrics = (): SystemMetrics => ({
-  totalJobs: 15647,
-  totalUsers: 8923,
-  totalMatches: 45231,
-  emailsSent: 23456,
-  jobsTrend: 12.5,
-  usersTrend: 8.3,
-  matchesTrend: -2.1,
-  emailsTrend: 15.7
+const generateMockDatabaseMetrics = (): DatabaseMetrics => ({
+  activeConnections: Math.floor(Math.random() * 20) + 5,
+  totalQueries: Math.floor(Math.random() * 10000) + 50000,
+  avgQueryTime: Math.floor(Math.random() * 50) + 25,
+  slowQueries: Math.floor(Math.random() * 10) + 2,
+  errorRate: Math.random() * 2,
+  uptime: `${Math.floor(Math.random() * 30) + 1} days`,
 });
 
-const generateMockBatchJobs = (): BatchJob[] => [
+const generateMockExecutionMetrics = (): QueryExecutionMetrics => ({
+  totalExecuted: Math.floor(Math.random() * 1000) + 500,
+  successfulQueries: Math.floor(Math.random() * 900) + 400,
+  failedQueries: Math.floor(Math.random() * 50) + 10,
+  avgExecutionTime: Math.floor(Math.random() * 200) + 50,
+  totalRowsReturned: Math.floor(Math.random() * 100000) + 10000,
+  lastExecutionTime: new Date().toISOString(),
+});
+
+// Sample queries for quick access
+const SAMPLE_QUERIES = [
   {
-    id: 'job-001',
-    name: 'Daily Job Matching',
-    status: 'running',
-    progress: 67,
-    startTime: '2024-01-15T10:30:00Z',
-    duration: 1200,
-    type: 'matching'
+    name: 'Active Jobs Count',
+    query: 'SELECT COUNT(*) as active_jobs FROM jobs WHERE status = \'active\';'
   },
   {
-    id: 'job-002',
-    name: 'Email Campaign Send',
-    status: 'completed',
-    progress: 100,
-    startTime: '2024-01-15T09:00:00Z',
-    duration: 1800,
-    type: 'email'
+    name: 'User Registration Stats',
+    query: 'SELECT DATE(created_at) as date, COUNT(*) as registrations\nFROM users \nWHERE created_at >= CURRENT_DATE - INTERVAL 30 DAY\nGROUP BY DATE(created_at)\nORDER BY date DESC;'
   },
   {
-    id: 'job-003',
-    name: 'User Profile Sync',
-    status: 'failed',
-    progress: 34,
-    startTime: '2024-01-15T08:15:00Z',
-    duration: 450,
-    type: 'sync'
+    name: 'Job Matching Success Rate',
+    query: 'SELECT \n  job_category,\n  COUNT(*) as total_applications,\n  SUM(CASE WHEN status = \'matched\' THEN 1 ELSE 0 END) as matches,\n  ROUND((SUM(CASE WHEN status = \'matched\' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2) as success_rate\nFROM job_applications ja\nJOIN jobs j ON ja.job_id = j.id\nGROUP BY job_category\nORDER BY success_rate DESC;'
   },
   {
-    id: 'job-004',
-    name: 'Database Cleanup',
-    status: 'pending',
-    progress: 0,
-    startTime: '2024-01-15T11:00:00Z',
-    duration: 0,
-    type: 'maintenance'
+    name: 'Recent Email Campaigns',
+    query: 'SELECT \n  campaign_name,\n  sent_count,\n  open_rate,\n  click_rate,\n  created_at\nFROM email_campaigns \nWHERE created_at >= CURRENT_DATE - INTERVAL 7 DAY\nORDER BY created_at DESC\nLIMIT 10;'
+  },
+  {
+    name: 'Database Table Sizes',
+    query: 'SELECT \n  table_name,\n  ROUND(((data_length + index_length) / 1024 / 1024), 2) AS \'Size (MB)\',\n  table_rows as \'Row Count\'\nFROM information_schema.tables \nWHERE table_schema = DATABASE()\nORDER BY (data_length + index_length) DESC;'
   }
 ];
 
-const generateMockPerformanceData = (): PerformanceMetric[] => {
-  const data: PerformanceMetric[] = [];
-  const now = new Date();
+export default function SQLMonitoringPage() {
+  // SQL Editor State
+  const [currentQuery, setCurrentQuery] = useState('-- Enter your SQL query here\nSELECT * FROM users LIMIT 10;');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [queryError, setQueryError] = useState<string | null>(null);
 
-  for (let i = 23; i >= 0; i--) {
-    const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-    data.push({
-      timestamp: timestamp.toISOString().substr(11, 5),
-      apiResponseTime: 120 + Math.random() * 80,
-      dbQueryTime: 45 + Math.random() * 30,
-      memoryUsage: 65 + Math.random() * 20,
-      cpuUsage: 40 + Math.random() * 30,
-      errorRate: Math.random() * 2,
-      throughput: 1000 + Math.random() * 500
-    });
-  }
+  // History and metrics
+  const [queryHistory, setQueryHistory] = useState<QueryHistory[]>([]);
+  const [dbMetrics, setDbMetrics] = useState<DatabaseMetrics>(generateMockDatabaseMetrics());
+  const [executionMetrics, setExecutionMetrics] = useState<QueryExecutionMetrics>(generateMockExecutionMetrics());
 
-  return data;
-};
+  // UI State
+  const [selectedTab, setSelectedTab] = useState('sql-console');
+  const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-const generateMockEmailStats = (): EmailStats => ({
-  sent: 23456,
-  opened: 18734,
-  clicked: 5623,
-  bounced: 234,
-  openRate: 79.9,
-  clickRate: 24.0,
-  bounceRate: 1.0
-});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-const generateMockAlerts = (): Alert[] => [
-  {
-    id: 'alert-001',
-    type: 'error',
-    message: 'Database connection pool exhausted',
-    timestamp: '2024-01-15T10:45:00Z',
-    severity: 'critical',
-    source: 'database'
-  },
-  {
-    id: 'alert-002',
-    type: 'warning',
-    message: 'High memory usage detected (85%)',
-    timestamp: '2024-01-15T10:30:00Z',
-    severity: 'medium',
-    source: 'system'
-  },
-  {
-    id: 'alert-003',
-    type: 'info',
-    message: 'Daily backup completed successfully',
-    timestamp: '2024-01-15T09:00:00Z',
-    severity: 'low',
-    source: 'backup'
-  }
-];
-
-export default function MonitoringDashboard() {
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>(generateMockSystemMetrics());
-  const [batchJobs, setBatchJobs] = useState<BatchJob[]>(generateMockBatchJobs());
-  const [performanceData, setPerformanceData] = useState<PerformanceMetric[]>(generateMockPerformanceData());
-  const [emailStats, setEmailStats] = useState<EmailStats>(generateMockEmailStats());
-  const [alerts, setAlerts] = useState<Alert[]>(generateMockAlerts());
-  const [isAutoRefresh, setIsAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30);
-  const [timeRange, setTimeRange] = useState('24h');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Auto-refresh logic
+  // Auto-refresh metrics
   useEffect(() => {
-    if (!isAutoRefresh) return;
-
     const interval = setInterval(() => {
-      setSystemMetrics(generateMockSystemMetrics());
-      setBatchJobs(generateMockBatchJobs());
-      setPerformanceData(generateMockPerformanceData());
-      setEmailStats(generateMockEmailStats());
-      // Don't refresh alerts as frequently
-      if (Math.random() > 0.7) {
-        setAlerts(generateMockAlerts());
-      }
-    }, refreshInterval * 1000);
+      setDbMetrics(generateMockDatabaseMetrics());
+      setExecutionMetrics(generateMockExecutionMetrics());
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, [isAutoRefresh, refreshInterval]);
-
-  const handleExportDashboard = useCallback(() => {
-    // Mock export functionality
-    console.log('Exporting dashboard as PDF...');
-    // In real implementation, this would generate and download a PDF
   }, []);
 
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+  // Mock SQL execution
+  const executeQuery = useCallback(async () => {
+    if (!currentQuery.trim() || isExecuting) return;
+
+    setIsExecuting(true);
+    setQueryError(null);
+    setQueryResult(null);
+
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+
+      // Simulate different types of results based on query
+      const queryLower = currentQuery.toLowerCase();
+      let mockResult: QueryResult;
+
+      if (queryLower.includes('count(*)')) {
+        mockResult = {
+          columns: ['count'],
+          rows: [[Math.floor(Math.random() * 10000) + 100]],
+          rowCount: 1,
+          executionTime: Math.floor(Math.random() * 100) + 10,
+          timestamp: new Date().toISOString(),
+        };
+      } else if (queryLower.includes('users')) {
+        const userCount = Math.floor(Math.random() * 20) + 5;
+        mockResult = {
+          columns: ['id', 'name', 'email', 'created_at', 'status'],
+          rows: Array.from({ length: userCount }, (_, i) => [
+            i + 1,
+            `User ${i + 1}`,
+            `user${i + 1}@example.com`,
+            new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            Math.random() > 0.8 ? 'inactive' : 'active'
+          ]),
+          rowCount: userCount,
+          executionTime: Math.floor(Math.random() * 150) + 20,
+          timestamp: new Date().toISOString(),
+        };
+      } else if (queryLower.includes('jobs')) {
+        const jobCount = Math.floor(Math.random() * 15) + 3;
+        mockResult = {
+          columns: ['id', 'title', 'company', 'location', 'salary', 'status'],
+          rows: Array.from({ length: jobCount }, (_, i) => [
+            i + 1,
+            `Software Engineer ${i + 1}`,
+            `Company ${String.fromCharCode(65 + i)}`,
+            ['New York', 'San Francisco', 'London', 'Tokyo'][Math.floor(Math.random() * 4)],
+            `$${(Math.floor(Math.random() * 100) + 50)}k`,
+            ['active', 'inactive', 'filled'][Math.floor(Math.random() * 3)]
+          ]),
+          rowCount: jobCount,
+          executionTime: Math.floor(Math.random() * 200) + 30,
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        // Generic result
+        const rowCount = Math.floor(Math.random() * 50) + 1;
+        mockResult = {
+          columns: ['column1', 'column2', 'column3'],
+          rows: Array.from({ length: rowCount }, (_, i) => [
+            `Value ${i + 1}`,
+            Math.floor(Math.random() * 1000),
+            Math.random() > 0.5 ? 'Yes' : 'No'
+          ]),
+          rowCount: rowCount,
+          executionTime: Math.floor(Math.random() * 300) + 50,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // Randomly simulate errors (5% chance)
+      if (Math.random() < 0.05) {
+        throw new Error('Syntax error: Unknown column \'invalid_column\' in \'field list\'');
+      }
+
+      setQueryResult(mockResult);
+
+      // Add to history
+      const historyEntry: QueryHistory = {
+        id: Date.now().toString(),
+        query: currentQuery,
+        timestamp: new Date().toISOString(),
+        executionTime: mockResult.executionTime,
+        status: 'success',
+        rowCount: mockResult.rowCount,
+      };
+
+      setQueryHistory(prev => [historyEntry, ...prev.slice(0, 49)]); // Keep last 50
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setQueryError(errorMessage);
+
+      // Add error to history
+      const historyEntry: QueryHistory = {
+        id: Date.now().toString(),
+        query: currentQuery,
+        timestamp: new Date().toISOString(),
+        executionTime: 0,
+        status: 'error',
+        error: errorMessage,
+      };
+
+      setQueryHistory(prev => [historyEntry, ...prev.slice(0, 49)]);
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [currentQuery, isExecuting]);
+
+  // Export results to CSV
+  const exportToCSV = useCallback(() => {
+    if (!queryResult) return;
+
+    const csvContent = [
+      queryResult.columns.join(','),
+      ...queryResult.rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `query_result_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [queryResult]);
+
+  // Load query from history
+  const loadQueryFromHistory = useCallback((historyItem: QueryHistory) => {
+    setCurrentQuery(historyItem.query);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   }, []);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'running':
-        return <Play className="h-4 w-4 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+  // Load sample query
+  const loadSampleQuery = useCallback((query: string) => {
+    setCurrentQuery(query);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
-  };
+  }, []);
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      running: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
-      pending: 'bg-yellow-100 text-yellow-800'
-    };
+  // Clear history
+  const clearHistory = useCallback(() => {
+    setQueryHistory([]);
+  }, []);
 
-    return (
-      <Badge className={variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800'}>
-        {status}
-      </Badge>
-    );
-  };
+  // Pagination for results
+  const paginatedRows = queryResult?.rows.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  ) || [];
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'error':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'info':
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const totalPages = queryResult ? Math.ceil(queryResult.rows.length / pageSize) : 0;
 
   return (
-    <div className={`min-h-screen bg-gray-50 p-6 ${isFullscreen ? 'fixed inset-0 z-50 overflow-auto' : ''}`}>
+    <div className="min-h-screen bg-background p-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Monitoring Dashboard</h1>
-          <p className="text-gray-600">Real-time system monitoring and analytics</p>
+          <h1 className="text-3xl font-bold">SQL Monitoring Console</h1>
+          <p className="text-muted-foreground">Execute SQL queries and monitor database performance</p>
         </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Time Range Selector */}
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          >
-            <option value="1h">Last Hour</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-
-          {/* Auto-refresh Controls */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={isAutoRefresh ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsAutoRefresh(!isAutoRefresh)}
-            >
-              {isAutoRefresh ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {isAutoRefresh ? 'Pause' : 'Resume'}
-            </Button>
-
-            <select
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Number(e.target.value))}
-              className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
-              disabled={!isAutoRefresh}
-            >
-              <option value={10}>10s</option>
-              <option value={30}>30s</option>
-              <option value={60}>1m</option>
-              <option value={300}>5m</option>
-            </select>
-          </div>
-
-          {/* Action Buttons */}
-          <Button variant="outline" size="sm" onClick={handleExportDashboard}>
-            <Download className="h-4 w-4" />
-            Export PDF
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-            <Monitor className="h-4 w-4" />
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
-          </Button>
+        <div className="flex items-center space-x-2">
+          <Badge variant="outline" className="flex items-center space-x-1">
+            <Database className="h-3 w-3" />
+            <span>Connected</span>
+          </Badge>
+          <Badge variant="secondary" className="flex items-center space-x-1">
+            <Activity className="h-3 w-3" />
+            <span>{dbMetrics.activeConnections} connections</span>
+          </Badge>
         </div>
       </div>
 
-      {/* System Overview Cards */}
-      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.totalJobs.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {systemMetrics.jobsTrend > 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500" />
-              )}
-              <span className={systemMetrics.jobsTrend > 0 ? 'text-green-600' : 'text-red-600'}>
-                {Math.abs(systemMetrics.jobsTrend)}%
-              </span>
-              <span className="ml-1">from last month</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.totalUsers.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 text-green-500" />
-              <span className="text-green-600">{systemMetrics.usersTrend}%</span>
-              <span className="ml-1">from last month</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Matches Made</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.totalMatches.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingDown className="h-3 w-3 text-red-500" />
-              <span className="text-red-600">{Math.abs(systemMetrics.matchesTrend)}%</span>
-              <span className="ml-1">from last month</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.emailsSent.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 text-green-500" />
-              <span className="text-green-600">{systemMetrics.emailsTrend}%</span>
-              <span className="ml-1">from last month</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="batch-jobs">Batch Jobs</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="email-campaigns">Email Campaigns</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="sql-console" className="flex items-center space-x-2">
+            <Terminal className="h-4 w-4" />
+            <span>SQL Console</span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Performance</span>
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="flex items-center space-x-2">
+            <MonitorIcon className="h-4 w-4" />
+            <span>Database Stats</span>
+          </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* API Response Times */}
-            <Card>
-              <CardHeader>
-                <CardTitle>API Response Times</CardTitle>
-                <CardDescription>Average response times over the last 24 hours</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="apiResponseTime" stroke="#8884d8" name="API (ms)" />
-                    <Line type="monotone" dataKey="dbQueryTime" stroke="#82ca9d" name="DB (ms)" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        {/* SQL Console Tab */}
+        <TabsContent value="sql-console" className="space-y-6">
+          <ResizablePanelGroup direction="horizontal" className="min-h-[600px] rounded-lg border">
+            {/* Query History Sidebar */}
+            <ResizablePanel defaultSize={25} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <History className="h-4 w-4" />
+                      <span className="font-medium">Query History</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setHistoryExpanded(!historyExpanded)}
+                    >
+                      {historyExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  </div>
 
-            {/* System Resource Usage */}
-            <Card>
-              <CardHeader>
-                <CardTitle>System Resources</CardTitle>
-                <CardDescription>CPU and memory usage trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area type="monotone" dataKey="cpuUsage" stackId="1" stroke="#8884d8" fill="#8884d8" name="CPU %" />
-                    <Area type="monotone" dataKey="memoryUsage" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Memory %" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                  {/* Sample Queries */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2">Sample Queries</h4>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full justify-start">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Load Sample
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        {SAMPLE_QUERIES.map((sample, index) => (
+                          <DropdownMenuItem
+                            key={index}
+                            onClick={() => loadSampleQuery(sample.query)}
+                          >
+                            {sample.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
-        {/* Batch Jobs Tab */}
-        <TabsContent value="batch-jobs" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Batch Jobs</CardTitle>
-                  <CardDescription>Currently running and recent batch operations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Job Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Progress</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Type</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {batchJobs.map((job) => (
-                        <TableRow key={job.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(job.status)}
-                              <span>{job.name}</span>
+                  {queryHistory.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearHistory}
+                      className="w-full"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear History
+                    </Button>
+                  )}
+                </div>
+
+                {historyExpanded && (
+                  <ScrollArea className="flex-1 p-4">
+                    {queryHistory.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No queries executed yet
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {queryHistory.map((item) => (
+                          <div
+                            key={item.id}
+                            className="p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                            onClick={() => loadQueryFromHistory(item)}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge
+                                variant={item.status === 'success' ? 'default' : 'destructive'}
+                                className="text-xs"
+                              >
+                                {item.status === 'success' ? (
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                ) : (
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                )}
+                                {item.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {item.executionTime}ms
+                              </span>
                             </div>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(job.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <div className="h-2 w-16 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 transition-all duration-300"
-                                  style={{ width: `${job.progress}%` }}
-                                />
-                              </div>
-                              <span className="text-sm text-gray-600">{job.progress}%</span>
+                            <p className="text-xs font-mono bg-muted p-2 rounded truncate">
+                              {item.query.split('\n')[0]}
+                            </p>
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                              <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                              {item.rowCount !== undefined && (
+                                <span>{item.rowCount} rows</span>
+                              )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {job.duration > 0 ? `${Math.floor(job.duration / 60)}m ${job.duration % 60}s` : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{job.type}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                )}
+              </div>
+            </ResizablePanel>
 
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Job Statistics</CardTitle>
-                  <CardDescription>Success rate and performance metrics</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Success Rate</span>
-                      <span className="font-medium text-green-600">94.2%</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500" style={{ width: '94.2%' }} />
+            <ResizableHandle />
+
+            {/* Main SQL Editor and Results */}
+            <ResizablePanel defaultSize={75}>
+              <div className="h-full flex flex-col">
+                {/* SQL Editor */}
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">SQL Query Editor</h3>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(currentQuery)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={executeQuery}
+                        disabled={isExecuting || !currentQuery.trim()}
+                        className="flex items-center space-x-2"
+                      >
+                        {isExecuting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                        <span>{isExecuting ? 'Executing...' : 'Execute'}</span>
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Average Duration</span>
-                      <span className="font-medium">12m 34s</span>
-                    </div>
-                  </div>
+                  <Textarea
+                    ref={textareaRef}
+                    value={currentQuery}
+                    onChange={(e) => setCurrentQuery(e.target.value)}
+                    placeholder="Enter your SQL query here..."
+                    className="min-h-[150px] font-mono text-sm"
+                    onKeyDown={(e) => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        executeQuery();
+                      }
+                    }}
+                  />
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Queue Depth</span>
-                      <span className="font-medium">7 jobs</span>
-                    </div>
+                  <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+                    <span>Press Ctrl+Enter to execute</span>
+                    {currentQuery && (
+                      <span>{currentQuery.length} characters</span>
+                    )}
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Failed Jobs (24h)</span>
-                      <span className="font-medium text-red-600">3</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                {/* Query Results */}
+                <div className="flex-1 p-4">
+                  {queryError && (
+                    <Card className="mb-4 border-destructive">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          <CardTitle className="text-sm text-destructive">Query Error</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <pre className="text-sm bg-destructive/10 p-3 rounded font-mono whitespace-pre-wrap">
+                          {queryError}
+                        </pre>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {queryResult && (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="flex items-center space-x-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span>Query Results</span>
+                            </CardTitle>
+                            <CardDescription>
+                              {queryResult.rowCount} rows returned in {queryResult.executionTime}ms
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  {pageSize} per page
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {[25, 50, 100, 200].map((size) => (
+                                  <DropdownMenuItem
+                                    key={size}
+                                    onClick={() => {
+                                      setPageSize(size);
+                                      setCurrentPage(1);
+                                    }}
+                                  >
+                                    {size} rows
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={exportToCSV}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Export CSV
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                {queryResult.columns.map((column, index) => (
+                                  <TableHead key={index} className="font-medium">
+                                    {column}
+                                  </TableHead>
+                                ))}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {paginatedRows.map((row, rowIndex) => (
+                                <TableRow key={rowIndex}>
+                                  {row.map((cell, cellIndex) => (
+                                    <TableCell key={cellIndex} className="font-mono text-sm">
+                                      {cell === null ? (
+                                        <span className="text-muted-foreground italic">NULL</span>
+                                      ) : (
+                                        String(cell)
+                                      )}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between mt-4">
+                            <p className="text-sm text-muted-foreground">
+                              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, queryResult.rowCount)} of {queryResult.rowCount} results
+                            </p>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                              >
+                                Previous
+                              </Button>
+                              <span className="text-sm">
+                                Page {currentPage} of {totalPages}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {!queryResult && !queryError && !isExecuting && (
+                    <Card className="border-dashed">
+                      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                        <Database className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Ready to Execute</h3>
+                        <p className="text-muted-foreground">
+                          Write your SQL query above and click Execute to see results here.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </TabsContent>
 
         {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Request Throughput</CardTitle>
-                <CardDescription>Requests per minute over time</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Queries Executed</CardTitle>
+                <ZapIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="throughput" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="text-2xl font-bold">{executionMetrics.totalExecuted}</div>
+                <p className="text-xs text-muted-foreground">
+                  {executionMetrics.successfulQueries} successful
+                </p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Error Rate</CardTitle>
-                <CardDescription>Application error rate percentage</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Execution Time</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="timestamp" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="errorRate" stroke="#ff7300" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="text-2xl font-bold">{executionMetrics.avgExecutionTime}ms</div>
+                <p className="text-xs text-muted-foreground">
+                  Last: {new Date(executionMetrics.lastExecutionTime).toLocaleTimeString()}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Rows Returned</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{executionMetrics.totalRowsReturned.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Total rows returned
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {((executionMetrics.successfulQueries / executionMetrics.totalExecuted) * 100).toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {executionMetrics.failedQueries} failed queries
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Database Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Query Time</span>
-                      <span className="font-medium">avg 45ms</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Query Performance</CardTitle>
+              <CardDescription>Query execution times and success rates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {queryHistory.slice(0, 10).map((query, index) => (
+                  <div key={query.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-mono truncate">{query.query.split('\n')[0]}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(query.timestamp).toLocaleString()}
+                      </p>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500" style={{ width: '60%' }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Connection Pool</span>
-                      <span className="font-medium">12/20</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500" style={{ width: '60%' }} />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Cache Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Hit Rate</span>
-                      <span className="font-medium text-green-600">89.3%</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500" style={{ width: '89.3%' }} />
+                    <div className="flex items-center space-x-4 ml-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{query.executionTime}ms</p>
+                        {query.rowCount !== undefined && (
+                          <p className="text-xs text-muted-foreground">{query.rowCount} rows</p>
+                        )}
+                      </div>
+                      <Badge variant={query.status === 'success' ? 'default' : 'destructive'}>
+                        {query.status === 'success' ? (
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                        )}
+                        {query.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Memory Usage</span>
-                      <span className="font-medium">2.1GB / 4GB</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-yellow-500" style={{ width: '52.5%' }} />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>API Endpoints</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>/api/jobs</span>
-                    <span className="text-green-600">98.2%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>/api/users</span>
-                    <span className="text-green-600">99.1%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>/api/matches</span>
-                    <span className="text-yellow-600">95.7%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>/api/emails</span>
-                    <span className="text-green-600">97.8%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Email Campaigns Tab */}
-        <TabsContent value="email-campaigns" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Campaign Performance</CardTitle>
-                  <CardDescription>Email campaign metrics and engagement rates</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Open Rate</span>
-                          <span className="font-medium text-green-600">{emailStats.openRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500" style={{ width: `${emailStats.openRate}%` }} />
-                        </div>
-                      </div>
+        {/* Database Monitoring Tab */}
+        <TabsContent value="monitoring" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Connections</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.activeConnections}</div>
+                <p className="text-xs text-muted-foreground">
+                  Database connections
+                </p>
+              </CardContent>
+            </Card>
 
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Click Rate</span>
-                          <span className="font-medium text-blue-600">{emailStats.clickRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500" style={{ width: `${emailStats.clickRate}%` }} />
-                        </div>
-                      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Queries</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.totalQueries.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Since last restart
+                </p>
+              </CardContent>
+            </Card>
 
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Bounce Rate</span>
-                          <span className="font-medium text-red-600">{emailStats.bounceRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-red-500" style={{ width: `${emailStats.bounceRate * 10}%` }} />
-                        </div>
-                      </div>
-                    </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Query Time</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.avgQueryTime}ms</div>
+                <p className="text-xs text-muted-foreground">
+                  Database average
+                </p>
+              </CardContent>
+            </Card>
 
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Slow Queries</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.slowQueries}</div>
+                <p className="text-xs text-muted-foreground">
+                  Queries &gt; 1000ms
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.errorRate.toFixed(2)}%</div>
+                <p className="text-xs text-muted-foreground">
+                  Query error rate
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Database Uptime</CardTitle>
+                <Server className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dbMetrics.uptime}</div>
+                <p className="text-xs text-muted-foreground">
+                  System uptime
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Database Health Status</CardTitle>
+              <CardDescription>Real-time database health monitoring</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
                     <div>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: 'Opened', value: emailStats.opened },
-                              { name: 'Clicked', value: emailStats.clicked },
-                              { name: 'Bounced', value: emailStats.bounced },
-                              { name: 'Unread', value: emailStats.sent - emailStats.opened }
-                            ]}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {COLORS.map((color, index) => (
-                              <Cell key={`cell-${index}`} fill={color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <p className="font-medium">Database Connection</p>
+                      <p className="text-sm text-muted-foreground">Primary database is responding normally</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <Badge className="bg-green-100 text-green-800">Healthy</Badge>
+                </div>
 
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Statistics</CardTitle>
-                  <CardDescription>Today's email metrics</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">Sent</span>
-                    </div>
-                    <span className="font-medium">{emailStats.sent.toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Eye className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Opened</span>
-                    </div>
-                    <span className="font-medium">{emailStats.opened.toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Activity className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm">Clicked</span>
-                    </div>
-                    <span className="font-medium">{emailStats.clicked.toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm">Bounced</span>
-                    </div>
-                    <span className="font-medium">{emailStats.bounced.toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Top Performing Sections</CardTitle>
-                  <CardDescription>Most engaging job categories</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Technology</span>
-                      <span className="font-medium text-green-600">34.2%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Healthcare</span>
-                      <span className="font-medium text-green-600">28.7%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Finance</span>
-                      <span className="font-medium text-blue-600">22.1%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Education</span>
-                      <span className="font-medium text-blue-600">15.0%</span>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="font-medium">Query Performance</p>
+                      <p className="text-sm text-muted-foreground">Average response time within normal range</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
+                  <Badge className="bg-green-100 text-green-800">Good</Badge>
+                </div>
 
-        {/* Alerts Tab */}
-        <TabsContent value="alerts" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Alerts</CardTitle>
-                  <CardDescription>Recent alerts and system notifications</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-96">
-                    <div className="space-y-4">
-                      {alerts.map((alert) => (
-                        <div key={alert.id} className="flex items-start space-x-3 rounded-lg border p-4">
-                          <div className="flex-shrink-0">
-                            {getAlertIcon(alert.type)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium text-gray-900">
-                                {alert.message}
-                              </p>
-                              <Badge
-                                className={
-                                  alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                                  alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                                  alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }
-                              >
-                                {alert.severity}
-                              </Badge>
-                            </div>
-                            <div className="mt-1 flex items-center space-x-2 text-xs text-gray-500">
-                              <span>{alert.source}</span>
-                              <span>•</span>
-                              <span>{new Date(alert.timestamp).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Alert Summary</CardTitle>
-                  <CardDescription>Alert distribution by severity</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-3 w-3 rounded-full bg-red-500" />
-                        <span className="text-sm">Critical</span>
-                      </div>
-                      <span className="font-medium">1</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-3 w-3 rounded-full bg-orange-500" />
-                        <span className="text-sm">High</span>
-                      </div>
-                      <span className="font-medium">0</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                        <span className="text-sm">Medium</span>
-                      </div>
-                      <span className="font-medium">1</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-3 w-3 rounded-full bg-blue-500" />
-                        <span className="text-sm">Low</span>
-                      </div>
-                      <span className="font-medium">1</span>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <p className="font-medium">Connection Pool</p>
+                      <p className="text-sm text-muted-foreground">High connection usage detected</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>
+                </div>
 
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>System Status</CardTitle>
-                  <CardDescription>Current system health</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Server className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">API Server</span>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">Healthy</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Database className="h-4 w-4 text-red-500" />
-                        <span className="text-sm">Database</span>
-                      </div>
-                      <Badge className="bg-red-100 text-red-800">Warning</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Email Service</span>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">Healthy</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Activity className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Background Jobs</span>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">Running</Badge>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="font-medium">Disk Space</p>
+                      <p className="text-sm text-muted-foreground">Sufficient storage available</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                  <Badge className="bg-green-100 text-green-800">Normal</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
