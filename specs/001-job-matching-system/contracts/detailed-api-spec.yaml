@@ -1,0 +1,4114 @@
+openapi: 3.0.3
+info:
+  title: Job Matching System - Detailed API Specification
+  description: |
+    バイト求人マッチングシステムの詳細API仕様書
+
+    ## システム概要
+    - 10万件の求人データから1万人のユーザーに最適な40件を毎日選定
+    - パーソナライズされたメール配信準備
+    - 3段階スコアリング（基礎・SEO・パーソナライズ）
+    - 6セクション構成のメール生成
+
+    ## 技術スタック
+    - Backend: Python 3.11 + FastAPI
+    - Database: Supabase (PostgreSQL)
+    - AI: OpenAI GPT-4/5 nano
+    - Monitoring: Real-time SQL dashboard
+  version: 2.0.0
+  contact:
+    name: Job Matching System Team
+    email: dev@job-matching.com
+    url: https://github.com/job-matching/api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api/v2
+    description: Development server
+  - url: https://staging-api.job-matching.com/v2
+    description: Staging server
+  - url: https://api.job-matching.com/v2
+    description: Production server
+
+tags:
+  - name: Jobs
+    description: 求人データ管理（CRUD、検索、フィルタリング）
+  - name: Users
+    description: ユーザー管理（プロファイル、行動履歴）
+  - name: Matching
+    description: マッチング処理（スコアリング、推薦）
+  - name: Batch
+    description: バッチ処理（ジョブ管理、ステータス監視）
+  - name: Monitoring
+    description: モニタリング（ヘルスチェック、メトリクス）
+  - name: Email
+    description: メール生成・配信管理
+
+paths:
+  # ===========================================
+  # 求人管理API（CRUD、検索、フィルタリング）
+  # ===========================================
+
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: 求人一覧取得
+      description: |
+        求人データの一覧を取得。
+        検索、フィルタリング、ページネーション、ソート機能付き。
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: ページ番号
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+          description: 1ページあたりの件数
+        - name: keyword
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: キーワード検索（職種、会社名、勤務地など）
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: 勤務地フィルタ（部分一致）
+        - name: salary_min
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: 最低時給（円）
+        - name: salary_max
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: 最高時給（円）
+        - name: occupation_categories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [restaurant, retail, office, logistics, education, medical,
+                     construction, manufacturing, it, service, creative, other]
+          style: form
+          explode: true
+          description: 職種カテゴリフィルタ
+        - name: needs_categories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [daily_payment, high_hourly, short_term, long_term, student_ok,
+                     unexperienced_ok, transportation_provided, meal_provided,
+                     uniform_provided, near_station, flexible_shift, weekend_only,
+                     night_shift, remote_ok]
+          style: form
+          explode: true
+          description: ニーズカテゴリフィルタ
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, paused, expired, deleted]
+            default: active
+          description: 求人ステータス
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, salary, basic_score, seo_score,
+                   personalized_score, combined_score]
+            default: updated_at
+          description: ソート項目
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: ソート順
+        - name: created_after
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 作成日時フィルタ（以降）
+        - name: created_before
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 作成日時フィルタ（以前）
+      responses:
+        '200':
+          description: 求人一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Jobs]
+      summary: 求人作成
+      description: 新しい求人を作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreateRequest'
+      responses:
+        '201':
+          description: 求人作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /jobs/{job_id}:
+    get:
+      tags: [Jobs]
+      summary: 求人詳細取得
+      description: 指定されたIDの求人詳細を取得
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 求人ID
+      responses:
+        '200':
+          description: 求人詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Jobs]
+      summary: 求人更新
+      description: 指定されたIDの求人を更新
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 求人ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobUpdateRequest'
+      responses:
+        '200':
+          description: 求人更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Jobs]
+      summary: 求人削除
+      description: 指定されたIDの求人を削除（論理削除）
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 求人ID
+      responses:
+        '204':
+          description: 求人削除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /jobs/bulk:
+    post:
+      tags: [Jobs]
+      summary: 求人一括作成/更新
+      description: |
+        CSVファイルまたはJSON配列による求人の一括作成・更新
+        最大10万件まで処理可能
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV/JSONファイル
+                operation:
+                  type: string
+                  enum: [create, update, upsert]
+                  default: upsert
+                  description: 操作種別
+                batch_size:
+                  type: integer
+                  minimum: 100
+                  maximum: 5000
+                  default: 1000
+                  description: バッチサイズ
+                validate_only:
+                  type: boolean
+                  default: false
+                  description: バリデーションのみ実行
+          application/json:
+            schema:
+              type: object
+              properties:
+                jobs:
+                  type: array
+                  maxItems: 10000
+                  items:
+                    $ref: '#/components/schemas/JobCreateRequest'
+                operation:
+                  type: string
+                  enum: [create, update, upsert]
+                  default: upsert
+                validate_only:
+                  type: boolean
+                  default: false
+      responses:
+        '202':
+          description: バルク処理開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkJobResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: ペイロードが大きすぎます
+
+  /jobs/search:
+    post:
+      tags: [Jobs]
+      summary: 高度な求人検索
+      description: |
+        複雑な検索条件による求人検索
+        全文検索、地理的検索、スコア範囲指定など
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobSearchRequest'
+      responses:
+        '200':
+          description: 検索結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /jobs/{job_id}/scoring:
+    post:
+      tags: [Jobs]
+      summary: 求人スコア再計算
+      description: 指定求人の各種スコアを再計算
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [basic, seo, personalized, all]
+                  default: [all]
+                force_refresh:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: スコア計算完了
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobScoringResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /jobs/{job_id}/categorize:
+    post:
+      tags: [Jobs]
+      summary: 求人カテゴリ再分類
+      description: 指定求人のカテゴリを再分類
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: カテゴリ分類完了
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCategorizationResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================
+  # ユーザー管理API（プロファイル、行動履歴）
+  # ===========================================
+
+  /users:
+    get:
+      tags: [Users]
+      summary: ユーザー一覧取得
+      description: |
+        ユーザー一覧を取得。
+        フィルタリング、ページネーション対応。
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, suspended, deleted]
+            default: active
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: 居住地フィルタ
+        - name: age_min
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+        - name: age_max
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+        - name: registered_after
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: registered_before
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, last_login, engagement_score]
+            default: updated_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: ユーザー一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Users]
+      summary: ユーザー作成
+      description: 新しいユーザーを作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: ユーザー作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: ユーザーが既に存在
+
+  /users/{user_id}:
+    get:
+      tags: [Users]
+      summary: ユーザー詳細取得
+      description: 指定されたIDのユーザー詳細を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ユーザー詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Users]
+      summary: ユーザー更新
+      description: 指定されたIDのユーザーを更新
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: ユーザー更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Users]
+      summary: ユーザー削除
+      description: 指定されたIDのユーザーを削除（論理削除）
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: ユーザー削除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user_id}/profile:
+    get:
+      tags: [Users]
+      summary: ユーザープロファイル取得
+      description: ユーザーの詳細プロファイル情報を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ユーザープロファイル
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Users]
+      summary: ユーザープロファイル更新
+      description: ユーザーのプロファイル情報を更新
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: プロファイル更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user_id}/behavior:
+    get:
+      tags: [Users]
+      summary: ユーザー行動履歴取得
+      description: |
+        ユーザーの行動履歴（クリック、応募、メール開封など）を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: action_type
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [email_open, email_click, job_view, job_apply, job_save,
+                     profile_update, search, filter_use]
+          style: form
+          explode: true
+          description: 行動タイプフィルタ
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 開始日
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 終了日
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        '200':
+          description: 行動履歴
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBehaviorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Users]
+      summary: ユーザー行動記録
+      description: ユーザーの行動をログとして記録
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserBehaviorLogRequest'
+      responses:
+        '201':
+          description: 行動記録成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBehaviorLog'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user_id}/preferences:
+    get:
+      tags: [Users]
+      summary: ユーザー設定取得
+      description: ユーザーの設定・環境設定を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ユーザー設定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Users]
+      summary: ユーザー設定更新
+      description: ユーザーの設定を更新
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferencesUpdateRequest'
+      responses:
+        '200':
+          description: 設定更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user_id}/analytics:
+    get:
+      tags: [Users]
+      summary: ユーザー分析データ取得
+      description: |
+        ユーザーの分析データ（エンゲージメント、マッチング精度など）を取得
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 180d, 1y]
+            default: 30d
+          description: 分析期間
+      responses:
+        '200':
+          description: 分析データ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAnalytics'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================
+  # マッチングAPI（スコアリング、推薦）
+  # ===========================================
+
+  /matching/users/{user_id}/recommendations:
+    get:
+      tags: [Matching]
+      summary: ユーザー向け求人推薦取得
+      description: |
+        指定ユーザーに対する求人推薦を取得
+        リアルタイム推薦または保存済み推薦を選択可能
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [realtime, cached, hybrid]
+            default: cached
+          description: 推薦モード
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 40
+          description: 推薦件数
+        - name: section
+          in: query
+          schema:
+            type: string
+            enum: [top5, regional, nearby, benefits, new_arrivals, all]
+            default: all
+          description: 推薦セクション指定
+        - name: batch_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: バッチ処理日（キャッシュモード用）
+      responses:
+        '200':
+          description: 推薦求人
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRecommendations'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Matching]
+      summary: ユーザー向け求人推薦実行
+      description: |
+        指定ユーザーに対する求人推薦を実行
+        リアルタイムマッチング処理
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                algorithm:
+                  type: string
+                  enum: [collaborative, content_based, hybrid]
+                  default: hybrid
+                  description: 推薦アルゴリズム
+                filters:
+                  $ref: '#/components/schemas/RecommendationFilters'
+                explanation:
+                  type: boolean
+                  default: false
+                  description: 推薦理由を含めるか
+                force_refresh:
+                  type: boolean
+                  default: false
+                  description: キャッシュを無視して再計算
+      responses:
+        '200':
+          description: 推薦処理完了
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRecommendations'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          description: レート制限
+
+  /matching/jobs/{job_id}/similar:
+    get:
+      tags: [Matching]
+      summary: 類似求人取得
+      description: 指定求人に類似した求人を取得
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: algorithm
+          in: query
+          schema:
+            type: string
+            enum: [cosine_similarity, jaccard, collaborative]
+            default: cosine_similarity
+      responses:
+        '200':
+          description: 類似求人一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimilarJobsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /matching/scoring/batch:
+    post:
+      tags: [Matching]
+      summary: バッチスコアリング実行
+      description: |
+        全求人または指定求人群のスコアリングを実行
+        3段階スコア（基礎・SEO・パーソナライズ）を計算
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 対象求人ID（空の場合は全件）
+                  maxItems: 100000
+                scoring_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [basic, seo, personalized]
+                  default: [basic, seo, personalized]
+                force_refresh:
+                  type: boolean
+                  default: false
+                  description: 既存スコアを上書き
+                parallel_workers:
+                  type: integer
+                  minimum: 1
+                  maximum: 8
+                  default: 4
+                  description: 並列ワーカー数
+      responses:
+        '202':
+          description: スコアリング処理開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchScoringResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /matching/categorization/batch:
+    post:
+      tags: [Matching]
+      summary: バッチカテゴリ分類実行
+      description: |
+        全求人または指定求人群のカテゴリ分類を実行
+        14ニーズカテゴリ×12職種カテゴリに分類
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 対象求人ID（空の場合は全件）
+                  maxItems: 100000
+                force_recategorize:
+                  type: boolean
+                  default: false
+                  description: 既存分類を上書き
+                parallel_workers:
+                  type: integer
+                  minimum: 1
+                  maximum: 8
+                  default: 4
+      responses:
+        '202':
+          description: カテゴリ分類処理開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchCategorizationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /matching/matrix/build:
+    post:
+      tags: [Matching]
+      summary: マッチングマトリックス構築
+      description: |
+        ユーザー×求人のマッチングマトリックスを構築
+        協調フィルタリング用の前処理
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                include_implicit_feedback:
+                  type: boolean
+                  default: true
+                  description: 暗黙的フィードバックを含める
+                min_interactions:
+                  type: integer
+                  minimum: 1
+                  default: 5
+                  description: 最小インタラクション数
+                matrix_format:
+                  type: string
+                  enum: [sparse, dense]
+                  default: sparse
+      responses:
+        '202':
+          description: マトリックス構築開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatrixBuildResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================
+  # バッチ処理API（ジョブ管理、ステータス）
+  # ===========================================
+
+  /batch/jobs:
+    get:
+      tags: [Batch]
+      summary: バッチジョブ一覧取得
+      description: |
+        実行中または完了したバッチジョブの一覧を取得
+        ステータス監視とログ確認用
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [pending, running, completed, failed, cancelled]
+          style: form
+          explode: true
+          description: ステータスフィルタ
+        - name: job_type
+          in: query
+          schema:
+            type: string
+            enum: [data_import, scoring, categorization, matching, email_generation, all]
+          description: ジョブ種別フィルタ
+        - name: created_after
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: created_before
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, started_at, completed_at]
+            default: created_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: バッチジョブ一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJobListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Batch]
+      summary: バッチジョブ作成
+      description: |
+        新しいバッチジョブを作成・スケジュール
+        各種処理の一括実行管理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchJobCreateRequest'
+      responses:
+        '201':
+          description: バッチジョブ作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /batch/jobs/{job_id}:
+    get:
+      tags: [Batch]
+      summary: バッチジョブ詳細取得
+      description: 指定されたバッチジョブの詳細とログを取得
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: バッチジョブID
+        - name: include_logs
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: ログを含めるか
+        - name: log_level
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warning, error]
+            default: info
+          description: ログレベルフィルタ
+      responses:
+        '200':
+          description: バッチジョブ詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJobDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Batch]
+      summary: バッチジョブ更新
+      description: バッチジョブの設定を更新（実行前のみ）
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchJobUpdateRequest'
+      responses:
+        '200':
+          description: バッチジョブ更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 実行中のジョブは更新不可
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Batch]
+      summary: バッチジョブキャンセル
+      description: 実行中のバッチジョブをキャンセル
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: キャンセル成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [cancelled]
+                  cancelled_at:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: キャンセル不可能な状態
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /batch/jobs/{job_id}/restart:
+    post:
+      tags: [Batch]
+      summary: バッチジョブ再実行
+      description: 失敗したバッチジョブを再実行
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resume_from_checkpoint:
+                  type: boolean
+                  default: true
+                  description: チェックポイントから再開
+                reset_parameters:
+                  type: object
+                  description: パラメータ変更
+      responses:
+        '201':
+          description: 再実行ジョブ作成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJob'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /batch/schedules:
+    get:
+      tags: [Batch]
+      summary: バッチスケジュール一覧取得
+      description: 定期実行バッチのスケジュール一覧を取得
+      responses:
+        '200':
+          description: スケジュール一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchScheduleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Batch]
+      summary: バッチスケジュール作成
+      description: 定期実行バッチのスケジュールを作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchScheduleCreateRequest'
+      responses:
+        '201':
+          description: スケジュール作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /batch/schedules/{schedule_id}:
+    get:
+      tags: [Batch]
+      summary: バッチスケジュール詳細取得
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: スケジュール詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSchedule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Batch]
+      summary: バッチスケジュール更新
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchScheduleUpdateRequest'
+      responses:
+        '200':
+          description: スケジュール更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Batch]
+      summary: バッチスケジュール削除
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: スケジュール削除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================
+  # モニタリングAPI（ヘルスチェック、メトリクス）
+  # ===========================================
+
+  /monitoring/health:
+    get:
+      tags: [Monitoring]
+      summary: システムヘルスチェック
+      description: |
+        システム全体の健全性を確認
+        DB接続、外部API、バッチ処理状況をチェック
+      responses:
+        '200':
+          description: システム正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealth'
+        '503':
+          description: システム異常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealth'
+
+  /monitoring/health/detailed:
+    get:
+      tags: [Monitoring]
+      summary: 詳細ヘルスチェック
+      description: |
+        各コンポーネントの詳細な健全性情報を取得
+        パフォーマンス指標、リソース使用状況を含む
+      responses:
+        '200':
+          description: 詳細ヘルスチェック結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedSystemHealth'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /monitoring/metrics:
+    get:
+      tags: [Monitoring]
+      summary: システムメトリクス取得
+      description: |
+        システムの主要メトリクスを取得
+        処理性能、ユーザー行動、ビジネス指標など
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d, 30d]
+            default: 24h
+          description: メトリクス取得期間
+        - name: metrics
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [api_requests, response_times, error_rates,
+                     job_processing, user_engagement, matching_accuracy,
+                     email_metrics, database_performance]
+          style: form
+          explode: true
+          description: 取得するメトリクス種別
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [minute, hour, day]
+            default: hour
+          description: データ粒度
+      responses:
+        '200':
+          description: メトリクスデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /monitoring/alerts:
+    get:
+      tags: [Monitoring]
+      summary: アラート一覧取得
+      description: |
+        システムアラートの一覧を取得
+        未解決、解決済み、抑制中のアラートを管理
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [active, resolved, suppressed]
+          style: form
+          explode: true
+          description: アラートステータスフィルタ
+        - name: severity
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [critical, warning, info]
+          style: form
+          explode: true
+          description: 重要度フィルタ
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [system, api, database, batch, external]
+          description: カテゴリフィルタ
+        - name: created_after
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: アラート一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Monitoring]
+      summary: アラート作成
+      description: 手動アラートの作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreateRequest'
+      responses:
+        '201':
+          description: アラート作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /monitoring/alerts/{alert_id}:
+    get:
+      tags: [Monitoring]
+      summary: アラート詳細取得
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: アラート詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Monitoring]
+      summary: アラート更新
+      description: アラートの状態更新（解決、抑制など）
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertUpdateRequest'
+      responses:
+        '200':
+          description: アラート更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /monitoring/query:
+    post:
+      tags: [Monitoring]
+      summary: SQLクエリ実行
+      description: |
+        読み取り専用SQLクエリを実行
+        データ確認、分析用途
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: SELECT文のみ許可
+                  maxLength: 10000
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 10000
+                  default: 1000
+                  description: 結果件数制限
+                timeout:
+                  type: integer
+                  minimum: 1
+                  maximum: 300
+                  default: 30
+                  description: タイムアウト（秒）
+                explain:
+                  type: boolean
+                  default: false
+                  description: 実行計画を取得
+              required:
+                - query
+      responses:
+        '200':
+          description: クエリ実行結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResults'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: 禁止されたクエリ
+        '408':
+          description: クエリタイムアウト
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /monitoring/logs:
+    get:
+      tags: [Monitoring]
+      summary: システムログ取得
+      description: |
+        システムログの検索・取得
+        エラー調査、監査用途
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [debug, info, warning, error, critical]
+          style: form
+          explode: true
+          description: ログレベルフィルタ
+        - name: component
+          in: query
+          schema:
+            type: string
+            enum: [api, batch, matching, email, database, external]
+          description: コンポーネントフィルタ
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 開始時刻
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 終了時刻
+        - name: keyword
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: キーワード検索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        '200':
+          description: ログデータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemLogsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================
+  # メール生成・配信管理API
+  # ===========================================
+
+  /email/templates:
+    get:
+      tags: [Email]
+      summary: メールテンプレート一覧取得
+      description: 利用可能なメールテンプレートの一覧を取得
+      responses:
+        '200':
+          description: テンプレート一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /email/generate:
+    post:
+      tags: [Email]
+      summary: メール生成
+      description: |
+        選定された求人から6セクション構成のHTMLメールを生成
+        GPT-4/5 nanoによる件名生成含む
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailGenerateRequest'
+      responses:
+        '200':
+          description: メール生成完了
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: ユーザーまたは求人が見つからない
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /email/batch-generate:
+    post:
+      tags: [Email]
+      summary: 一括メール生成
+      description: |
+        全ユーザー（1万人）分のメールを一括生成
+        並列処理によりパフォーマンス最適化
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchEmailGenerateRequest'
+      responses:
+        '202':
+          description: 一括生成開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchEmailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /email/deliveries:
+    get:
+      tags: [Email]
+      summary: 配信履歴取得
+      description: メール配信の履歴とステータスを取得
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: 特定ユーザーの履歴
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [pending, sent, delivered, bounced, failed]
+          style: form
+          explode: true
+        - name: batch_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+      responses:
+        '200':
+          description: 配信履歴
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailDeliveryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ===========================================
+# Components Section
+# ===========================================
+
+components:
+  schemas:
+    # ===== 共通スキーマ =====
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        total_items:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 0
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: エラーメッセージ
+        error_code:
+          type: string
+          description: エラーコード
+        details:
+          type: array
+          items:
+            type: string
+          description: 詳細エラー情報
+        timestamp:
+          type: string
+          format: date-time
+        trace_id:
+          type: string
+          description: トレースID
+
+    # ===== 求人関連スキーマ =====
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+        external_id:
+          type: string
+          description: 外部システムの求人ID
+        company_name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        salary_min:
+          type: integer
+          description: 最低時給（円）
+        salary_max:
+          type: integer
+          description: 最高時給（円）
+        location:
+          type: string
+        prefecture:
+          type: string
+        city:
+          type: string
+        nearest_station:
+          type: string
+        work_hours:
+          type: string
+        work_days:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+          description: 求人特徴（日払い、高時給など）
+        occupation_category:
+          type: string
+          enum: [restaurant, retail, office, logistics, education, medical,
+                 construction, manufacturing, it, service, creative, other]
+        needs_categories:
+          type: array
+          items:
+            type: string
+            enum: [daily_payment, high_hourly, short_term, long_term, student_ok,
+                   unexperienced_ok, transportation_provided, meal_provided,
+                   uniform_provided, near_station, flexible_shift, weekend_only,
+                   night_shift, remote_ok]
+        basic_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        seo_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        personalized_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        combined_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        status:
+          type: string
+          enum: [draft, active, paused, expired, deleted]
+        url:
+          type: string
+          format: uri
+        application_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - company_name
+        - title
+        - status
+
+    JobCreateRequest:
+      type: object
+      properties:
+        external_id:
+          type: string
+        company_name:
+          type: string
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        salary_min:
+          type: integer
+          minimum: 0
+        salary_max:
+          type: integer
+          minimum: 0
+        location:
+          type: string
+          maxLength: 200
+        prefecture:
+          type: string
+        city:
+          type: string
+        nearest_station:
+          type: string
+        work_hours:
+          type: string
+        work_days:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        occupation_category:
+          type: string
+          enum: [restaurant, retail, office, logistics, education, medical,
+                 construction, manufacturing, it, service, creative, other]
+        url:
+          type: string
+          format: uri
+        application_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+      required:
+        - company_name
+        - title
+        - occupation_category
+
+    JobUpdateRequest:
+      type: object
+      properties:
+        company_name:
+          type: string
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        salary_min:
+          type: integer
+          minimum: 0
+        salary_max:
+          type: integer
+          minimum: 0
+        location:
+          type: string
+          maxLength: 200
+        work_hours:
+          type: string
+        work_days:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [draft, active, paused, expired]
+        url:
+          type: string
+          format: uri
+        application_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+
+    JobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        filters:
+          type: object
+          description: 適用されたフィルタ情報
+
+    JobSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          maxLength: 200
+          description: 全文検索クエリ
+        location:
+          type: object
+          properties:
+            point:
+              type: object
+              properties:
+                lat:
+                  type: number
+                  format: float
+                lng:
+                  type: number
+                  format: float
+            radius_km:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+          description: 地理的検索
+        salary_range:
+          type: object
+          properties:
+            min:
+              type: integer
+              minimum: 0
+            max:
+              type: integer
+              minimum: 0
+        score_range:
+          type: object
+          properties:
+            score_type:
+              type: string
+              enum: [basic, seo, personalized, combined]
+            min:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            max:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+        filters:
+          type: object
+          properties:
+            occupation_categories:
+              type: array
+              items:
+                type: string
+            needs_categories:
+              type: array
+              items:
+                type: string
+            status:
+              type: array
+              items:
+                type: string
+        sort:
+          type: object
+          properties:
+            field:
+              type: string
+              enum: [created_at, updated_at, salary, basic_score, seo_score,
+                     personalized_score, combined_score, relevance]
+            order:
+              type: string
+              enum: [asc, desc]
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 50
+
+    JobSearchResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Job'
+              - type: object
+                properties:
+                  relevance_score:
+                    type: number
+                    format: float
+                  highlight:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        search_meta:
+          type: object
+          properties:
+            total_time_ms:
+              type: integer
+            query_analyzed:
+              type: string
+            suggestions:
+              type: array
+              items:
+                type: string
+
+    JobScoringResult:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        scores:
+          type: object
+          properties:
+            basic:
+              type: number
+              format: float
+            seo:
+              type: number
+              format: float
+            personalized:
+              type: number
+              format: float
+            combined:
+              type: number
+              format: float
+        score_details:
+          type: object
+          additionalProperties:
+            type: object
+        updated_at:
+          type: string
+          format: date-time
+
+    JobCategorizationResult:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        occupation_category:
+          type: string
+        needs_categories:
+          type: array
+          items:
+            type: string
+        confidence_scores:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+        updated_at:
+          type: string
+          format: date-time
+
+    BulkJobResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        operation:
+          type: string
+          enum: [create, update, upsert]
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        total_records:
+          type: integer
+        processed_records:
+          type: integer
+        successful_records:
+          type: integer
+        failed_records:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              error:
+                type: string
+              details:
+                type: object
+        started_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    # ===== ユーザー関連スキーマ =====
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        age:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gender:
+          type: string
+          enum: [male, female, other, not_specified]
+        location:
+          type: object
+          properties:
+            prefecture:
+              type: string
+            city:
+              type: string
+            address:
+              type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended, deleted]
+        email_verified:
+          type: boolean
+        last_login:
+          type: string
+          format: date-time
+        engagement_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - status
+
+    UserCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          maxLength: 100
+        age:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gender:
+          type: string
+          enum: [male, female, other, not_specified]
+        location:
+          type: object
+          properties:
+            prefecture:
+              type: string
+            city:
+              type: string
+            address:
+              type: string
+      required:
+        - email
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        age:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gender:
+          type: string
+          enum: [male, female, other, not_specified]
+        location:
+          type: object
+          properties:
+            prefecture:
+              type: string
+            city:
+              type: string
+            address:
+              type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        basic_info:
+          $ref: '#/components/schemas/User'
+        work_preferences:
+          type: object
+          properties:
+            preferred_occupations:
+              type: array
+              items:
+                type: string
+            preferred_locations:
+              type: array
+              items:
+                type: string
+            salary_expectation:
+              type: object
+              properties:
+                min:
+                  type: integer
+                max:
+                  type: integer
+            work_style:
+              type: array
+              items:
+                type: string
+                enum: [part_time, full_time, short_term, long_term,
+                       weekend_only, night_shift, flexible]
+        experience:
+          type: object
+          properties:
+            work_history:
+              type: array
+              items:
+                type: object
+                properties:
+                  occupation:
+                    type: string
+                  duration_months:
+                    type: integer
+                  skills:
+                    type: array
+                    items:
+                      type: string
+            education:
+              type: string
+              enum: [high_school, vocational, university, graduate, other]
+        personal_info:
+          type: object
+          properties:
+            transportation:
+              type: array
+              items:
+                type: string
+                enum: [walk, bicycle, public_transport, car, motorcycle]
+            availability:
+              type: object
+              properties:
+                weekdays:
+                  type: boolean
+                weekends:
+                  type: boolean
+                mornings:
+                  type: boolean
+                afternoons:
+                  type: boolean
+                evenings:
+                  type: boolean
+                nights:
+                  type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        work_preferences:
+          type: object
+          properties:
+            preferred_occupations:
+              type: array
+              items:
+                type: string
+            preferred_locations:
+              type: array
+              items:
+                type: string
+            salary_expectation:
+              type: object
+              properties:
+                min:
+                  type: integer
+                max:
+                  type: integer
+            work_style:
+              type: array
+              items:
+                type: string
+        experience:
+          type: object
+          properties:
+            work_history:
+              type: array
+              items:
+                type: object
+                properties:
+                  occupation:
+                    type: string
+                  duration_months:
+                    type: integer
+                  skills:
+                    type: array
+                    items:
+                      type: string
+            education:
+              type: string
+              enum: [high_school, vocational, university, graduate, other]
+        personal_info:
+          type: object
+          properties:
+            transportation:
+              type: array
+              items:
+                type: string
+            availability:
+              type: object
+
+    UserBehaviorLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        action_type:
+          type: string
+          enum: [email_open, email_click, job_view, job_apply, job_save,
+                 profile_update, search, filter_use]
+        target_id:
+          type: integer
+          description: 対象のID（求人IDなど）
+        target_type:
+          type: string
+          enum: [job, email, search, filter]
+        metadata:
+          type: object
+          description: 追加情報
+        session_id:
+          type: string
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    UserBehaviorLogRequest:
+      type: object
+      properties:
+        action_type:
+          type: string
+          enum: [email_open, email_click, job_view, job_apply, job_save,
+                 profile_update, search, filter_use]
+        target_id:
+          type: integer
+        target_type:
+          type: string
+          enum: [job, email, search, filter]
+        metadata:
+          type: object
+        session_id:
+          type: string
+      required:
+        - action_type
+
+    UserBehaviorResponse:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        behaviors:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserBehaviorLog'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        summary:
+          type: object
+          properties:
+            total_actions:
+              type: integer
+            action_counts:
+              type: object
+              additionalProperties:
+                type: integer
+            most_common_actions:
+              type: array
+              items:
+                type: object
+                properties:
+                  action_type:
+                    type: string
+                  count:
+                    type: integer
+
+    UserPreferences:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        notification_settings:
+          type: object
+          properties:
+            email_enabled:
+              type: boolean
+            email_frequency:
+              type: string
+              enum: [daily, weekly, bi_weekly, monthly]
+            sms_enabled:
+              type: boolean
+            push_enabled:
+              type: boolean
+        privacy_settings:
+          type: object
+          properties:
+            profile_visibility:
+              type: string
+              enum: [public, private, employers_only]
+            search_tracking:
+              type: boolean
+            behavior_tracking:
+              type: boolean
+        recommendation_settings:
+          type: object
+          properties:
+            algorithm_preference:
+              type: string
+              enum: [collaborative, content_based, hybrid]
+            diversity_weight:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+            freshness_weight:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+        updated_at:
+          type: string
+          format: date-time
+
+    UserPreferencesUpdateRequest:
+      type: object
+      properties:
+        notification_settings:
+          type: object
+          properties:
+            email_enabled:
+              type: boolean
+            email_frequency:
+              type: string
+              enum: [daily, weekly, bi_weekly, monthly]
+            sms_enabled:
+              type: boolean
+            push_enabled:
+              type: boolean
+        privacy_settings:
+          type: object
+          properties:
+            profile_visibility:
+              type: string
+              enum: [public, private, employers_only]
+            search_tracking:
+              type: boolean
+            behavior_tracking:
+              type: boolean
+        recommendation_settings:
+          type: object
+          properties:
+            algorithm_preference:
+              type: string
+              enum: [collaborative, content_based, hybrid]
+            diversity_weight:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+            freshness_weight:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+
+    UserAnalytics:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        period:
+          type: string
+        engagement_metrics:
+          type: object
+          properties:
+            total_sessions:
+              type: integer
+            avg_session_duration:
+              type: number
+              format: float
+            email_open_rate:
+              type: number
+              format: float
+            email_click_rate:
+              type: number
+              format: float
+            job_view_count:
+              type: integer
+            job_apply_count:
+              type: integer
+            search_count:
+              type: integer
+        matching_metrics:
+          type: object
+          properties:
+            recommendations_shown:
+              type: integer
+            recommendations_clicked:
+              type: integer
+            click_through_rate:
+              type: number
+              format: float
+            conversion_rate:
+              type: number
+              format: float
+            avg_match_score:
+              type: number
+              format: float
+        behavior_patterns:
+          type: object
+          properties:
+            most_active_hours:
+              type: array
+              items:
+                type: integer
+            most_active_days:
+              type: array
+              items:
+                type: string
+            preferred_job_types:
+              type: array
+              items:
+                type: string
+            preferred_locations:
+              type: array
+              items:
+                type: string
+
+    # ===== マッチング関連スキーマ =====
+    UserRecommendations:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        batch_date:
+          type: string
+          format: date
+        generated_at:
+          type: string
+          format: date-time
+        algorithm_used:
+          type: string
+          enum: [collaborative, content_based, hybrid]
+        sections:
+          type: object
+          properties:
+            top5:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+              maxItems: 5
+            regional:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+              maxItems: 10
+            nearby:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+              maxItems: 10
+            benefits:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+              maxItems: 10
+            new_arrivals:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+              maxItems: 5
+        total_count:
+          type: integer
+        metadata:
+          type: object
+          properties:
+            processing_time_ms:
+              type: integer
+            cache_hit:
+              type: boolean
+            confidence_score:
+              type: number
+              format: float
+
+    JobRecommendation:
+      type: object
+      properties:
+        job:
+          $ref: '#/components/schemas/Job'
+        match_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        match_reasons:
+          type: array
+          items:
+            type: string
+          description: マッチング理由
+        section_score:
+          type: number
+          format: float
+          description: セクション内でのスコア
+        explanation:
+          type: object
+          properties:
+            factors:
+              type: object
+              additionalProperties:
+                type: number
+                format: float
+            keywords:
+              type: array
+              items:
+                type: string
+            similarity_jobs:
+              type: array
+              items:
+                type: integer
+              description: 類似求人ID
+
+    RecommendationFilters:
+      type: object
+      properties:
+        occupation_categories:
+          type: array
+          items:
+            type: string
+        needs_categories:
+          type: array
+          items:
+            type: string
+        location_filters:
+          type: object
+          properties:
+            prefectures:
+              type: array
+              items:
+                type: string
+            max_distance_km:
+              type: number
+              format: float
+        salary_filters:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        score_filters:
+          type: object
+          properties:
+            min_match_score:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+
+    SimilarJobsResponse:
+      type: object
+      properties:
+        source_job_id:
+          type: integer
+        similar_jobs:
+          type: array
+          items:
+            type: object
+            properties:
+              job:
+                $ref: '#/components/schemas/Job'
+              similarity_score:
+                type: number
+                format: float
+                minimum: 0
+                maximum: 1
+              similarity_factors:
+                type: object
+                additionalProperties:
+                  type: number
+                  format: float
+        algorithm_used:
+          type: string
+        total_time_ms:
+          type: integer
+
+    BatchScoringResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        scoring_types:
+          type: array
+          items:
+            type: string
+        total_jobs:
+          type: integer
+        processed_jobs:
+          type: integer
+        failed_jobs:
+          type: integer
+        average_scores:
+          type: object
+          properties:
+            basic_avg:
+              type: number
+              format: float
+            seo_avg:
+              type: number
+              format: float
+            personalized_avg:
+              type: number
+              format: float
+        processing_time_ms:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    BatchCategorizationResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        total_jobs:
+          type: integer
+        processed_jobs:
+          type: integer
+        failed_jobs:
+          type: integer
+        categorization_results:
+          type: object
+          properties:
+            occupation_distribution:
+              type: object
+              additionalProperties:
+                type: integer
+            needs_distribution:
+              type: object
+              additionalProperties:
+                type: integer
+        processing_time_ms:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+
+    MatrixBuildResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        matrix_stats:
+          type: object
+          properties:
+            total_users:
+              type: integer
+            total_jobs:
+              type: integer
+            total_interactions:
+              type: integer
+            sparsity:
+              type: number
+              format: float
+        build_time_ms:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+
+    # ===== バッチ処理関連スキーマ =====
+    BatchJob:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        job_type:
+          type: string
+          enum: [data_import, scoring, categorization, matching, email_generation,
+                 matrix_build, cleanup, analytics]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+        parameters:
+          type: object
+          description: ジョブ固有のパラメータ
+        progress:
+          type: object
+          properties:
+            current:
+              type: integer
+            total:
+              type: integer
+            percentage:
+              type: number
+              format: float
+        result:
+          type: object
+          description: 実行結果
+        error_details:
+          type: object
+          properties:
+            error_type:
+              type: string
+            error_message:
+              type: string
+            stack_trace:
+              type: string
+        retry_count:
+          type: integer
+        max_retries:
+          type: integer
+        timeout_seconds:
+          type: integer
+        scheduled_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - job_type
+        - status
+
+    BatchJobCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        job_type:
+          type: string
+          enum: [data_import, scoring, categorization, matching, email_generation,
+                 matrix_build, cleanup, analytics]
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+          default: normal
+        parameters:
+          type: object
+        scheduled_at:
+          type: string
+          format: date-time
+          description: 実行予定時刻（未指定時は即座に実行）
+        timeout_seconds:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+        max_retries:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 3
+      required:
+        - name
+        - job_type
+
+    BatchJobUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+        parameters:
+          type: object
+        scheduled_at:
+          type: string
+          format: date-time
+        timeout_seconds:
+          type: integer
+          minimum: 60
+          maximum: 86400
+        max_retries:
+          type: integer
+          minimum: 0
+          maximum: 10
+
+    BatchJobDetail:
+      allOf:
+        - $ref: '#/components/schemas/BatchJob'
+        - type: object
+          properties:
+            logs:
+              type: array
+              items:
+                type: object
+                properties:
+                  level:
+                    type: string
+                    enum: [debug, info, warning, error]
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  context:
+                    type: object
+            checkpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  data:
+                    type: object
+                  created_at:
+                    type: string
+                    format: date-time
+            resource_usage:
+              type: object
+              properties:
+                cpu_usage:
+                  type: number
+                  format: float
+                memory_usage_mb:
+                  type: integer
+                disk_usage_mb:
+                  type: integer
+
+    BatchJobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchJob'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        summary:
+          type: object
+          properties:
+            total_jobs:
+              type: integer
+            status_counts:
+              type: object
+              additionalProperties:
+                type: integer
+            type_counts:
+              type: object
+              additionalProperties:
+                type: integer
+
+    BatchSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        job_type:
+          type: string
+          enum: [data_import, scoring, categorization, matching, email_generation]
+        cron_expression:
+          type: string
+          description: Cron形式のスケジュール表現
+        timezone:
+          type: string
+          default: "Asia/Tokyo"
+        is_active:
+          type: boolean
+        parameters:
+          type: object
+        last_run_at:
+          type: string
+          format: date-time
+        next_run_at:
+          type: string
+          format: date-time
+        success_count:
+          type: integer
+        failure_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BatchScheduleCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        job_type:
+          type: string
+          enum: [data_import, scoring, categorization, matching, email_generation]
+        cron_expression:
+          type: string
+        timezone:
+          type: string
+          default: "Asia/Tokyo"
+        is_active:
+          type: boolean
+          default: true
+        parameters:
+          type: object
+      required:
+        - name
+        - job_type
+        - cron_expression
+
+    BatchScheduleUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        cron_expression:
+          type: string
+        timezone:
+          type: string
+        is_active:
+          type: boolean
+        parameters:
+          type: object
+
+    BatchScheduleListResponse:
+      type: object
+      properties:
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchSchedule'
+        summary:
+          type: object
+          properties:
+            total_schedules:
+              type: integer
+            active_schedules:
+              type: integer
+            next_runs:
+              type: array
+              items:
+                type: object
+                properties:
+                  schedule_id:
+                    type: string
+                  name:
+                    type: string
+                  next_run_at:
+                    type: string
+                    format: date-time
+
+    # ===== モニタリング関連スキーマ =====
+    SystemHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        components:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [up, down, degraded]
+                response_time_ms:
+                  type: integer
+                connection_count:
+                  type: integer
+            external_apis:
+              type: object
+              properties:
+                openai:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      enum: [up, down, rate_limited]
+                    last_check:
+                      type: string
+                      format: date-time
+            batch_processing:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [running, idle, error]
+                active_jobs:
+                  type: integer
+                queue_length:
+                  type: integer
+        last_batch_info:
+          type: object
+          properties:
+            date:
+              type: string
+              format: date
+            status:
+              type: string
+              enum: [completed, failed, running]
+            processing_time_minutes:
+              type: number
+              format: float
+
+    DetailedSystemHealth:
+      allOf:
+        - $ref: '#/components/schemas/SystemHealth'
+        - type: object
+          properties:
+            system_metrics:
+              type: object
+              properties:
+                cpu_usage:
+                  type: number
+                  format: float
+                memory_usage:
+                  type: object
+                  properties:
+                    used_mb:
+                      type: integer
+                    total_mb:
+                      type: integer
+                    percentage:
+                      type: number
+                      format: float
+                disk_usage:
+                  type: object
+                  properties:
+                    used_gb:
+                      type: number
+                      format: float
+                    total_gb:
+                      type: number
+                      format: float
+                    percentage:
+                      type: number
+                      format: float
+            api_metrics:
+              type: object
+              properties:
+                requests_per_minute:
+                  type: number
+                  format: float
+                avg_response_time_ms:
+                  type: number
+                  format: float
+                error_rate:
+                  type: number
+                  format: float
+            database_metrics:
+              type: object
+              properties:
+                total_connections:
+                  type: integer
+                active_connections:
+                  type: integer
+                slow_queries:
+                  type: integer
+                locks:
+                  type: integer
+
+    SystemMetrics:
+      type: object
+      properties:
+        period:
+          type: string
+        granularity:
+          type: string
+        metrics:
+          type: object
+          properties:
+            api_requests:
+              type: object
+              properties:
+                total:
+                  type: integer
+                success_rate:
+                  type: number
+                  format: float
+                avg_response_time:
+                  type: number
+                  format: float
+                timeline:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                      value:
+                        type: number
+            job_processing:
+              type: object
+              properties:
+                total_jobs:
+                  type: integer
+                success_rate:
+                  type: number
+                  format: float
+                avg_processing_time:
+                  type: number
+                  format: float
+                timeline:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                      completed:
+                        type: integer
+                      failed:
+                        type: integer
+            user_engagement:
+              type: object
+              properties:
+                active_users:
+                  type: integer
+                email_open_rate:
+                  type: number
+                  format: float
+                email_click_rate:
+                  type: number
+                  format: float
+                avg_session_duration:
+                  type: number
+                  format: float
+            matching_accuracy:
+              type: object
+              properties:
+                avg_match_score:
+                  type: number
+                  format: float
+                click_through_rate:
+                  type: number
+                  format: float
+                conversion_rate:
+                  type: number
+                  format: float
+        generated_at:
+          type: string
+          format: date-time
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        status:
+          type: string
+          enum: [active, resolved, suppressed]
+        category:
+          type: string
+          enum: [system, api, database, batch, external]
+        source:
+          type: string
+          description: アラート発生源
+        metadata:
+          type: object
+          description: 追加情報
+        threshold_value:
+          type: number
+          format: float
+        current_value:
+          type: number
+          format: float
+        actions_taken:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        acknowledged_by:
+          type: string
+
+    AlertCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        category:
+          type: string
+          enum: [system, api, database, batch, external]
+        source:
+          type: string
+        metadata:
+          type: object
+        threshold_value:
+          type: number
+          format: float
+        current_value:
+          type: number
+          format: float
+      required:
+        - title
+        - severity
+        - category
+
+    AlertUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, resolved, suppressed]
+        actions_taken:
+          type: array
+          items:
+            type: string
+        acknowledged_by:
+          type: string
+
+    AlertListResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        summary:
+          type: object
+          properties:
+            total_alerts:
+              type: integer
+            active_alerts:
+              type: integer
+            critical_alerts:
+              type: integer
+            severity_counts:
+              type: object
+              additionalProperties:
+                type: integer
+
+    QueryResults:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              nullable:
+                type: boolean
+        rows:
+          type: array
+          items:
+            type: array
+        row_count:
+          type: integer
+        execution_time_ms:
+          type: integer
+        query_plan:
+          type: object
+          description: 実行計画（explainが有効な場合）
+        warnings:
+          type: array
+          items:
+            type: string
+
+    SystemLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              level:
+                type: string
+                enum: [debug, info, warning, error, critical]
+              component:
+                type: string
+              message:
+                type: string
+              context:
+                type: object
+              trace_id:
+                type: string
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        search_meta:
+          type: object
+          properties:
+            total_time_ms:
+              type: integer
+            keyword_matches:
+              type: integer
+
+    # ===== メール関連スキーマ =====
+    EmailContent:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        batch_date:
+          type: string
+          format: date
+        subject:
+          type: string
+        html_content:
+          type: string
+        text_content:
+          type: string
+        sections:
+          type: object
+          properties:
+            top5:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            regional:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            nearby:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            benefits:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+            new_arrivals:
+              type: array
+              items:
+                $ref: '#/components/schemas/JobRecommendation'
+        metadata:
+          type: object
+          properties:
+            template_id:
+              type: string
+            generation_time_ms:
+              type: integer
+            ai_subject_generated:
+              type: boolean
+        generated_at:
+          type: string
+          format: date-time
+
+    EmailGenerateRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        batch_date:
+          type: string
+          format: date
+          description: バッチ処理日（未指定時は最新）
+        template_id:
+          type: string
+          default: "default"
+        options:
+          type: object
+          properties:
+            generate_ai_subject:
+              type: boolean
+              default: true
+            include_personal_greeting:
+              type: boolean
+              default: true
+            max_jobs_per_section:
+              type: integer
+              minimum: 1
+              maximum: 20
+              default: 10
+      required:
+        - user_id
+
+    BatchEmailGenerateRequest:
+      type: object
+      properties:
+        batch_date:
+          type: string
+          format: date
+        user_ids:
+          type: array
+          items:
+            type: integer
+          description: 対象ユーザーID（空の場合は全員）
+        template_id:
+          type: string
+          default: "default"
+        parallel_workers:
+          type: integer
+          minimum: 1
+          maximum: 8
+          default: 4
+        options:
+          type: object
+          properties:
+            generate_ai_subject:
+              type: boolean
+              default: true
+            include_personal_greeting:
+              type: boolean
+              default: true
+            max_jobs_per_section:
+              type: integer
+              minimum: 1
+              maximum: 20
+              default: 10
+
+    BatchEmailResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        total_emails:
+          type: integer
+        generated_count:
+          type: integer
+        failed_count:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: integer
+              error:
+                type: string
+        processing_time_ms:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    EmailTemplateListResponse:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              description:
+                type: string
+              is_default:
+                type: boolean
+              sections:
+                type: array
+                items:
+                  type: string
+              created_at:
+                type: string
+                format: date-time
+              updated_at:
+                type: string
+                format: date-time
+
+    EmailDeliveryListResponse:
+      type: object
+      properties:
+        deliveries:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              user_id:
+                type: integer
+              email:
+                type: string
+              subject:
+                type: string
+              status:
+                type: string
+                enum: [pending, sent, delivered, bounced, failed]
+              batch_date:
+                type: string
+                format: date
+              sent_at:
+                type: string
+                format: date-time
+              delivered_at:
+                type: string
+                format: date-time
+              opened_at:
+                type: string
+                format: date-time
+              click_count:
+                type: integer
+              last_clicked_at:
+                type: string
+                format: date-time
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        summary:
+          type: object
+          properties:
+            total_deliveries:
+              type: integer
+            status_counts:
+              type: object
+              additionalProperties:
+                type: integer
+            open_rate:
+              type: number
+              format: float
+            click_rate:
+              type: number
+              format: float
+
+  responses:
+    BadRequest:
+      description: リクエストが無効です
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: 認証が必要です
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: アクセス権限がありません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: リソースが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: サーバー内部エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        APIキー認証
+        ヘッダーに `X-API-Key: your-api-key` を含めてください
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT認証
+        ヘッダーに `Authorization: Bearer <token>` を含めてください
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+# ===========================================
+# 追加情報・拡張仕様
+# ===========================================
+externalDocs:
+  description: Job Matching System Documentation
+  url: https://docs.job-matching.com
+
+x-tagGroups:
+  - name: Core APIs
+    tags:
+      - Jobs
+      - Users
+      - Matching
+  - name: Operations
+    tags:
+      - Batch
+      - Monitoring
+      - Email
+
+x-codeSamples:
+  - lang: curl
+    source: |
+      # 求人一覧取得
+      curl -X GET "https://api.job-matching.com/v2/jobs?page=1&limit=10" \
+        -H "X-API-Key: your-api-key"
+
+      # ユーザー推薦取得
+      curl -X GET "https://api.job-matching.com/v2/matching/users/123/recommendations" \
+        -H "X-API-Key: your-api-key"
+
+      # バッチジョブ作成
+      curl -X POST "https://api.job-matching.com/v2/batch/jobs" \
+        -H "X-API-Key: your-api-key" \
+        -H "Content-Type: application/json" \
+        -d '{"name": "Daily Matching", "job_type": "matching"}'
+
+  - lang: python
+    source: |
+      import requests
+
+      # APIクライアント設定
+      base_url = "https://api.job-matching.com/v2"
+      headers = {"X-API-Key": "your-api-key"}
+
+      # 求人検索
+      response = requests.get(f"{base_url}/jobs",
+                            params={"keyword": "アルバイト", "limit": 20},
+                            headers=headers)
+      jobs = response.json()
+
+      # ユーザー推薦取得
+      user_id = 123
+      response = requests.get(f"{base_url}/matching/users/{user_id}/recommendations",
+                            headers=headers)
+      recommendations = response.json()
+
+  - lang: javascript
+    source: |
+      // APIクライアント設定
+      const baseURL = 'https://api.job-matching.com/v2';
+      const apiKey = 'your-api-key';
+
+      // 求人検索
+      const searchJobs = async (keyword, limit = 20) => {
+        const response = await fetch(`${baseURL}/jobs?keyword=${keyword}&limit=${limit}`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        return response.json();
+      };
+
+      // ユーザー推薦取得
+      const getUserRecommendations = async (userId) => {
+        const response = await fetch(`${baseURL}/matching/users/${userId}/recommendations`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        return response.json();
+      };
