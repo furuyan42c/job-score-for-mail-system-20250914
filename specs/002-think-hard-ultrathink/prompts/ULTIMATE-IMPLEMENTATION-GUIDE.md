@@ -245,17 +245,37 @@ Task toolで並列実行：
 
 ---
 
-## 📅 Day 3: フロントエンド＆統合（8時間）
+## 📅 Day 3-4: 段階的実装フェーズ（16時間）
 
-### Phase 4: フロントエンド実装（エージェント並列）
+### Phase 実装: tasks.md準拠の段階的並列実行
 ```markdown
 =========================================
-Phase 4: フロントエンド構築
+📋 詳細な65タスクの実行手順
+参照: specs/002-think-hard-ultrathink/tasks.md
 =========================================
 
-Task toolで並列実行：
+【Day 3 AM: Group A - インフラ・初期設定（T001-T015）】
+並列実行可能タスク：
+- データベース設定: T001-T004
+- 契約テスト作成: T005-T013（TDD REDフェーズ）
+- UIコンポーネント: T014-T015
 
-【並列グループE - UI実装】
+【Day 3 PM - Day 4 AM: Group B - コア実装（T016-T045）】
+Group A完了後に実行：
+- モデル実装: T016-T020
+- サービス実装: T021-T033
+- API実装: T034-T039
+- フロントエンド: T040-T045
+
+【Day 4 PM: Group C - 統合・最適化（T046-T065）】
+Group B完了後に実行：
+- 統合テスト: T046-T049
+- E2Eテスト: T050-T052
+- 最適化: T053-T056
+- セキュリティ: T057-T061
+- デプロイ準備: T062-T065
+
+Task toolで並列グループ実行：
 1. frontend-architect + Magic MCP:
    frontend/app/monitoring/page.tsx
    - SQL実行画面（最優先）
@@ -384,18 +404,25 @@ MVP版 - 基本機能のみ高速実装
 スケール: 1000件×100人
 機能: 基礎スコアリングとSQL実行画面のみ
 
-# Step 2: 並列実装（6時間）
-Task toolで並列実行：
+# Step 2: 段階的並列実装（6時間）
+参照: specs/002-think-hard-ultrathink/tasks.md
+簡略版実装（tasks.mdから主要タスクを抜粋）：
 
-Group A: バックエンド
-- python-expert: FastAPI + 基礎スコアリング
-- backend-architect: 簡易バッチ処理
+Phase 1 - インフラ設定（2時間）
+並列実行可能:
+- T001-T002: Supabase基本スキーマ作成
+- T005, T008, T012: 主要契約テスト（バッチ、スコアリング、SQL）
+- T014: SqlEditorコンポーネント基本構造
 
-Group B: フロントエンド  
-- frontend-architect + Magic: SQL実行画面
+Phase 2 - コア実装（3時間）※Phase 1後
+- T016, T018: Job, Scoreモデル実装
+- T021: 基礎スコア計算のみ実装
+- T034-T035, T039: バッチ・スコアリング・SQL APIエンドポイント
+- T041: SQL実行画面
 
-Group C: データベース
-- backend-architect: Supabase基本テーブル
+Phase 3 - 統合（1時間）※Phase 2後
+- T046: 簡易統合テスト（データフロー確認）
+- T057: SQLインジェクション対策テスト
 
 # Step 3: 検証（1.5時間）
 /verify-and-pr 001-mvp --simple

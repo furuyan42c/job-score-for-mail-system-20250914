@@ -7,9 +7,10 @@
 ## Step 1: 手動準備（1時間）
 ```bash
 # 必須作業
-1. Supabase.comでプロジェクト作成
-2. API KEY取得（Supabase + OpenAI）
-3. 環境変数設定（.env作成）
+1. Supabase.comでプロジェクト作成　https://lgkajpiecvbedfzfjgan.supabase.co
+2. API KEY取得（Supabase）
+3. API KEY取得 （OpenAI）
+4. 環境変数設定（.env作成）
 ```
 
 ---
