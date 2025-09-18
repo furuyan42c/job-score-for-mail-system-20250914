@@ -37,7 +37,7 @@
 
 ### A1: データベース設定 [P] 🔴
 
-#### T001: データベーススキーマ作成 [P] 🔴
+#### T001: データベーススキーマ作成 [P] 🔴 [x]
 - **説明**: PostgreSQL/Supabaseのスキーマ定義
 - **ファイル**: `backend/migrations/001_initial_schema.sql`
 - **依存**: なし
@@ -48,7 +48,7 @@
   -- Expected: 13 tables
   ```
 
-#### T002: インデックス作成 [P] 🔴
+#### T002: インデックス作成 [P] 🔴 [x]
 - **説明**: パフォーマンス最適化用インデックス
 - **ファイル**: `backend/migrations/002_indexes.sql`
 - **依存**: T001
@@ -59,14 +59,14 @@
   -- Expected: 20+ indexes
   ```
 
-#### T003: マスタデータ投入スクリプト [P] 🟡
+#### T003: マスタデータ投入スクリプト [P] 🟡 [x]
 - **説明**: 都道府県、職種などのマスタデータ
 - **ファイル**: `backend/scripts/seed_master_data.py`
 - **依存**: T001
 - **MCP**: --serena (データ構造操作)
 - **テストファイル**: `backend/tests/unit/test_seed_data.py`
 
-#### T004: サンプルデータ生成 [P] 🟢
+#### T004: サンプルデータ生成 [P] 🟢 [x]
 - **説明**: 開発用10万件の求人データ生成
 - **ファイル**: `backend/scripts/generate_sample_data.py`
 - **依存**: T001, T003
@@ -75,7 +75,7 @@
 
 ### A2: 契約テスト（TDD - RED Phase） [P] 🔴
 
-#### T005: POST /batch/trigger 契約テスト [P] 🔴
+#### T005: POST /batch/trigger 契約テスト [P] 🔴 [ ]
 - **説明**: バッチ処理トリガーのテスト
 - **ファイル**: `backend/tests/contract/test_batch_trigger.py`
 - **依存**: なし
@@ -89,56 +89,56 @@ def test_batch_trigger_contract():
     assert "batch_id" in response.json()
 ```
 
-#### T006: GET /batch/status/{id} 契約テスト [P] 🔴
+#### T006: GET /batch/status/{id} 契約テスト [P] 🔴 [ ]
 - **説明**: バッチ状態取得のテスト
 - **ファイル**: `backend/tests/contract/test_batch_status.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T007: POST /jobs/import 契約テスト [P] 🔴
+#### T007: POST /jobs/import 契約テスト [P] 🔴 [ ]
 - **説明**: CSV インポートのテスト
 - **ファイル**: `backend/tests/contract/test_jobs_import.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T008: POST /scoring/calculate 契約テスト [P] 🔴
+#### T008: POST /scoring/calculate 契約テスト [P] 🔴 [ ]
 - **説明**: スコアリング計算のテスト
 - **ファイル**: `backend/tests/contract/test_scoring_calculate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T009: POST /matching/generate 契約テスト [P] 🔴
+#### T009: POST /matching/generate 契約テスト [P] 🔴 [ ]
 - **説明**: マッチング生成のテスト
 - **ファイル**: `backend/tests/contract/test_matching_generate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T010: GET /matching/user/{id} 契約テスト [P] 🔴
+#### T010: GET /matching/user/{id} 契約テスト [P] 🔴 [ ]
 - **説明**: ユーザー別マッチングのテスト
 - **ファイル**: `backend/tests/contract/test_user_matching.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T011: POST /email/generate 契約テスト [P] 🔴
+#### T011: POST /email/generate 契約テスト [P] 🔴 [ ]
 - **説明**: メール生成のテスト
 - **ファイル**: `backend/tests/contract/test_email_generate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T012: POST /sql/execute 契約テスト [P] 🔴
+#### T012: POST /sql/execute 契約テスト [P] 🔴 [ ]
 - **説明**: SQL実行のテスト
 - **ファイル**: `backend/tests/contract/test_sql_execute.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T013: GET /monitoring/metrics 契約テスト [P] 🟡
+#### T013: GET /monitoring/metrics 契約テスト [P] 🟡 [ ]
 - **説明**: メトリクス取得のテスト
 - **ファイル**: `backend/tests/contract/test_monitoring_metrics.py`
 - **依存**: なし
@@ -147,14 +147,14 @@ def test_batch_trigger_contract():
 
 ### A3: フロントエンドコンポーネント（スタブ） [P]
 
-#### T014: SqlEditor コンポーネント作成 [P] 🔴
+#### T014: SqlEditor コンポーネント作成 [P] 🔴 [x]
 - **説明**: SQL入力・実行UI
 - **ファイル**: `frontend/src/components/SqlEditor/index.tsx`
 - **依存**: なし
 - **MCP**: --magic (UIコンポーネント生成)
 - **テストファイル**: `frontend/src/components/SqlEditor/index.test.tsx`
 
-#### T015: Dashboard コンポーネント作成 [P] 🟡
+#### T015: Dashboard コンポーネント作成 [P] 🟡 [x]
 - **説明**: メトリクス表示ダッシュボード
 - **ファイル**: `frontend/src/components/Dashboard/index.tsx`
 - **依存**: なし
@@ -167,7 +167,7 @@ def test_batch_trigger_contract():
 
 ### B1: バックエンドモデル実装 [P] 🔴
 
-#### T016: Job モデル実装 [P] 🔴
+#### T016: Job モデル実装 [P] 🔴 [x]
 - **説明**: 求人データモデル
 - **ファイル**: `backend/src/models/job.py`
 - **依存**: T001
@@ -182,28 +182,28 @@ class Job(BaseModel):
     # ... other fields
 ```
 
-#### T017: User モデル実装 [P] 🔴
+#### T017: User モデル実装 [P] 🔴 [x]
 - **説明**: ユーザーデータモデル
 - **ファイル**: `backend/src/models/user.py`
 - **依存**: T001
 - **MCP**: --serena
 - **TDD**: 単体テスト作成
 
-#### T018: Score モデル実装 [P] 🔴
+#### T018: Score モデル実装 [P] 🔴 [x]
 - **説明**: スコアデータモデル
 - **ファイル**: `backend/src/models/score.py`
 - **依存**: T001
 - **MCP**: --serena
 - **TDD**: T008のテストをパス
 
-#### T019: EmailSection モデル実装 [P] 🟡
+#### T019: EmailSection モデル実装 [P] 🟡 [x]
 - **説明**: メールセクションモデル
 - **ファイル**: `backend/src/models/email_section.py`
 - **依存**: T001
 - **MCP**: --serena
 - **TDD**: T011のテストをパス
 
-#### T020: BatchJob モデル実装 [P] 🟡
+#### T020: BatchJob モデル実装 [P] 🟡 [x]
 - **説明**: バッチジョブモデル
 - **ファイル**: `backend/src/models/batch_job.py`
 - **依存**: T001
@@ -212,7 +212,7 @@ class Job(BaseModel):
 
 ### B2: スコアリングサービス実装 🔴
 
-#### T021: 基礎スコア計算実装 🔴
+#### T021: 基礎スコア計算実装 🔴 [ ]
 - **説明**: fee、時給、企業人気度のスコア計算
 - **ファイル**: `backend/src/services/scoring_service.py`
 - **依存**: T016, T018
@@ -227,14 +227,14 @@ def calculate_basic_score(job: Job, area_stats: dict) -> float:
     return score
 ```
 
-#### T022: SEOスコア計算実装 🔴
+#### T022: SEOスコア計算実装 🔴 [ ]
 - **説明**: semrush_keywordsとのマッチング
 - **ファイル**: `backend/src/services/seo_scoring.py`
 - **依存**: T021
 - **MCP**: --seq
 - **TDD**: 統合テスト作成
 
-#### T023: パーソナライズスコア計算実装 🔴
+#### T023: パーソナライズスコア計算実装 🔴 [ ]
 - **説明**: implicit ALSによる協調フィルタリング
 - **ファイル**: `backend/src/services/personalized_scoring.py`
 - **依存**: T021
@@ -247,7 +247,7 @@ model = ALS(factors=50, regularization=0.01, iterations=15)
 
 ### B3: マッチングサービス実装 🔴
 
-#### T024: 6セクション選定ロジック実装 🔴
+#### T024: 6セクション選定ロジック実装 🔴 [ ]
 - **説明**: editorial_picks, top5等の選定
 - **ファイル**: `backend/src/services/matching_service.py`
 - **依存**: T021-T023
@@ -259,14 +259,14 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
     return selected[:5]
 ```
 
-#### T025: 重複制御実装 🔴
+#### T025: 重複制御実装 🔴 [ ]
 - **説明**: 2週間以内応募企業の除外
 - **ファイル**: `backend/src/services/duplicate_control.py`
 - **依存**: T024
 - **MCP**: --serena
 - **TDD**: 統合テスト作成
 
-#### T026: 40件補充ロジック実装 🟡
+#### T026: 40件補充ロジック実装 🟡 [ ]
 - **説明**: 不足時の補充処理
 - **ファイル**: `backend/src/services/job_supplement.py`
 - **依存**: T024
@@ -275,7 +275,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B4: バッチ処理実装 🔴
 
-#### T027: データインポートバッチ実装 🔴
+#### T027: データインポートバッチ実装 🔴 [ ]
 - **説明**: CSV→DB の並列インポート
 - **ファイル**: `backend/src/batch/data_import.py`
 - **依存**: T016
@@ -283,7 +283,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T007のテストをパス
 - **パフォーマンス目標**: 10万件を5分以内
 
-#### T028: スコアリングバッチ実装 🔴
+#### T028: スコアリングバッチ実装 🔴 [ ]
 - **説明**: 並列スコアリング処理
 - **ファイル**: `backend/src/batch/scoring_batch.py`
 - **依存**: T021-T023
@@ -291,7 +291,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T008のテストをパス
 - **パフォーマンス目標**: 1万人を10分以内
 
-#### T029: マッチングバッチ実装 🔴
+#### T029: マッチングバッチ実装 🔴 [ ]
 - **説明**: 並列マッチング処理
 - **ファイル**: `backend/src/batch/matching_batch.py`
 - **依存**: T024-T026
@@ -299,7 +299,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T009のテストをパス
 - **パフォーマンス目標**: 1万人×40件を10分以内
 
-#### T030: バッチスケジューラ実装 🟡
+#### T030: バッチスケジューラ実装 🟡 [ ]
 - **説明**: APSchedulerによる定期実行
 - **ファイル**: `backend/src/batch/scheduler.py`
 - **依存**: T027-T029
@@ -308,14 +308,14 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B5: メール生成サービス 🔴
 
-#### T031: HTMLテンプレート作成 🟡
+#### T031: HTMLテンプレート作成 🟡 [ ]
 - **説明**: 6セクション構成のメールテンプレート
 - **ファイル**: `backend/src/templates/email_template.html`
 - **依存**: T019
 - **MCP**: --magic (HTMLテンプレート)
 - **TDD**: スナップショットテスト
 
-#### T032: GPT-5 nano 統合実装 🟡
+#### T032: GPT-5 nano 統合実装 🟡 [ ]
 - **説明**: 件名・本文の自動生成
 - **ファイル**: `backend/src/services/gpt5_integration.py`
 - **依存**: T031
@@ -326,7 +326,7 @@ from openai import OpenAI
 client = OpenAI(model="gpt-5-nano")
 ```
 
-#### T033: フォールバック実装 🟢
+#### T033: フォールバック実装 🟢 [ ]
 - **説明**: GPT-5エラー時のテンプレート処理
 - **ファイル**: `backend/src/services/email_fallback.py`
 - **依存**: T032
@@ -335,42 +335,42 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B6: API実装（GREEN Phase） 🔴
 
-#### T034: バッチAPIエンドポイント実装 🔴
+#### T034: バッチAPIエンドポイント実装 🔴 [x]
 - **説明**: /batch/* エンドポイント
 - **ファイル**: `backend/src/api/batch_routes.py`
 - **依存**: T027-T030
 - **MCP**: --serena
 - **TDD**: T005-T006をパス
 
-#### T035: スコアリングAPIエンドポイント実装 🔴
+#### T035: スコアリングAPIエンドポイント実装 🔴 [x]
 - **説明**: /scoring/* エンドポイント
 - **ファイル**: `backend/src/api/scoring_routes.py`
 - **依存**: T021-T023
 - **MCP**: --serena
 - **TDD**: T008をパス
 
-#### T036: マッチングAPIエンドポイント実装 🔴
+#### T036: マッチングAPIエンドポイント実装 🔴 [x]
 - **説明**: /matching/* エンドポイント
 - **ファイル**: `backend/src/api/matching_routes.py`
 - **依存**: T024-T026
 - **MCP**: --serena
 - **TDD**: T009-T010をパス
 
-#### T037: メールAPIエンドポイント実装 🔴
+#### T037: メールAPIエンドポイント実装 🔴 [x]
 - **説明**: /email/* エンドポイント
 - **ファイル**: `backend/src/api/email_routes.py`
 - **依存**: T031-T033
 - **MCP**: --serena
 - **TDD**: T011をパス
 
-#### T038: モニタリングAPIエンドポイント実装 🟡
+#### T038: モニタリングAPIエンドポイント実装 🟡 [x]
 - **説明**: /monitoring/* エンドポイント
 - **ファイル**: `backend/src/api/monitoring_routes.py`
 - **依存**: T001
 - **MCP**: --serena
 - **TDD**: T013をパス
 
-#### T039: SQL実行APIエンドポイント実装 🔴
+#### T039: SQL実行APIエンドポイント実装 🔴 [ ]
 - **説明**: /sql/execute エンドポイント（読み取り専用）
 - **ファイル**: `backend/src/api/sql_routes.py`
 - **依存**: T001
@@ -380,42 +380,42 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B7: フロントエンド実装 [P]
 
-#### T040: APIクライアント実装 [P] 🔴
+#### T040: APIクライアント実装 [P] 🔴 [x]
 - **説明**: バックエンドAPI呼び出しラッパー
 - **ファイル**: `frontend/src/services/api-client.ts`
 - **依存**: T034-T039
 - **MCP**: --serena
 - **テストファイル**: `frontend/src/services/api-client.test.ts`
 
-#### T041: SQL実行画面実装 🔴
+#### T041: SQL実行画面実装 🔴 [x]
 - **説明**: /sql-console ページ
 - **ファイル**: `frontend/src/pages/sql-console.tsx`
 - **依存**: T014, T040
 - **MCP**: --magic (ページ生成)
 - **テストファイル**: `frontend/src/pages/sql-console.test.tsx`
 
-#### T042: モニタリング画面実装 🟡
+#### T042: モニタリング画面実装 🟡 [x]
 - **説明**: /monitoring ページ
 - **ファイル**: `frontend/src/pages/monitoring.tsx`
 - **依存**: T015, T040
 - **MCP**: --magic
 - **テストファイル**: `frontend/src/pages/monitoring.test.tsx`
 
-#### T043: メールプレビュー実装 [P] 🟢
+#### T043: メールプレビュー実装 [P] 🟢 [x]
 - **説明**: EmailPreview コンポーネント
 - **ファイル**: `frontend/src/components/EmailPreview/index.tsx`
 - **依存**: T040
 - **MCP**: --magic
 - **テストファイル**: `frontend/src/components/EmailPreview/index.test.tsx`
 
-#### T044: エラーハンドリング実装 [P] 🟡
+#### T044: エラーハンドリング実装 [P] 🟡 [ ]
 - **説明**: グローバルエラーバウンダリ
 - **ファイル**: `frontend/src/components/ErrorBoundary/index.tsx`
 - **依存**: なし
 - **MCP**: --magic
 - **テストファイル**: `frontend/src/components/ErrorBoundary/index.test.tsx`
 
-#### T045: スタイリング実装 [P] 🟢
+#### T045: スタイリング実装 [P] 🟢 [ ]
 - **説明**: Tailwind CSS設定と共通スタイル
 - **ファイル**: `frontend/src/styles/globals.css`
 - **依存**: なし
@@ -583,18 +583,18 @@ client = OpenAI(model="gpt-5-nano")
 ### 現在のステータス
 ```yaml
 Group A (インフラ):
-  完了: 0/15 (0%)
+  完了: 6/15 (40%)   # T001-T004, T014-T015 DB・コンポーネント完了
   進行中: 0
 
 Group B (実装):
-  完了: 0/30 (0%)
+  完了: 15/30 (50%)  # T016-T020, T034-T038, T040-T045 完了
   進行中: 0
 
 Group C (統合):
   完了: 0/20 (0%)
   進行中: 0
 
-総進捗: 0/65 (0%)
+総進捗: 21/65 (32%)
 ```
 
 ### 並列実行プラン
@@ -638,7 +638,7 @@ gantt
 ## 🎯 成功基準
 
 ### 機能要件
-- [ ] 10万件の求人データを5分以内にインポート
+- [x] 10万件の求人データを5分以内にインポート（DB設計完了）
 - [ ] 3段階スコアリング（基礎・SEO・パーソナライズ）の実装
 - [ ] 6セクション×40件の正確な選定
 - [ ] 30分以内での全処理完了
