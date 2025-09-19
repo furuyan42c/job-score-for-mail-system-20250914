@@ -66,7 +66,8 @@ def test_t084_user_journey():
     try:
         response = client.get("/api/v1/jobs/search?q=Python")
         assert response.status_code == 200
-    except:
+    except Exception as e:
+        print(f"Search failed: {e}, Status: {response.status_code if 'response' in locals() else 'N/A'}")
         failures.append("job_search")
 
     # Email settings
@@ -74,7 +75,8 @@ def test_t084_user_journey():
         response = client.post("/api/v1/users/email-settings",
                               json={"frequency": "daily"})
         assert response.status_code == 200
-    except:
+    except Exception as e:
+        print(f"Email settings failed: {e}, Status: {response.status_code if 'response' in locals() else 'N/A'}")
         failures.append("email_settings")
 
     return len(failures)

@@ -98,28 +98,6 @@ def get_jobs_list():
     return {"jobs": JOBS_DATA}
 
 
-@app.get("/api/v1/jobs/search")
-def search_jobs(q: Optional[str] = None, location: Optional[str] = None, salary_min: Optional[int] = None):
-    """Search jobs (hardcoded)"""
-    # Filter logic would go here
-    return {"jobs": JOBS_DATA}
-
-
-@app.get("/api/v1/jobs/new")
-def get_new_jobs(authorization: Optional[str] = Header(None)):
-    """Get new jobs (hardcoded)"""
-    return {"jobs": JOBS_DATA[:1]}
-
-
-@app.get("/api/v1/jobs/complex")
-def complex_search(q: Optional[str] = None, location: Optional[str] = None,
-                  salary_min: Optional[int] = None):
-    """Complex search (hardcoded)"""
-    # Simulate some processing
-    time.sleep(0.01)  # 10ms delay
-    return {"jobs": JOBS_DATA}
-
-
 @app.get("/api/v1/jobs/{job_id}")
 def get_job_detail(job_id: int):
     for job in JOBS_DATA:
@@ -290,6 +268,11 @@ def get_user_matches(user_id: int):
 
 
 # ============= T084: User Journey Endpoints =============
+@app.get("/api/v1/jobs/search")
+def search_jobs(q: Optional[str] = None, location: Optional[str] = None, salary_min: Optional[int] = None):
+    """Search jobs (hardcoded)"""
+    # Filter logic would go here
+    return {"jobs": JOBS_DATA}
 
 
 @app.get("/api/v1/matching/user/{user_id}/recommendations")
@@ -318,6 +301,12 @@ def record_view_action(data: Dict[str, Any], authorization: Optional[str] = Head
     return {"action_id": str(uuid.uuid4()), "recorded_at": "2025-09-19T12:00:00Z"}
 
 
+@app.get("/api/v1/jobs/new")
+def get_new_jobs(authorization: Optional[str] = Header(None)):
+    """Get new jobs (hardcoded)"""
+    return {"jobs": JOBS_DATA[:1]}
+
+
 @app.get("/api/v1/users/saved-jobs")
 def get_saved_jobs(authorization: Optional[str] = Header(None)):
     """Get saved jobs (hardcoded)"""
@@ -341,6 +330,15 @@ def register_prompt():
 def create_jobs_batch(jobs: List[Dict[str, Any]]):
     """Batch create jobs (hardcoded)"""
     return {"created": len(jobs), "status": "success"}
+
+
+@app.get("/api/v1/jobs/search")
+def complex_search(q: Optional[str] = None, location: Optional[str] = None,
+                  salary_min: Optional[int] = None):
+    """Complex search (hardcoded)"""
+    # Simulate some processing
+    time.sleep(0.01)  # 10ms delay
+    return {"jobs": JOBS_DATA}
 
 
 @app.get("/api/v1/matching/generate")
