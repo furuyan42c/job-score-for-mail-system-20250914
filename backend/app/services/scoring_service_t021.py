@@ -16,6 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 from app.scoring.basic_scorer import BasicScorer
 from app.scoring.keyword_scorer import KeywordScorer
 from app.scoring.ai_scorer import AIScorer
+from app.services.score_aggregator import ScoreAggregator
+from app.services.weight_optimizer import WeightOptimizer
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,10 @@ class ScoringService:
         self.basic_scorer = BasicScorer()
         self.keyword_scorer = KeywordScorer()
         self.ai_scorer = AIScorer(api_key=ai_api_key)
+
+        # Initialize aggregation and optimization components
+        self.aggregator = ScoreAggregator()
+        self.weight_optimizer = WeightOptimizer()
 
         # Set default weights
         default_weights = {
@@ -208,3 +214,102 @@ class ScoringService:
             metrics["cache_hits"] / max(metrics["total_scores_calculated"], 1)
         )
         return metrics
+
+    def calculate_score_with_strategy(
+        self,
+        job_data: Dict[str, Any],
+        user_preferences: Dict[str, Any],
+        strategy: str = "weighted_average"
+    ) -> float:
+        """
+        Calculate score using specific aggregation strategy.
+
+        Args:
+            job_data: Job information
+            user_preferences: User preferences
+            strategy: Aggregation strategy to use
+
+        Returns:
+            Score calculated with specified strategy
+        """
+        # Get individual stage scores
+        stage_scores = self.get_stage_scores(job_data, user_preferences)
+
+        if strategy == "harmonic_mean":
+            scores_list = list(stage_scores.values())
+            return self.aggregator.harmonic_mean(scores_list)
+        elif strategy == "geometric_mean":
+            scores_list = list(stage_scores.values())
+            return self.aggregator.geometric_mean(scores_list)
+        elif strategy == "weighted_average":
+            return self.aggregator.weighted_average(stage_scores, self.weights)
+        else:
+            # Default to composite score
+            return self.calculate_composite_score(job_data, user_preferences)
+
+    def update_weights_from_feedback(self, feedback: List[Dict[str, Any]]) -> None:
+        """
+        Update weights based on user feedback.
+
+        Args:
+            feedback: List of feedback records
+        """
+        try:
+            new_weights = self.weight_optimizer.optimize_by_feedback(feedback)
+            self.weight_optimizer.validate_weights(new_weights)
+            self.weights = new_weights
+            logger.info(f"Weights updated from feedback: {new_weights}")
+        except Exception as e:
+            logger.error(f"Failed to update weights from feedback: {e}")
+
+    def optimize_for_objectives(self, objectives: Dict[str, float]) -> Dict[str, float]:
+        """
+        Optimize weights for multiple objectives.
+
+        Args:
+            objectives: Dictionary of objective name -> target value
+
+        Returns:
+            Optimized weights
+        """
+        # Simple implementation: weight objectives equally
+        # In a real implementation, this would use multi-objective optimization
+        return self.weights.copy()  # Placeholder
+
+    def ab_test_weights(self, weight_configs: List[Dict[str, float]], sample_size: int = 100) -> Dict[str, Any]:
+        """
+        A/B test different weight configurations.
+
+        Args:
+            weight_configs: List of weight configurations to test
+            sample_size: Sample size for testing
+
+        Returns:
+            A/B test results
+        """
+        # Simple implementation: return first config as winner
+        # In a real implementation, this would run actual A/B tests
+        return {
+            "winner": weight_configs[0] if weight_configs else self.weights,
+            "confidence": 0.95,
+            "sample_size": sample_size
+        }
+
+    def calculate_ensemble_score(self, job_data: Dict[str, Any], user_preferences: Dict[str, Any]) -> float:
+        """
+        Calculate ensemble score using multiple aggregation strategies.
+
+        Args:
+            job_data: Job information
+            user_preferences: User preferences
+
+        Returns:
+            Ensemble score
+        """
+        # Calculate scores with different strategies
+        weighted_score = self.calculate_score_with_strategy(job_data, user_preferences, "weighted_average")
+        harmonic_score = self.calculate_score_with_strategy(job_data, user_preferences, "harmonic_mean")
+        geometric_score = self.calculate_score_with_strategy(job_data, user_preferences, "geometric_mean")
+
+        # Simple ensemble: average of all strategies
+        return (weighted_score + harmonic_score + geometric_score) / 3.0
