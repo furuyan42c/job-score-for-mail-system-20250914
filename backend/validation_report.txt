@@ -1,0 +1,54 @@
+============================================================
+DATA INTEGRITY VALIDATION REPORT
+============================================================
+Timestamp: 2025-09-20 00:49:23
+
+SUMMARY
+----------------------------------------
+✅ Passed: 24
+⚠️  Warnings: 5
+❌ Failed: 2
+
+PASSED VALIDATIONS
+----------------------------------------
+✅ Table 'jobs' exists
+✅ Table 'seo_keywords' exists
+✅ Table 'jobs_fts' exists
+✅ Table 'seo_keywords_fts' exists
+✅ Jobs table has 4654 records
+✅ SEO keywords table has 1000 records
+✅ Field 'jobs.job_id' is 100% complete
+✅ Field 'seo_keywords.keyword' is 100% complete
+✅ Field 'seo_keywords.search_volume' is 100% complete
+✅ All age ranges are valid (min <= max)
+✅ No duplicate job IDs found
+✅ No duplicate keywords found
+✅ Index 'idx_jobs_job_id' exists
+✅ Index 'idx_jobs_company_name' exists
+✅ Index 'idx_jobs_pref_cd' exists
+✅ Index 'idx_jobs_city_cd' exists
+✅ Index 'idx_jobs_occupation_cd1' exists
+✅ Index 'idx_jobs_employment_type_cd' exists
+✅ Index 'idx_jobs_salary' exists
+✅ Index 'idx_jobs_age' exists
+✅ Index 'idx_seo_keywords_keyword' exists
+✅ Jobs distributed across 47 prefectures
+✅ Jobs have 9 employment types
+✅ Salary range is reasonable: ¥0 - ¥2,000,000
+
+WARNINGS
+----------------------------------------
+⚠️  Field 'jobs.company_name' has 2 null values (0.0% incomplete)
+⚠️  Field 'jobs.pref_cd' has 2 null values (0.0% incomplete)
+⚠️  Field 'jobs.employment_type_cd' has 79 null values (1.7% incomplete)
+⚠️  Job FTS search returned no results
+⚠️  SEO keyword FTS search returned no results
+
+FAILED VALIDATIONS
+----------------------------------------
+❌ Field 'jobs.job_contents' has 733 null values (15.7% incomplete)
+❌ 14 jobs have invalid salary ranges (min > max)
+
+OVERALL RESULT
+----------------------------------------
+❌ VALIDATIONS FAILED - Data integrity issues need attention
