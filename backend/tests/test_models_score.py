@@ -18,8 +18,7 @@ from sqlalchemy import select
 from app.models.score import Score, ScoreType
 from app.models.job import Job
 from app.models.user import User
-from app.models.base import Base
-from app.core.database import get_db
+from app.core.database import Base, get_db
 
 
 class TestScoreModel:

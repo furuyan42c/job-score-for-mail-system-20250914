@@ -17,8 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.job import Job
-from app.models.base import Base
-from app.core.database import get_db
+from app.core.database import Base, get_db
 
 
 class TestJobModel:

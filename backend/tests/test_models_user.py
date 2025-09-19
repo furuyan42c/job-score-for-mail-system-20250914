@@ -16,9 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.user import User
-from app.models.base import Base
-from app.core.database import get_db
-from app.core.security import get_password_hash, verify_password
+from app.core.database import Base, get_db
+from app.core.security import hash_password as get_password_hash, verify_password
 
 
 class TestUserModel:
