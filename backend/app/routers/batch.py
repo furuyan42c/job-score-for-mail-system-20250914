@@ -31,20 +31,44 @@ async def trigger_batch(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    T005: バッチトリガー（TDD最小実装）
+    T005: バッチトリガー（TDD REFACTOR実装）
 
-    契約テストをパスするための最小限の実装。
-    後でリファクタリングで実際のロジックを追加。
+    実際のビジネスロジックでバッチジョブを作成・開始
     """
-    # ハードコーディングで最小応答を返す（GREEN Phase）
+    import uuid
     from datetime import datetime
 
-    return {
-        "batch_id": 1,  # ハードコード
-        "job_type": batch_type,
-        "started_at": datetime.now().isoformat(),
-        "status": "pending"
-    }
+    try:
+        # 入力バリデーション
+        valid_batch_types = ["daily_matching", "email_generation", "data_import", "scoring"]
+        if batch_type not in valid_batch_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid batch_type. Must be one of: {valid_batch_types}"
+            )
+
+        # バッチサービス経由で実際のジョブ作成
+        batch_service = BatchService(db)
+        batch_job = await batch_service.create_and_start_batch(
+            batch_type=batch_type,
+            initiated_by="system",  # TODO: 実際のユーザーIDに置換
+            priority="normal"
+        )
+
+        return {
+            "batch_id": batch_job.batch_id,
+            "job_type": batch_job.job_type,
+            "started_at": batch_job.started_at.isoformat() if batch_job.started_at else datetime.now().isoformat(),
+            "status": batch_job.status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger batch: {str(e)}"
+        )
 
 
 @router.get("/status/{batch_id}")
@@ -53,15 +77,38 @@ async def get_batch_status(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    T006: バッチステータス取得（TDD最小実装）
+    T006: バッチステータス取得（TDD REFACTOR実装）
+
+    実際のデータベースからバッチステータスを取得
     """
-    # ハードコーディングで最小応答を返す
-    return {
-        "batch_id": batch_id,
-        "status": "running",
-        "progress": 50,
-        "job_type": "daily_matching"
-    }
+    try:
+        # バッチサービス経由で実際のステータス取得
+        batch_service = BatchService(db)
+        batch_job = await batch_service.get_batch_status(batch_id)
+
+        if not batch_job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Batch job with ID {batch_id} not found"
+            )
+
+        return {
+            "batch_id": batch_job.batch_id,
+            "status": batch_job.status,
+            "progress": batch_job.progress_percentage or 0,
+            "job_type": batch_job.job_type,
+            "started_at": batch_job.started_at.isoformat() if batch_job.started_at else None,
+            "completed_at": batch_job.completed_at.isoformat() if batch_job.completed_at else None,
+            "error_message": batch_job.error_message
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get batch status: {str(e)}"
+        )
 
 
 # ============================================================================
