@@ -1,0 +1,112 @@
+-- =====================================================================================
+-- T068: Supabase Row Level Security (RLS) Policies
+-- =====================================================================================
+--
+-- This migration creates comprehensive RLS policies for the job matching system
+-- ensuring proper data isolation and access control for multi-tenant usage.
+--
+-- Created: 2024-09-19
+-- Target: Supabase PostgreSQL with RLS support
+-- Status: TDD RED Phase - Policies will be created by SupabaseRLSManager
+-- =====================================================================================
+
+-- Enable RLS on all user-related tables
+-- This will be handled by the SupabaseRLSManager in the application code
+
+-- User Data Isolation Policies
+-- ========================================================================================
+-- Policy Name: user_data_isolation
+-- Purpose: Ensure users can only access their own data
+-- Tables: users, user_profiles, user_actions, user_preferences
+--
+-- Template:
+-- CREATE POLICY user_data_isolation ON {table_name}
+--   FOR ALL USING (auth.uid() = user_id);
+
+-- Job Access Control Policies
+-- ========================================================================================
+-- Policy Name: job_access_control
+-- Purpose: Control access to job data based on user permissions and job status
+-- Tables: jobs, job_applications, job_views, job_favorites
+--
+-- Template:
+-- CREATE POLICY job_access_control ON {table_name}
+--   FOR ALL USING (
+--     -- Public jobs are visible to all authenticated users
+--     (status = 'public' AND auth.uid() IS NOT NULL)
+--     OR
+--     -- Private jobs only visible to owner or admin
+--     (user_id = auth.uid())
+--     OR
+--     -- Admin users can access all jobs
+--     (auth.jwt() ->> 'role' = 'admin')
+--   );
+
+-- Matching Data Security Policies
+-- ========================================================================================
+-- Policy Name: matching_data_security
+-- Purpose: Secure matching algorithm data and recommendations
+-- Tables: matching, recommendations, scores, email_sections
+--
+-- Template:
+-- CREATE POLICY matching_data_security ON {table_name}
+--   FOR ALL USING (
+--     -- Users can only see their own matching data
+--     (user_id = auth.uid())
+--     OR
+--     -- System can access for batch processing (service role)
+--     (auth.jwt() ->> 'role' = 'service_role')
+--     OR
+--     -- Admin users can access all matching data
+--     (auth.jwt() ->> 'role' = 'admin')
+--   );
+
+-- Admin Access Policies
+-- ========================================================================================
+-- Policy Name: admin_full_access
+-- Purpose: Grant full access to admin users for management operations
+-- Tables: All tables when needed
+--
+-- Template:
+-- CREATE POLICY admin_full_access ON {table_name}
+--   FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+
+-- Company Data Access Policies
+-- ========================================================================================
+-- Policy Name: company_data_access
+-- Purpose: Company users can only access their company's data
+-- Tables: companies, company_jobs, company_stats
+--
+-- Template:
+-- CREATE POLICY company_data_access ON {table_name}
+--   FOR ALL USING (
+--     (company_id = (auth.jwt() ->> 'company_id')::uuid)
+--     OR
+--     (auth.jwt() ->> 'role' = 'admin')
+--   );
+
+-- Audit and Logging Policies
+-- ========================================================================================
+-- Policy Name: audit_log_access
+-- Purpose: Restrict access to audit logs
+-- Tables: audit_logs, system_logs, error_logs
+--
+-- Template:
+-- CREATE POLICY audit_log_access ON {table_name}
+--   FOR SELECT USING (
+--     -- Only admin and system can read audit logs
+--     (auth.jwt() ->> 'role' IN ('admin', 'service_role'))
+--   );
+
+-- =====================================================================================
+-- Notes:
+-- - All policies will be created and managed by SupabaseRLSManager
+-- - Policies are designed to work with Supabase Auth JWT tokens
+-- - Service role bypass is included for system operations
+-- - Admin role has full access for management operations
+-- - Company isolation is maintained for multi-tenant usage
+-- =====================================================================================
+
+-- This file serves as documentation for the RLS strategy
+-- Actual policy creation will be handled by the application code
+SELECT 'RLS policy templates documented - implementation via SupabaseRLSManager' as status;
