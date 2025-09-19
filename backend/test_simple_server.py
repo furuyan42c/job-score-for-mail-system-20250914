@@ -471,7 +471,160 @@ def calculate_batch_scores_v2(data: Dict[str, Any]):
     return {"scores": scores}
 
 
+# ============= T091: SEO Score Calculation =============
+@app.post("/api/v1/scoring/calculate/seo")
+def calculate_seo_score(data: Dict[str, Any]):
+    """Calculate SEO score (hardcoded)"""
+    # Simple SEO scoring logic
+    keyword_matches = []
+    for kw in data.get("seo_keywords", []):
+        if kw["keyword"].split()[0] in data.get("job_data", {}).get("title", ""):
+            keyword_matches.append({
+                "keyword": kw["keyword"],
+                "matched": True,
+                "volume": kw["volume"]
+            })
+
+    seo_score = 75 if keyword_matches else 50
+    search_volume_score = 80
+    competition_score = 60
+
+    return {
+        "seo_score": seo_score,
+        "keyword_matches": keyword_matches,
+        "search_volume_score": search_volume_score,
+        "competition_score": competition_score
+    }
+
+
+# ============= T092: User-Job Matching =============
+@app.post("/api/v1/matching/generate/comprehensive")
+def generate_comprehensive_matching(data: Dict[str, Any]):
+    """Generate comprehensive user-job matches (hardcoded)"""
+    user_ids = data.get("user_ids", [])
+    job_ids = data.get("job_ids", [])
+
+    matches = []
+    for user_id in user_ids:
+        for job_id in job_ids:
+            matches.append({
+                "user_id": user_id,
+                "job_id": job_id,
+                "total_score": 85 - (user_id + job_id) % 15,  # Varied scores
+                "location_score": 90,
+                "salary_score": 80,
+                "skill_score": 75,
+                "seo_score": 70
+            })
+
+    return {"matches": matches}
+
+
+@app.get("/api/v1/matching/user/{user_id}/top")
+def get_top_matches(user_id: int, limit: int = 5):
+    """Get top matches for a user (hardcoded)"""
+    matches = [
+        {"job_id": 1, "total_score": 90, "title": "Job 1"},
+        {"job_id": 2, "total_score": 85, "title": "Job 2"},
+        {"job_id": 3, "total_score": 80, "title": "Job 3"},
+    ][:limit]
+    return {"matches": matches}
+
+
+# ============= T093: Email Generation =============
+@app.post("/api/v1/email/generate")
+def generate_email(data: Dict[str, Any]):
+    """Generate email content (hardcoded)"""
+    user_name = data.get("user_data", {}).get("name", "ユーザー")
+    recommendations = data.get("job_recommendations", [])
+
+    body_text = f"""こんにちは、{user_name}様
+
+あなたにぴったりの求人が見つかりました！
+
+おすすめ求人:
+"""
+    for job in recommendations[:3]:
+        body_text += f"- {job['title']} ({job['company']}) - マッチ度: {job['match_score']}%\n"
+
+    body_html = f"""<html><body>
+<h2>こんにちは、{user_name}様</h2>
+<p>あなたにぴったりの求人が見つかりました！</p>
+<ul>
+{''.join([f"<li>{job['title']} - {job['company']}</li>" for job in recommendations[:3]])}
+</ul>
+</body></html>"""
+
+    return {
+        "email": {
+            "subject": f"{user_name}様へのおすすめ求人情報",
+            "body_text": body_text,
+            "body_html": body_html
+        }
+    }
+
+
+# ============= T094: Distribution List Generation =============
+@app.post("/api/v1/distribution/generate-list")
+def generate_distribution_list(data: Dict[str, Any]):
+    """Generate distribution list (hardcoded)"""
+    max_recipients = data.get("filters", {}).get("max_recipients", 100)
+
+    distribution_list = []
+    for i in range(min(10, max_recipients)):  # Generate up to 10 recipients
+        distribution_list.append({
+            "user_id": i + 1,
+            "email": f"user{i+1}@example.com",
+            "job_recommendations": [
+                {"job_id": j+1, "score": 85 - j*5}
+                for j in range(3)
+            ]
+        })
+
+    return {
+        "distribution_list": distribution_list,
+        "total_recipients": len(distribution_list)
+    }
+
+
+# ============= T095: Batch Distribution Simulation =============
+DISTRIBUTION_STATUS = {}
+
+
+@app.post("/api/v1/distribution/simulate")
+def simulate_batch_distribution(data: Dict[str, Any]):
+    """Simulate batch email distribution (hardcoded)"""
+    list_id = data.get("distribution_list_id", "default")
+    send_rate = data.get("send_rate", 10)
+    total_recipients = data.get("total_recipients", 100)
+
+    estimated_time = total_recipients / send_rate
+
+    DISTRIBUTION_STATUS[list_id] = "in_progress"
+
+    return {
+        "simulation_results": {
+            "estimated_time_seconds": estimated_time,
+            "success_count": total_recipients - 2,  # Simulate some failures
+            "failure_count": 2,
+            "queue_status": "active",
+            "send_rate": send_rate
+        }
+    }
+
+
+@app.get("/api/v1/distribution/status/{list_id}")
+def get_distribution_status(list_id: str):
+    """Get distribution status (hardcoded)"""
+    status = DISTRIBUTION_STATUS.get(list_id, "pending")
+    return {
+        "status": status,
+        "list_id": list_id,
+        "progress": 75 if status == "in_progress" else 100
+    }
+
+
 if __name__ == "__main__":
     print("🚀 Starting extended test server on http://localhost:8000")
-    print("📋 GREEN Phase implementation for T081-T090")
+    print("📋 GREEN Phase implementation for T081-T095")
     uvicorn.run(app, host="0.0.0.0", port=8000)
