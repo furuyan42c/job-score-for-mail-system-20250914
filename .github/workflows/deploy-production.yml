@@ -1,13 +1,30 @@
-# T072: Production Deployment CI/CD Pipeline
 name: Deploy to Production
 
 on:
-  push:
-    branches: [main, master]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+      skip_tests:
+        description: 'Skip pre-deployment tests'
+        required: false
+        default: false
+        type: boolean
+      maintenance_mode:
+        description: 'Enable maintenance mode during deployment'
+        required: false
+        default: true
+        type: boolean
 
 env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   # ========================================

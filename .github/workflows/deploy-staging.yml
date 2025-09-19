@@ -1,0 +1,135 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  KUBECONFIG_FILE: '${{ secrets.KUBECONFIG_STAGING }}'
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 --decode > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Set image tags
+        id: image-tags
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "backend_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "frontend_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "backend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "frontend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace mail-score-staging --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy to staging
+        run: |
+          cd k8s/overlays/staging
+
+          # Update image tags
+          kustomize edit set image \
+            mail-score-backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.image-tags.outputs.backend_tag }} \
+            mail-score-frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.image-tags.outputs.frontend_tag }}
+
+          # Apply manifests
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for deployment rollout
+        run: |
+          kubectl rollout status deployment/mail-score-backend -n mail-score-staging --timeout=600s
+          kubectl rollout status deployment/mail-score-frontend -n mail-score-staging --timeout=600s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n mail-score-staging
+          kubectl get services -n mail-score-staging
+          kubectl get ingress -n mail-score-staging
+
+      - name: Run smoke tests
+        run: |
+          # Wait for services to be ready
+          sleep 30
+
+          # Get the staging URL
+          STAGING_URL=$(kubectl get ingress mail-score-ingress -n mail-score-staging -o jsonpath='{.spec.rules[0].host}')
+
+          # Basic health checks
+          curl -f "https://${STAGING_URL}/api/health" || exit 1
+          curl -f "https://${STAGING_URL}/" || exit 1
+
+          echo "Staging deployment successful! Available at: https://${STAGING_URL}"
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  rollback-staging:
+    name: Rollback Staging (Manual)
+    runs-on: ubuntu-latest
+    environment: staging
+    if: failure()
+
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 --decode > ~/.kube/config
+
+      - name: Rollback to previous version
+        run: |
+          kubectl rollout undo deployment/mail-score-backend -n mail-score-staging
+          kubectl rollout undo deployment/mail-score-frontend -n mail-score-staging
+
+          kubectl rollout status deployment/mail-score-backend -n mail-score-staging --timeout=300s
+          kubectl rollout status deployment/mail-score-frontend -n mail-score-staging --timeout=300s
+
+      - name: Verify rollback
+        run: |
+          kubectl get pods -n mail-score-staging
+          echo "Rollback completed successfully"

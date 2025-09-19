@@ -29,7 +29,7 @@ from app.dependencies import (
 )
 from app.utils.error_tracker import init_error_tracking, error_tracker, ErrorCategory, ErrorSeverity
 from app.utils.openapi import custom_openapi
-from app.routers import jobs, users, matching, analytics, batch, scores, actions, health, tdd_endpoints, sql_routes, auth, rate_limit_admin
+from app.routers import jobs, users, matching, analytics, batch, scores, actions, health, tdd_endpoints, sql_routes, auth, rate_limit_admin, performance
 
 
 # ログ設定
@@ -66,6 +66,23 @@ async def lifespan(app: FastAPI):
         pool_stats = ConnectionPoolStats.get_pool_stats()
         logger.info(f"Database pool initialized: {pool_stats}")
 
+        # T053-T055: 最適化コンポーネントの初期化
+        try:
+            from app.optimizations.parallel_processor import default_processor
+            from app.services.cache_service import default_cache_manager
+
+            # 並列プロセッサ開始
+            await default_processor.start()
+            logger.info("Parallel processor initialized")
+
+            # キャッシュマネージャー開始
+            await default_cache_manager.start()
+            logger.info("Cache manager initialized")
+
+        except Exception as opt_error:
+            logger.warning(f"Failed to initialize optimization components: {opt_error}")
+            # 最適化コンポーネントの失敗はアプリケーション全体を停止しない
+
     except Exception as e:
         logger.error(f"Failed to initialize system: {e}")
         # エラー追跡にも送信
@@ -83,6 +100,20 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down job matching system...")
 
     try:
+        # T053-T055: 最適化コンポーネントの停止
+        try:
+            from app.optimizations.parallel_processor import default_processor
+            from app.services.cache_service import default_cache_manager
+
+            await default_processor.stop()
+            logger.info("Parallel processor stopped")
+
+            await default_cache_manager.stop()
+            logger.info("Cache manager stopped")
+
+        except Exception as opt_error:
+            logger.warning(f"Failed to stop optimization components: {opt_error}")
+
         # 接続を優雅にクローズ
         await close_redis()
         logger.info("Redis connection closed")
@@ -184,6 +215,14 @@ tags_metadata = [
     {
         "name": "monitoring",
         "description": "システム監視・ヘルスチェック",
+    },
+    {
+        "name": "performance",
+        "description": "パフォーマンス監視・最適化ダッシュボード（T053-T055統合）",
+        "externalDocs": {
+            "description": "最適化機能の詳細",
+            "url": "/performance/dashboard",
+        },
     },
     {
         "name": "admin",
@@ -607,6 +646,13 @@ app.include_router(
 )
 
 # TDD Phase 2: GREEN - 契約テスト用エンドポイント（最小実装）
+# パフォーマンス監視ダッシュボード（T053-T055統合）
+app.include_router(
+    performance.router,
+    prefix="/api/v1",
+    tags=["performance"]
+)
+
 # これらは後でリファクタリングフェーズで適切な場所に移動する
 app.include_router(
     tdd_endpoints.router,

@@ -1,0 +1,1582 @@
+<testsuites id="" name="" tests="385" failures="0" skipped="385" errors="0" time="0.13387700000000008">
+<testsuite name="dashboard.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="chromium" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display detailed table structure information" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show accurate column information with data types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display table statistics accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show column details with constraints and indexes" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should provide visual indicators for different column types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display table data with proper formatting" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle different data types in table cells" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should provide data manipulation controls" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle scrolling for large datasets" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display row numbers and navigation" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by name accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by description content" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should handle partial matches and case insensitive search" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should clear search results appropriately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should maintain search state during table operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display database overview statistics" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show real-time connection status" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display table-specific statistics in structure view" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show performance metrics when available" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should track and display query history" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should load dashboard components within performance thresholds" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle rapid tab switching efficiently" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should maintain responsiveness during search operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle concurrent user interactions gracefully" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="chromium" tests="25" failures="0" skipped="25" time="0" errors="0">
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display full desktop layout correctly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should show all navigation elements clearly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display tables with full column visibility" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should handle side-by-side content layout" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should adapt layout for tablet viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should show responsive navigation elements" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should maintain table readability" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should stack cards appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize layout for mobile viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should provide mobile-friendly navigation" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile table display" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should stack content vertically" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize touch interactions" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile sidebar appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain functionality across all viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle viewport transitions smoothly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain search functionality across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle performance consistently across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain visual consistency across breakpoints" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle edge cases in viewport sizes" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain accessibility across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle dynamic content resizing" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should support appropriate input methods per device" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should optimize content density per viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should handle orientation changes gracefully" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sql-execution.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="chromium" tests="19" failures="0" skipped="19" time="0" errors="0">
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display all 19 database tables in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should update SQL query when table is selected" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should highlight selected table in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display table information (row count and description)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should allow SQL query input and execution" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should handle invalid SQL queries with error messages" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should show query execution status (loading/completed)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should display execution time and performance metrics" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should switch between all tabs correctly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should maintain table selection across tab switches" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should show appropriate content for each tab" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should display query results in table format" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should show row count in query results" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should handle large result sets with scrolling" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should filter tables based on search term" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should show no results for invalid search terms" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should load main interface within performance threshold" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should switch tabs quickly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should handle concurrent operations" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="supabase-integration.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Supabase connection test should fail initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Database table count should be 0 initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: SQL query execution should return mock data" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Real-time data updates should not work yet" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Environment variables should not be exposed" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Error handling should show user-friendly messages" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ v0 SQLite管理画面が正常に表示される" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ テーブル一覧が表示される（v0モック）" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ レスポンシブデザインが機能する" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="firefox" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display detailed table structure information" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show accurate column information with data types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display table statistics accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show column details with constraints and indexes" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should provide visual indicators for different column types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display table data with proper formatting" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle different data types in table cells" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should provide data manipulation controls" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle scrolling for large datasets" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display row numbers and navigation" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by name accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by description content" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should handle partial matches and case insensitive search" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should clear search results appropriately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should maintain search state during table operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display database overview statistics" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show real-time connection status" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display table-specific statistics in structure view" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show performance metrics when available" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should track and display query history" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should load dashboard components within performance thresholds" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle rapid tab switching efficiently" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should maintain responsiveness during search operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle concurrent user interactions gracefully" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="firefox" tests="25" failures="0" skipped="25" time="0" errors="0">
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display full desktop layout correctly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should show all navigation elements clearly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display tables with full column visibility" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should handle side-by-side content layout" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should adapt layout for tablet viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should show responsive navigation elements" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should maintain table readability" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should stack cards appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize layout for mobile viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should provide mobile-friendly navigation" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile table display" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should stack content vertically" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize touch interactions" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile sidebar appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain functionality across all viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle viewport transitions smoothly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain search functionality across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle performance consistently across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain visual consistency across breakpoints" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle edge cases in viewport sizes" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain accessibility across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle dynamic content resizing" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should support appropriate input methods per device" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should optimize content density per viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should handle orientation changes gracefully" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sql-execution.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="firefox" tests="19" failures="0" skipped="19" time="0" errors="0">
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display all 19 database tables in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should update SQL query when table is selected" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should highlight selected table in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display table information (row count and description)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should allow SQL query input and execution" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should handle invalid SQL queries with error messages" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should show query execution status (loading/completed)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should display execution time and performance metrics" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should switch between all tabs correctly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should maintain table selection across tab switches" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should show appropriate content for each tab" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should display query results in table format" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should show row count in query results" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should handle large result sets with scrolling" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should filter tables based on search term" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should show no results for invalid search terms" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should load main interface within performance threshold" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should switch tabs quickly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should handle concurrent operations" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="supabase-integration.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="firefox" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Supabase connection test should fail initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Database table count should be 0 initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: SQL query execution should return mock data" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Real-time data updates should not work yet" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Environment variables should not be exposed" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Error handling should show user-friendly messages" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ v0 SQLite管理画面が正常に表示される" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ テーブル一覧が表示される（v0モック）" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ レスポンシブデザインが機能する" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="webkit" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display detailed table structure information" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show accurate column information with data types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display table statistics accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show column details with constraints and indexes" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should provide visual indicators for different column types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display table data with proper formatting" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle different data types in table cells" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should provide data manipulation controls" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle scrolling for large datasets" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display row numbers and navigation" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by name accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by description content" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should handle partial matches and case insensitive search" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should clear search results appropriately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should maintain search state during table operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display database overview statistics" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show real-time connection status" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display table-specific statistics in structure view" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show performance metrics when available" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should track and display query history" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should load dashboard components within performance thresholds" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle rapid tab switching efficiently" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should maintain responsiveness during search operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle concurrent user interactions gracefully" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="webkit" tests="25" failures="0" skipped="25" time="0" errors="0">
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display full desktop layout correctly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should show all navigation elements clearly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display tables with full column visibility" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should handle side-by-side content layout" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should adapt layout for tablet viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should show responsive navigation elements" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should maintain table readability" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should stack cards appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize layout for mobile viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should provide mobile-friendly navigation" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile table display" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should stack content vertically" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize touch interactions" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile sidebar appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain functionality across all viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle viewport transitions smoothly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain search functionality across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle performance consistently across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain visual consistency across breakpoints" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle edge cases in viewport sizes" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain accessibility across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle dynamic content resizing" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should support appropriate input methods per device" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should optimize content density per viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should handle orientation changes gracefully" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sql-execution.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="webkit" tests="19" failures="0" skipped="19" time="0" errors="0">
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display all 19 database tables in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should update SQL query when table is selected" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should highlight selected table in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display table information (row count and description)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should allow SQL query input and execution" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should handle invalid SQL queries with error messages" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should show query execution status (loading/completed)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should display execution time and performance metrics" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should switch between all tabs correctly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should maintain table selection across tab switches" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should show appropriate content for each tab" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should display query results in table format" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should show row count in query results" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should handle large result sets with scrolling" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should filter tables based on search term" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should show no results for invalid search terms" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should load main interface within performance threshold" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should switch tabs quickly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should handle concurrent operations" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="supabase-integration.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="webkit" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Supabase connection test should fail initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Database table count should be 0 initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: SQL query execution should return mock data" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Real-time data updates should not work yet" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Environment variables should not be exposed" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Error handling should show user-friendly messages" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ v0 SQLite管理画面が正常に表示される" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ テーブル一覧が表示される（v0モック）" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ レスポンシブデザインが機能する" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Chrome" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display detailed table structure information" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show accurate column information with data types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display table statistics accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show column details with constraints and indexes" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should provide visual indicators for different column types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display table data with proper formatting" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle different data types in table cells" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should provide data manipulation controls" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle scrolling for large datasets" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display row numbers and navigation" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by name accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by description content" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should handle partial matches and case insensitive search" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should clear search results appropriately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should maintain search state during table operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display database overview statistics" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show real-time connection status" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display table-specific statistics in structure view" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show performance metrics when available" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should track and display query history" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should load dashboard components within performance thresholds" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle rapid tab switching efficiently" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should maintain responsiveness during search operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle concurrent user interactions gracefully" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Chrome" tests="25" failures="0" skipped="25" time="0" errors="0">
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display full desktop layout correctly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should show all navigation elements clearly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display tables with full column visibility" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should handle side-by-side content layout" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should adapt layout for tablet viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should show responsive navigation elements" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should maintain table readability" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should stack cards appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize layout for mobile viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should provide mobile-friendly navigation" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile table display" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should stack content vertically" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize touch interactions" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile sidebar appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain functionality across all viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle viewport transitions smoothly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain search functionality across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle performance consistently across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain visual consistency across breakpoints" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle edge cases in viewport sizes" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain accessibility across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle dynamic content resizing" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should support appropriate input methods per device" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should optimize content density per viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should handle orientation changes gracefully" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sql-execution.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Chrome" tests="19" failures="0" skipped="19" time="0" errors="0">
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display all 19 database tables in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should update SQL query when table is selected" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should highlight selected table in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display table information (row count and description)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should allow SQL query input and execution" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should handle invalid SQL queries with error messages" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should show query execution status (loading/completed)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should display execution time and performance metrics" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should switch between all tabs correctly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should maintain table selection across tab switches" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should show appropriate content for each tab" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should display query results in table format" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should show row count in query results" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should handle large result sets with scrolling" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should filter tables based on search term" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should show no results for invalid search terms" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should load main interface within performance threshold" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should switch tabs quickly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should handle concurrent operations" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="supabase-integration.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Supabase connection test should fail initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Database table count should be 0 initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: SQL query execution should return mock data" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Real-time data updates should not work yet" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Environment variables should not be exposed" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Error handling should show user-friendly messages" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ v0 SQLite管理画面が正常に表示される" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ テーブル一覧が表示される（v0モック）" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ レスポンシブデザインが機能する" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Safari" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display detailed table structure information" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show accurate column information with data types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should display table statistics accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should show column details with constraints and indexes" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Table Structure Tab - Detailed Views › should provide visual indicators for different column types" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display table data with proper formatting" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle different data types in table cells" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should provide data manipulation controls" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should handle scrolling for large datasets" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Data Browsing Tab - Data Display and Pagination › should display row numbers and navigation" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by name accurately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should filter tables by description content" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should handle partial matches and case insensitive search" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should clear search results appropriately" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Search Functionality - Advanced Filtering › should maintain search state during table operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display database overview statistics" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show real-time connection status" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should display table-specific statistics in structure view" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should show performance metrics when available" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Statistics Display and Monitoring › should track and display query history" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should load dashboard components within performance thresholds" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle rapid tab switching efficiently" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should maintain responsiveness during search operations" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T051: Dashboard E2E Tests › Dashboard Performance and Responsiveness › should handle concurrent user interactions gracefully" classname="dashboard.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Safari" tests="25" failures="0" skipped="25" time="0" errors="0">
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display full desktop layout correctly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should show all navigation elements clearly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should display tables with full column visibility" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Desktop Layout (1920x1080) › should handle side-by-side content layout" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should adapt layout for tablet viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should show responsive navigation elements" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should maintain table readability" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Tablet Layout (768x1024) › should stack cards appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize layout for mobile viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should provide mobile-friendly navigation" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile table display" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should stack content vertically" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should optimize touch interactions" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Mobile Layout (375x667) › should handle mobile sidebar appropriately" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain functionality across all viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle viewport transitions smoothly" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should maintain search functionality across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Cross-Viewport Functionality › should handle performance consistently across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain visual consistency across breakpoints" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle edge cases in viewport sizes" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should maintain accessibility across viewports" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Visual Regression and Layout Consistency › should handle dynamic content resizing" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should support appropriate input methods per device" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should optimize content density per viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T052: Responsive UI E2E Tests › Responsive Interaction Patterns › should handle orientation changes gracefully" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sql-execution.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Safari" tests="19" failures="0" skipped="19" time="0" errors="0">
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display all 19 database tables in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should update SQL query when table is selected" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should highlight selected table in sidebar" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Table Selection and Sidebar Navigation › should display table information (row count and description)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should allow SQL query input and execution" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should handle invalid SQL queries with error messages" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should show query execution status (loading/completed)" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › SQL Query Input and Execution › should display execution time and performance metrics" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should switch between all tabs correctly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should maintain table selection across tab switches" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Tab Switching and Navigation › should show appropriate content for each tab" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should display query results in table format" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should show row count in query results" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Result Display and Data Handling › should handle large result sets with scrolling" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should filter tables based on search term" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Search and Filter Functionality › should show no results for invalid search terms" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should load main interface within performance threshold" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should switch tabs quickly" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="T050: SQL Execution E2E Tests › Performance and Responsiveness › should handle concurrent operations" classname="sql-execution.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="supabase-integration.spec.ts" timestamp="2025-09-19T02:17:23.077Z" hostname="Mobile Safari" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Supabase connection test should fail initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Database table count should be 0 initially" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: SQL query execution should return mock data" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Real-time data updates should not work yet" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Environment variables should not be exposed" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Supabase Integration E2E Tests (RED Phase) › 🔴 RED: Error handling should show user-friendly messages" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ v0 SQLite管理画面が正常に表示される" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ テーブル一覧が表示される（v0モック）" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="v0 Original Functionality (Should Work) › ✅ レスポンシブデザインが機能する" classname="supabase-integration.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

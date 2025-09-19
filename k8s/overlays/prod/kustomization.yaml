@@ -1,0 +1,64 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: mail-score-production
+
+namespace: mail-score-production
+
+resources:
+  - ../../base
+
+commonLabels:
+  environment: production
+
+images:
+  - name: mail-score-backend
+    newTag: v1.0.0
+  - name: mail-score-frontend
+    newTag: v1.0.0
+
+replicas:
+  - name: mail-score-backend
+    count: 5
+  - name: mail-score-frontend
+    count: 3
+  - name: postgres
+    count: 1
+  - name: redis
+    count: 1
+
+patchesStrategicMerge:
+  - backend-prod.yaml
+  - frontend-prod.yaml
+  - ingress-prod.yaml
+
+configMapGenerator:
+  - name: backend-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=INFO
+      - WORKERS=8
+      - MAX_WORKERS=16
+      - APP_ENV=production
+
+  - name: frontend-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.mailscore.com
+
+secretGenerator:
+  - name: backend-secret
+    behavior: merge
+    files:
+      - DATABASE_URL=secrets/database-url
+      - REDIS_URL=secrets/redis-url
+      - SENTRY_DSN=secrets/sentry-dsn
+      - SECRET_KEY=secrets/secret-key
+
+  - name: frontend-secret
+    behavior: merge
+    files:
+      - NEXT_PUBLIC_SUPABASE_URL=secrets/supabase-url
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=secrets/supabase-anon-key

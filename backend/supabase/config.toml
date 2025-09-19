@@ -1,0 +1,198 @@
+# T074: Supabase Deployment Configuration
+#
+# Production-ready configuration for Supabase deployment including:
+# - Database settings
+# - API configuration
+# - Real-time settings
+# - Storage configuration
+# - Edge function deployment
+# - Security policies
+
+project_id = "new-mail-score-backend"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+# Database configuration
+port = 54322
+major_version = 15
+max_connections = 200
+
+# Database settings for production
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+# Real-time configuration
+enabled = true
+ip_version = "dual"
+port = 54324
+max_header_length = 4096
+
+# Real-time rate limiting
+[realtime.rate_limit]
+enabled = true
+max_events_per_second = 100
+max_concurrent_users = 1000
+
+# Real-time channel configuration
+[realtime.channels]
+job_updates = { max_joins = 100, presence = true }
+user_notifications = { max_joins = 1000, presence = false }
+matching_results = { max_joins = 50, presence = false }
+system_status = { max_joins = 500, presence = false }
+email_processing = { max_joins = 100, presence = false }
+score_calculation = { max_joins = 50, presence = false }
+audit_logs = { max_joins = 10, presence = false }
+
+[storage]
+# Storage configuration
+enabled = true
+file_size_limit = "100MB"
+image_transformation = { enabled = true, max_width = 2048, max_height = 2048 }
+
+# Storage buckets configuration
+[storage.buckets.files]
+public = false
+file_size_limit = "100MB"
+allowed_mime_types = ["text/csv", "application/pdf", "image/*", "text/*"]
+
+[storage.buckets.csv-imports]
+public = false
+file_size_limit = "50MB"
+allowed_mime_types = ["text/csv", "application/vnd.ms-excel"]
+
+[storage.buckets.email-attachments]
+public = false
+file_size_limit = "25MB"
+allowed_mime_types = ["*"]
+
+[storage.buckets.public-files]
+public = true
+file_size_limit = "10MB"
+allowed_mime_types = ["image/*", "text/*", "application/pdf"]
+
+[storage.buckets.temp-files]
+public = false
+file_size_limit = "10MB"
+allowed_mime_types = ["*"]
+
+[auth]
+# Authentication configuration
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://your-production-domain.com"]
+
+# Auth providers
+[auth.external.email]
+enabled = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_email_change_enabled = true
+
+# JWT settings
+[auth.jwt]
+exp = 3600
+default_role = "authenticated"
+aud = "authenticated"
+
+# Session configuration
+[auth.sessions]
+timebox = 86400
+inactivity_timeout = 3600
+
+[edge_functions]
+# Edge Functions configuration
+enabled = true
+inspector_port = 8083
+
+# Individual function configuration
+[edge_functions.background-job-processor]
+verify_jwt = true
+import_map = "./functions/import_map.json"
+
+[edge_functions.email-sender]
+verify_jwt = true
+import_map = "./functions/import_map.json"
+
+[edge_functions.score-calculator]
+verify_jwt = true
+import_map = "./functions/import_map.json"
+
+[analytics]
+# Analytics configuration
+enabled = true
+port = 54327
+vector_port = 54328
+health_check_port = 54329
+
+[inbucket]
+# Email testing (development)
+enabled = true
+port = 54330
+smtp_port = 54325
+pop3_port = 54326
+
+# Production environment overrides
+[environments.production]
+
+[environments.production.api]
+max_rows = 10000
+
+[environments.production.db]
+max_connections = 500
+
+[environments.production.db.pooler]
+default_pool_size = 50
+max_client_conn = 200
+
+[environments.production.realtime]
+max_header_length = 8192
+
+[environments.production.realtime.rate_limit]
+max_events_per_second = 500
+max_concurrent_users = 5000
+
+[environments.production.storage]
+file_size_limit = "500MB"
+
+[environments.production.storage.buckets.files]
+file_size_limit = "500MB"
+
+[environments.production.storage.buckets.csv-imports]
+file_size_limit = "200MB"
+
+[environments.production.storage.buckets.email-attachments]
+file_size_limit = "100MB"
+
+[environments.production.auth]
+site_url = "https://your-production-domain.com"
+
+[environments.production.auth.sessions]
+timebox = 604800  # 7 days
+inactivity_timeout = 86400  # 24 hours
+
+# Staging environment
+[environments.staging]
+
+[environments.staging.api]
+max_rows = 5000
+
+[environments.staging.db]
+max_connections = 100
+
+[environments.staging.realtime.rate_limit]
+max_events_per_second = 200
+max_concurrent_users = 1000
+
+[environments.staging.auth]
+site_url = "https://staging.your-domain.com"

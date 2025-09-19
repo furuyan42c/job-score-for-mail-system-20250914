@@ -4,12 +4,12 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: job-matching-postgres
+    container_name: mail-score-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-job_matching}
+      POSTGRES_DB: ${POSTGRES_DB:-mail_score}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=ja_JP.UTF-8"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=en_US.UTF-8"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
@@ -17,12 +17,12 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
-      - job-matching-network
+      - mail-score-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-job_matching}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mail_score}"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 40s
     restart: unless-stopped
     deploy:
@@ -30,11 +30,14 @@ services:
         limits:
           memory: 1GB
           cpus: '1.0'
+        reservations:
+          memory: 512MB
+          cpus: '0.5'
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: job-matching-redis
+    container_name: mail-score-redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword}
     volumes:
       - redis_data:/data
@@ -42,7 +45,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
-      - job-matching-network
+      - mail-score-network
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 30s
@@ -54,29 +57,40 @@ services:
         limits:
           memory: 512MB
           cpus: '0.5'
+        reservations:
+          memory: 256MB
+          cpus: '0.2'
 
-  # Main FastAPI Application
-  api:
+  # FastAPI Backend
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
       target: base
-    container_name: job-matching-api
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF}
+    container_name: mail-score-backend
     environment:
-      - APP_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-job_matching}
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-mail_score}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379/0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - PROMETHEUS_METRICS=true
       - SENTRY_DSN=${SENTRY_DSN}
+      - WORKERS=${BACKEND_WORKERS:-4}
+      - MAX_WORKERS=${BACKEND_MAX_WORKERS:-8}
+      - TIMEOUT=${BACKEND_TIMEOUT:-300}
     volumes:
       - ./backend/logs:/app/logs
       - ./data/imports:/app/data/imports
       - ./data/exports:/app/data/exports
+      - ./data/uploads:/app/uploads
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     networks:
-      - job-matching-network
+      - mail-score-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,14 +100,56 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+          cpus: '2.0'
+        reservations:
+          memory: 1GB
+          cpus: '1.0'
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF}
+    container_name: mail-score-frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - mail-score-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 1GB
           cpus: '1.0'
+        reservations:
+          memory: 512MB
+          cpus: '0.5'
 
   # Batch Processing Service
   batch-processor:
@@ -284,12 +340,12 @@ services:
     restart: unless-stopped
 
 networks:
-  job-matching-network:
+  mail-score-network:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.21.0.0/16
 
 volumes:
   postgres_data:

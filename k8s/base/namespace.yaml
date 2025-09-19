@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mail-score
+  labels:
+    app.kubernetes.io/name: mail-score
+    app.kubernetes.io/version: "1.0.0"
+    environment: base
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mail-score-staging
+  labels:
+    app.kubernetes.io/name: mail-score
+    app.kubernetes.io/version: "1.0.0"
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mail-score-production
+  labels:
+    app.kubernetes.io/name: mail-score
+    app.kubernetes.io/version: "1.0.0"
+    environment: production
