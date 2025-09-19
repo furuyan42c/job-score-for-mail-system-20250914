@@ -1,111 +1,96 @@
 """
-T066: Supabase環境セットアップ - TDD RED Phase
-失敗するテストを作成（Supabase接続確認）
+T066: Supabase Connection Test (RED Phase)
+
+This test MUST FAIL initially as per TDD methodology.
+It tests the Supabase client configuration and connection.
 """
 
 import pytest
-import requests
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import asyncio
-import asyncpg
+from app.core.supabase import SupabaseClient
 
 
 class TestSupabaseConnection:
-    """Supabase接続テスト - RED Phase（必ず失敗する）"""
+    """Test Supabase client configuration and connection"""
 
-    def test_supabase_api_server_running(self):
-        """
-        テスト: Supabase APIサーバー起動確認
-        期待結果: 現在は失敗（supabase startしていないため）
-        """
-        # Supabase API endpoint (localhost:54321)
-        api_url = "http://localhost:54321/rest/v1/"
+    def test_supabase_client_initialization(self):
+        """Test Supabase client initializes with correct configuration"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client = SupabaseClient()
 
-        try:
-            response = requests.get(api_url, timeout=5)
-            # サーバーが起動していれば200番台のレスポンス
-            assert response.status_code in [200, 401], f"Unexpected status: {response.status_code}"
+        assert client is not None
+        assert hasattr(client, 'client')
+        assert hasattr(client, 'async_client')
+        assert client.url is not None
+        assert client.anon_key is not None
 
-            # APIサーバーが起動している場合の確認
-            assert "supabase" in response.headers.get('server', '').lower(), "Not Supabase server"
+    def test_supabase_client_singleton_pattern(self):
+        """Test Supabase client follows singleton pattern"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client1 = SupabaseClient()
+        client2 = SupabaseClient()
 
-        except requests.exceptions.ConnectionError:
-            # 予想される失敗: Supabaseサーバーが起動していない
-            pytest.fail("🔴 EXPECTED FAILURE: Supabase server not running on localhost:54321")
-
-    def test_supabase_studio_accessible(self):
-        """
-        テスト: Supabase Studio UI アクセス確認
-        期待結果: 現在は失敗（supabase startしていないため）
-        """
-        studio_url = "http://localhost:54323"
-
-        try:
-            response = requests.get(studio_url, timeout=5)
-            assert response.status_code == 200, f"Studio not accessible: {response.status_code}"
-
-            # Studio UIの確認
-            assert "supabase" in response.text.lower(), "Not Supabase Studio"
-
-        except requests.exceptions.ConnectionError:
-            # 予想される失敗: Supabase Studioが起動していない
-            pytest.fail("🔴 EXPECTED FAILURE: Supabase Studio not running on localhost:54323")
+        assert client1 is client2
 
     @pytest.mark.asyncio
-    async def test_postgres_database_connection(self):
-        """
-        テスト: PostgreSQL データベース接続確認
-        期待結果: 現在は失敗（supabase startしていないため）
-        """
-        # Supabase local database connection parameters
-        db_config = {
-            "host": "localhost",
-            "port": 54322,
-            "database": "postgres",
-            "user": "postgres",
-            "password": "postgres"
-        }
+    async def test_supabase_async_connection(self):
+        """Test Supabase async connection works"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client = SupabaseClient()
 
-        try:
-            # PostgreSQL接続試行
-            conn = await asyncpg.connect(**db_config)
+        # Test async connection
+        result = await client.test_connection()
+        assert result is True
 
-            # 基本的なクエリ実行
-            result = await conn.fetchval("SELECT version()")
-            assert "PostgreSQL" in result, f"Not PostgreSQL: {result}"
+    def test_supabase_connection_pool_configuration(self):
+        """Test Supabase connection pool is configured correctly"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client = SupabaseClient()
 
-            # 接続を閉じる
-            await conn.close()
+        assert hasattr(client, 'pool_size')
+        assert client.pool_size > 0
+        assert hasattr(client, 'max_overflow')
 
-        except (OSError, asyncpg.exceptions.CannotConnectNowError):
-            # 予想される失敗: PostgreSQLサーバーが起動していない
-            pytest.fail("🔴 EXPECTED FAILURE: PostgreSQL not running on localhost:54322")
+    def test_supabase_retry_logic(self):
+        """Test Supabase client has retry logic for failed connections"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client = SupabaseClient()
 
-    def test_supabase_config_validation(self):
-        """
-        テスト: config.toml設定値の確認
-        期待結果: これは成功する（設定ファイルは存在する）
-        """
-        import toml
-        import os
+        assert hasattr(client, 'max_retries')
+        assert client.max_retries >= 3
+        assert hasattr(client, 'retry_delay')
 
-        config_path = "supabase/config.toml"
-        assert os.path.exists(config_path), f"Config file not found: {config_path}"
+    @pytest.mark.asyncio
+    async def test_supabase_health_check(self):
+        """Test Supabase health check functionality"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        client = SupabaseClient()
 
-        with open(config_path, 'r') as f:
-            config = toml.load(f)
+        health_status = await client.health_check()
+        assert 'status' in health_status
+        assert 'connection_pool' in health_status
+        assert 'database' in health_status
 
-        # 必須設定の確認
-        assert config['api']['port'] == 54321, "API port mismatch"
-        assert config['db']['port'] == 54322, "DB port mismatch"
-        assert config['studio']['port'] == 54323, "Studio port mismatch"
-        assert config['auth']['enabled'] is True, "Auth not enabled"
-        assert config['realtime']['enabled'] is True, "Realtime not enabled"
+    def test_supabase_client_configuration_from_env(self):
+        """Test Supabase client reads configuration from environment variables"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        with patch.dict('os.environ', {
+            'SUPABASE_URL': 'https://test.supabase.co',
+            'SUPABASE_ANON_KEY': 'test-anon-key',
+            'SUPABASE_SERVICE_ROLE_KEY': 'test-service-key'
+        }):
+            client = SupabaseClient()
 
-        # サイトURL確認（フロントエンド用）
-        expected_site_url = "http://127.0.0.1:3000"
-        assert config['auth']['site_url'] == expected_site_url, f"Site URL mismatch: {config['auth']['site_url']}"
+            assert client.url == 'https://test.supabase.co'
+            assert client.anon_key == 'test-anon-key'
+            assert client.service_role_key == 'test-service-key'
 
+    def test_supabase_client_error_handling(self):
+        """Test Supabase client handles configuration errors"""
+        # This test MUST FAIL - SupabaseClient doesn't exist yet
+        with patch.dict('os.environ', {}, clear=True):
+            with pytest.raises(ValueError) as exc_info:
+                SupabaseClient()
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
+            assert "SUPABASE_URL" in str(exc_info.value)
