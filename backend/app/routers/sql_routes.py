@@ -12,6 +12,8 @@ import re
 import time
 import logging
 import hashlib
+import asyncio
+import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy import text
@@ -477,6 +479,7 @@ async def execute_sql(
         # 結果をキャッシュ
         if request.cache_ttl and request.cache_ttl > 0 and not from_cache:
             try:
+                import json
                 cache_data = {
                     "columns": columns,
                     "rows": formatted_rows,
