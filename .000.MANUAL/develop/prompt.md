@@ -41,7 +41,7 @@
 •グループ完了時
 
 実行開始をお願いします。"
---all-mcp--parallel-optimization--delegateauto
+--all-mcp--parallel-optimization--delegateauto--think-hard--seq
 
 
 

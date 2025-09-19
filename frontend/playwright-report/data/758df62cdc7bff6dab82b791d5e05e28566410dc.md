@@ -1,0 +1,236 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e6]
+          - heading "メールスコアリングシステム - データベース管理ツール" [level=1] [ref=e10]
+          - generic [ref=e11]: SQLite風
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - img [ref=e14]
+            - generic [ref=e18]: オフライン
+          - generic [ref=e19]:
+            - generic [ref=e20]: "INSERT: 0"
+            - generic [ref=e21]: "UPDATE: 0"
+            - generic [ref=e22]: "DELETE: 0"
+          - button "リアルタイム無効化" [ref=e23]:
+            - img
+            - text: リアルタイム無効化
+          - button "接続更新" [ref=e24]:
+            - img
+            - text: 接続更新
+          - button "スキーマ出力" [ref=e25]:
+            - img
+            - text: スキーマ出力
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e29]:
+          - img [ref=e30]
+          - textbox "テーブル検索..." [ref=e33]
+        - generic [ref=e38]:
+          - heading "データベーステーブル (19)" [level=3] [ref=e39]
+          - generic [ref=e40]:
+            - button "users ユーザー情報 10,000 行" [ref=e41]:
+              - generic [ref=e42]:
+                - img
+                - generic [ref=e43]:
+                  - generic [ref=e44]: users
+                  - generic [ref=e45]: ユーザー情報
+                  - generic [ref=e46]: 10,000 行
+            - button "jobs 求人情報（メインテーブル） 100,000 行" [ref=e47]:
+              - generic [ref=e48]:
+                - img
+                - generic [ref=e49]:
+                  - generic [ref=e50]: jobs
+                  - generic [ref=e51]: 求人情報（メインテーブル）
+                  - generic [ref=e52]: 100,000 行
+            - button "jobs_match_raw 求人マッチ生データ 100,000 行" [ref=e53]:
+              - generic [ref=e54]:
+                - img
+                - generic [ref=e55]:
+                  - generic [ref=e56]: jobs_match_raw
+                  - generic [ref=e57]: 求人マッチ生データ
+                  - generic [ref=e58]: 100,000 行
+            - button "jobs_contents_raw 求人コンテンツ生データ 100,000 行" [ref=e59]:
+              - generic [ref=e60]:
+                - img
+                - generic [ref=e61]:
+                  - generic [ref=e62]: jobs_contents_raw
+                  - generic [ref=e63]: 求人コンテンツ生データ
+                  - generic [ref=e64]: 100,000 行
+            - button "user_actions ユーザーアクション履歴 85,000 行" [ref=e65]:
+              - generic [ref=e66]:
+                - img
+                - generic [ref=e67]:
+                  - generic [ref=e68]: user_actions
+                  - generic [ref=e69]: ユーザーアクション履歴
+                  - generic [ref=e70]: 85,000 行
+            - button "daily_email_queue 日次メール配信キュー 30,000 行" [ref=e71]:
+              - generic [ref=e72]:
+                - img
+                - generic [ref=e73]:
+                  - generic [ref=e74]: daily_email_queue
+                  - generic [ref=e75]: 日次メール配信キュー
+                  - generic [ref=e76]: 30,000 行
+            - button "job_enrichment 求人エンリッチメント 100,000 行" [ref=e77]:
+              - generic [ref=e78]:
+                - img
+                - generic [ref=e79]:
+                  - generic [ref=e80]: job_enrichment
+                  - generic [ref=e81]: 求人エンリッチメント
+                  - generic [ref=e82]: 100,000 行
+            - button "user_job_mapping ユーザー求人マッピング 400,000 行" [ref=e83]:
+              - generic [ref=e84]:
+                - img
+                - generic [ref=e85]:
+                  - generic [ref=e86]: user_job_mapping
+                  - generic [ref=e87]: ユーザー求人マッピング
+                  - generic [ref=e88]: 400,000 行
+            - button "daily_job_picks 日次求人選定 40,000 行" [ref=e89]:
+              - generic [ref=e90]:
+                - img
+                - generic [ref=e91]:
+                  - generic [ref=e92]: daily_job_picks
+                  - generic [ref=e93]: 日次求人選定
+                  - generic [ref=e94]: 40,000 行
+            - button "user_profiles ユーザープロファイル 10,000 行" [ref=e95]:
+              - generic [ref=e96]:
+                - img
+                - generic [ref=e97]:
+                  - generic [ref=e98]: user_profiles
+                  - generic [ref=e99]: ユーザープロファイル
+                  - generic [ref=e100]: 10,000 行
+            - button "keyword_scoring キーワードスコアリング 5,000 行" [ref=e101]:
+              - generic [ref=e102]:
+                - img
+                - generic [ref=e103]:
+                  - generic [ref=e104]: keyword_scoring
+                  - generic [ref=e105]: キーワードスコアリング
+                  - generic [ref=e106]: 5,000 行
+            - button "semrush_keywords SEMrushキーワード 5,000 行" [ref=e107]:
+              - generic [ref=e108]:
+                - img
+                - generic [ref=e109]:
+                  - generic [ref=e110]: semrush_keywords
+                  - generic [ref=e111]: SEMrushキーワード
+                  - generic [ref=e112]: 5,000 行
+            - button "occupation_master 職種マスター 500 行" [ref=e113]:
+              - generic [ref=e114]:
+                - img
+                - generic [ref=e115]:
+                  - generic [ref=e116]: occupation_master
+                  - generic [ref=e117]: 職種マスター
+                  - generic [ref=e118]: 500 行
+            - button "prefecture_master 都道府県マスター 47 行" [ref=e119]:
+              - generic [ref=e120]:
+                - img
+                - generic [ref=e121]:
+                  - generic [ref=e122]: prefecture_master
+                  - generic [ref=e123]: 都道府県マスター
+                  - generic [ref=e124]: 47 行
+            - button "city_master 市区町村マスター 1,741 行" [ref=e125]:
+              - generic [ref=e126]:
+                - img
+                - generic [ref=e127]:
+                  - generic [ref=e128]: city_master
+                  - generic [ref=e129]: 市区町村マスター
+                  - generic [ref=e130]: 1,741 行
+            - button "employment_type_master 雇用形態マスター 10 行" [ref=e131]:
+              - generic [ref=e132]:
+                - img
+                - generic [ref=e133]:
+                  - generic [ref=e134]: employment_type_master
+                  - generic [ref=e135]: 雇用形態マスター
+                  - generic [ref=e136]: 10 行
+            - button "salary_type_master 給与タイプマスター 5 行" [ref=e137]:
+              - generic [ref=e138]:
+                - img
+                - generic [ref=e139]:
+                  - generic [ref=e140]: salary_type_master
+                  - generic [ref=e141]: 給与タイプマスター
+                  - generic [ref=e142]: 5 行
+            - button "feature_master 特徴マスター 200 行" [ref=e143]:
+              - generic [ref=e144]:
+                - img
+                - generic [ref=e145]:
+                  - generic [ref=e146]: feature_master
+                  - generic [ref=e147]: 特徴マスター
+                  - generic [ref=e148]: 200 行
+            - button "needs_category_master ニーズカテゴリマスター 14 行" [ref=e149]:
+              - generic [ref=e150]:
+                - img
+                - generic [ref=e151]:
+                  - generic [ref=e152]: needs_category_master
+                  - generic [ref=e153]: ニーズカテゴリマスター
+                  - generic [ref=e154]: 14 行
+      - generic [ref=e158]:
+        - tablist [ref=e160]:
+          - tab "SQLクエリ" [ref=e161]
+          - tab "データ閲覧" [active] [selected] [ref=e162]
+          - tab "テーブル構造" [ref=e163]
+          - tab "リアルタイム" [ref=e164]:
+            - generic [ref=e165]:
+              - img [ref=e166]
+              - text: リアルタイム
+        - tabpanel "データ閲覧" [ref=e169]:
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - 'heading "テーブル: users" [level=3] [ref=e172]'
+              - generic [ref=e173]:
+                - button "新規追加" [ref=e174]:
+                  - img
+                  - text: 新規追加
+                - button "フィルター" [ref=e175]:
+                  - img
+                  - text: フィルター
+            - table [ref=e181]:
+              - rowgroup [ref=e182]:
+                - row "# user_id email age_range gender is_active created_at updated_at 操作" [ref=e183]:
+                  - cell "#" [ref=e184]
+                  - cell "user_id" [ref=e185]
+                  - cell "email" [ref=e186]
+                  - cell "age_range" [ref=e187]
+                  - cell "gender" [ref=e188]
+                  - cell "is_active" [ref=e189]
+                  - cell "created_at" [ref=e190]
+                  - cell "updated_at" [ref=e191]
+                  - cell "操作" [ref=e192]
+              - rowgroup [ref=e193]:
+                - row "1 550e8400-e29b-41d4-a716-446655440000 user1@example.com 20-24 男性 true 2024-01-15 10:30:00+09 2024-08-29 14:20:00+09" [ref=e194]:
+                  - cell "1" [ref=e195]
+                  - cell "550e8400-e29b-41d4-a716-446655440000" [ref=e196]
+                  - cell "user1@example.com" [ref=e197]
+                  - cell "20-24" [ref=e198]
+                  - cell "男性" [ref=e199]
+                  - cell "true" [ref=e200]:
+                    - generic [ref=e201]: "true"
+                  - cell "2024-01-15 10:30:00+09" [ref=e202]
+                  - cell "2024-08-29 14:20:00+09" [ref=e203]
+                  - cell [ref=e204]:
+                    - generic [ref=e205]:
+                      - button [ref=e206]:
+                        - img
+                      - button [ref=e207]:
+                        - img
+                - row "2 550e8400-e29b-41d4-a716-446655440001 user2@example.com 25-29 女性 true 2024-02-20 14:15:00+09 2024-08-29 14:20:00+09" [ref=e208]:
+                  - cell "2" [ref=e209]
+                  - cell "550e8400-e29b-41d4-a716-446655440001" [ref=e210]
+                  - cell "user2@example.com" [ref=e211]
+                  - cell "25-29" [ref=e212]
+                  - cell "女性" [ref=e213]
+                  - cell "true" [ref=e214]:
+                    - generic [ref=e215]: "true"
+                  - cell "2024-02-20 14:15:00+09" [ref=e216]
+                  - cell "2024-08-29 14:20:00+09" [ref=e217]
+                  - cell [ref=e218]:
+                    - generic [ref=e219]:
+                      - button [ref=e220]:
+                        - img
+                      - button [ref=e221]:
+                        - img
+  - alert [ref=e222]
+```
