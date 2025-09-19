@@ -74,51 +74,52 @@
   -- Expected: 13 tables
   ```
 
-#### T002: インデックス作成 [P] 🔴 [⏳PENDING]
-- **説明**: パフォーマンス最適化用インデックス
-- **ファイル**: `backend/migrations/002_indexes.sql`
+#### T002: インデックス作成 [P] 🔴 [✅COMPLETE]
+- **説明**: パフォーマンス最適化用インデックス ✅ 完了
+- **ファイル**: `backend/migrations/002_indexes.sql` ✅ 58個のインデックス作成完了
 - **依存**: T001
 - **MCP**: なし
 - **TDDフェーズ**: 非適用（インフラタスク）
-- **チェックポイント**:
-  ```sql
-  SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public';
-  -- Expected: 20+ indexes
-  ```
+- **完了状況**:
+  - ✅ 検索最適化インデックス（15個）
+  - ✅ 外部キーインデックス（20個）
+  - ✅ 部分インデックス（10個）
+  - ✅ 複合インデックス（13個）
+- **チェックポイント**: ✅ 58個のインデックス作成確認済み
 
-#### T003: マスタデータ投入スクリプト [P] 🟡 [🔄REFACTOR]
-- **説明**: 都道府県、職種などのマスタデータ
+#### T003: マスタデータ投入スクリプト [P] 🟡 [✅COMPLETE]
+- **説明**: 都道府県、職種などのマスタデータ ✅ REFACTOR完了
 - **ファイル**: `backend/scripts/seed_master_data.py` ✅ 完了
 - **依存**: T001
 - **MCP**: --serena (データ構造操作)
 - **TDDフェーズ**:
   - [✅RED]: テスト作成済み
   - [✅GREEN]: 最小実装完了
-  - [🔄REFACTOR]: エラーハンドリング改善必要
+  - [✅REFACTOR]: エラーハンドリング改善完了
 - **テストファイル**: `backend/tests/unit/test_seed_data.py`
 
-#### T004: サンプルデータ生成 [P] 🟢 [🔄REFACTOR]
-- **説明**: 開発用10万件の求人データ生成
+#### T004: サンプルデータ生成 [P] 🟢 [✅COMPLETE]
+- **説明**: 開発用10万件の求人データ生成 ✅ REFACTOR完了
 - **ファイル**: `backend/scripts/generate_sample_data.py` ✅ 完了
 - **依存**: T001, T003
 - **MCP**: --seq (大量データ生成ロジック)
 - **TDDフェーズ**:
   - [✅RED]: テスト作成済み
   - [✅GREEN]: 最小実装完了
-  - [🔄REFACTOR]: パフォーマンス最適化必要
+  - [✅REFACTOR]: パフォーマンス最適化完了
 - **テストファイル**: `backend/tests/unit/test_sample_generator.py`
 
 ### A2: 契約テスト（TDD - RED Phase） [P] 🔴
 
-#### T005: POST /batch/trigger 契約テスト [P] 🔴 [🔄REFACTOR]
-- **説明**: バッチ処理トリガーのテスト
+#### T005: POST /batch/trigger 契約テスト [P] 🔴 [✅COMPLETE]
+- **説明**: バッチ処理トリガーのテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_batch_trigger.py`
 - **依存**: なし
 - **MCP**: --c7 (api-spec.yaml参照)
 - **TDDフェーズ**:
   - [✅RED]: テスト作成完了（FAIL確認済み）
   - [✅GREEN]: ハードコード実装でテストパス
-  - [🔄REFACTOR]: 実際のロジック実装必要
+  - [✅REFACTOR]: BatchServiceクラス実装完了
 ```python
 def test_batch_trigger_contract():
     response = client.post("/api/v1/batch/trigger",
@@ -127,45 +128,45 @@ def test_batch_trigger_contract():
     assert "batch_id" in response.json()
 ```
 
-#### T006: GET /batch/status/{id} 契約テスト [P] 🔴 [🔄REFACTOR]
-- **説明**: バッチ状態取得のテスト
+#### T006: GET /batch/status/{id} 契約テスト [P] 🔴 [✅COMPLETE]
+- **説明**: バッチ状態取得のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_batch_status.py`
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
   - [✅RED]: テスト作成完了（FAIL確認済み）
   - [✅GREEN]: ハードコード実装でテストパス
-  - [🔄REFACTOR]: 実際のロジック実装必要
+  - [✅REFACTOR]: BatchServiceクラス実装完了
 
-#### T007: POST /jobs/import 契約テスト [P] 🔴 [🔄REFACTOR]
-- **説明**: CSV インポートのテスト
+#### T007: POST /jobs/import 契約テスト [P] 🔴 [✅COMPLETE]
+- **説明**: CSV インポートのテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_jobs_import.py`
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
   - [✅RED]: テスト作成完了（FAIL確認済み）
   - [✅GREEN]: ハードコード実装でテストパス
-  - [🔄REFACTOR]: 実際のロジック実装必要
+  - [✅REFACTOR]: データ処理サービス実装完了
 
-#### T008: POST /scoring/calculate 契約テスト [P] 🔴 [🔄REFACTOR]
-- **説明**: スコアリング計算のテスト
+#### T008: POST /scoring/calculate 契約テスト [P] 🔴 [✅COMPLETE]
+- **説明**: スコアリング計算のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_scoring_calculate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
   - [✅RED]: テスト作成完了（FAIL確認済み）
   - [✅GREEN]: ハードコード実装でテストパス
-  - [🔄REFACTOR]: 実際のロジック実装必要
+  - [✅REFACTOR]: ScoringServiceクラス実装完了
 
-#### T009: POST /matching/generate 契約テスト [P] 🔴 [🔄REFACTOR]
-- **説明**: マッチング生成のテスト
+#### T009: POST /matching/generate 契約テスト [P] 🔴 [✅COMPLETE]
+- **説明**: マッチング生成のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_matching_generate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
   - [✅RED]: テスト作成完了（FAIL確認済み）
   - [✅GREEN]: ハードコード実装でテストパス
-  - [🔄REFACTOR]: 実際のロジック実装必要
+  - [✅REFACTOR]: 統合サービス層実装完了
 
 #### T010: GET /matching/user/{id} 契約テスト [P] 🔴 [x]
 - **説明**: ユーザー別マッチングのテスト
@@ -694,7 +695,7 @@ client = OpenAI(model="gpt-5-nano")
 - **チェックポイント**: `SELECT count(*) FROM information_schema.tables;` = 20
 
 #### T068: v0フロントエンドSupabase統合 [P] 🔴 [🔴RED]
-- **説明**: v0 SQLite管理画面にSupabaseクライアント追加
+- **説明**: v0 管理画面にSupabaseクライアント追加
 - **ファイル**: `frontend/lib/supabase.ts`, `frontend/package.json`
 - **依存**: T067, T041（v0 SQL実行画面）
 - **MCP**: --magic (v0コードとの統合)
@@ -875,12 +876,12 @@ gantt
 ### D1: 環境準備 [P] 🔴
 
 #### T075: Supabaseプロジェクト設定 [P] 🔴 [⏳PENDING]
-- **説明**: Supabaseプロジェクト作成と認証情報取得
+- **説明**: Supabaseプロジェクト　確認と認証情報取得
 - **作業内容**:
-  - Supabaseアカウント作成/ログイン
-  - 新規プロジェクト作成
-  - DATABASE_URL取得
-  - ANON_KEY, SERVICE_ROLE_KEY取得
+  - Supabaseログイン
+  - プロジェクト確認
+  - DATABASE_URL確認
+  - ANON_KEY, SERVICE_ROLE_KEY確認
 - **ファイル**: `backend/.env`
 - **依存**: なし
 - **MCP**: --c7 (Supabaseドキュメント参照)
