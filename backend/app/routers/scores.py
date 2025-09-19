@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.models.common import BaseResponse, PaginatedResponse
-from app.services.scoring import ScoringService
+from app.services.scoring import ScoringEngine as ScoringService
 
 router = APIRouter()
 

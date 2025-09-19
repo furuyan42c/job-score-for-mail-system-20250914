@@ -16,11 +16,24 @@ import re
 
 from app.core.database import get_db
 from app.services.job_import import JobImportService
-from app.services.scoring import ScoringService
-from app.services.matching import MatchingService
-from app.services.email_generation import EmailGenerationService
-from app.services.sql_executor import SQLExecutorService
-from app.services.monitoring import MonitoringService
+from app.services.scoring import ScoringEngine as ScoringService
+# from app.services.matching import MatchingService
+# from app.services.email_generation import EmailGenerationService
+# from app.services.sql_executor import SQLExecutorService
+# from app.services.monitoring import MonitoringService
+
+# Temporary stub classes
+class MatchingService:
+    pass
+
+class EmailGenerationService:
+    pass
+
+class SQLExecutorService:
+    pass
+
+class MonitoringService:
+    pass
 
 router = APIRouter()
 
