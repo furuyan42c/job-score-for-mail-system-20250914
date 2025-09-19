@@ -8,9 +8,9 @@
 
 ## 📊 タスク概要
 
-- **総タスク数**: 74タスク（222サブタスク = 74 × 3フェーズ）
-- **並列実行可能**: 48タスク（64.9%）
-- **推定所要時間**: 並列実行で約6日、順次実行で約18日
+- **総タスク数**: 96タスク（288サブタスク = 96 × 3フェーズ）
+- **並列実行可能**: 63タスク（65.6%）
+- **推定所要時間**: 並列実行で約8日、順次実行で約23日
 - **優先度**: 🔴高（ブロッカー） 🟡中（重要） 🟢低（改善）
 - **TDDフェーズ表記**: [🔴RED] [🟢GREEN] [🔄REFACTOR] [✅COMPLETE][❌　TDD] 
 - **完了**: [❌TASK] [✅TASK] 
@@ -46,6 +46,8 @@
 - **Group C**: 統合・最適化（タスク46-74）
   - **C1-C5**: 既存統合・セキュリティ（T046-T065）
   - **C6**: Supabase統合（T066-T074）
+- **Group D**: 実装テスト・統合検証（タスク75-85）
+- **Group E**: 実データ投入・本番検証（タスク86-96）
 
 ### MCP活用方針
 - **Sequential (--seq)**: 複雑なロジック、深い分析
@@ -865,6 +867,492 @@ gantt
 - [ ] **マルチユーザー対応**（RLSによるアクセス制御）
 - [ ] **リアルタイム更新**（データベース変更の即座反映）
 - [ ] **本番環境対応**（スケーラブルなクラウドDB管理システム）
+
+---
+
+## Group D: 実装テスト・統合検証（実環境動作確認）
+
+### D1: 環境準備 [P] 🔴
+
+#### T075: Supabaseプロジェクト設定 [P] 🔴 [⏳PENDING]
+- **説明**: Supabaseプロジェクト作成と認証情報取得
+- **作業内容**:
+  - Supabaseアカウント作成/ログイン
+  - 新規プロジェクト作成
+  - DATABASE_URL取得
+  - ANON_KEY, SERVICE_ROLE_KEY取得
+- **ファイル**: `backend/.env`
+- **依存**: なし
+- **MCP**: --c7 (Supabaseドキュメント参照)
+- **TDDフェーズ**: 非適用（環境設定タスク）
+- **チェックポイント**:
+  ```bash
+  grep "SUPABASE_URL=https://" backend/.env
+  # Expected: 実際のSupabase URLが設定されている
+  ```
+
+#### T076: Backend設定調整 [P] 🔴 [⏳PENDING]
+- **説明**: PostgreSQL/Supabase接続設定の最適化
+- **ファイル**: `backend/app/core/config.py`, `backend/.env`
+- **作業内容**:
+  - DATABASE_URL検証の環境別対応
+  - ENVIRONMENT変数の活用
+  - 開発環境での柔軟な設定
+- **依存**: T075
+- **MCP**: なし
+- **TDDフェーズ**: 非適用（設定タスク）
+- **チェックポイント**:
+  ```python
+  # config.pyが開発環境でSQLiteも受け入れること
+  import os; os.environ['ENVIRONMENT'] = 'development'
+  ```
+
+#### T077: データベースマイグレーション 🔴 [⏳PENDING]
+- **説明**: Supabaseデータベースへのスキーマ適用
+- **コマンド**:
+  ```bash
+  cd backend
+  alembic upgrade head  # または
+  python scripts/migrate.py
+  ```
+- **ファイル**: `backend/migrations/`, `backend/alembic.ini`
+- **依存**: T075, T076
+- **MCP**: なし
+- **TDDフェーズ**: 非適用（マイグレーションタスク）
+- **チェックポイント**:
+  ```sql
+  -- Supabaseダッシュボードで確認
+  SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';
+  -- Expected: 20+ tables
+  ```
+
+### D2: サービス起動確認 🔴
+
+#### T078: Backend起動テスト 🔴 [⏳PENDING]
+- **説明**: FastAPIサーバーの起動と基本動作確認
+- **コマンド**:
+  ```bash
+  cd backend
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+  ```
+- **依存**: T076, T077
+- **MCP**: なし
+- **TDDフェーズ**: 非適用（起動確認タスク）
+- **チェックポイント**:
+  - http://localhost:8000 → {"status": "healthy"}
+  - http://localhost:8000/docs → Swagger UI表示
+  - http://localhost:8000/health → 正常レスポンス
+
+#### T079: Frontend起動確認 [P] 🟡 [✅COMPLETE]
+- **説明**: Next.jsサーバーの起動と表示確認
+- **コマンド**:
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+- **ファイル**: 既に起動確認済み
+- **依存**: なし
+- **MCP**: なし
+- **TDDフェーズ**: 非適用（起動確認タスク）
+- **チェックポイント**: ✅ http://localhost:3000 で正常表示確認済み
+
+### D3: API統合テスト [P] 🔴
+
+#### T080: 基本APIエンドポイントテスト [P] 🔴 [⏳PENDING]
+- **説明**: 主要APIエンドポイントの動作確認
+- **テスト対象**:
+  ```bash
+  # Health Check
+  curl -X GET http://localhost:8000/health
+
+  # Jobs API
+  curl -X GET http://localhost:8000/api/v1/jobs
+
+  # Users API
+  curl -X POST http://localhost:8000/api/v1/users/register \
+    -H "Content-Type: application/json" \
+    -d '{"email": "test@example.com", "password": "testpass123"}'
+  ```
+- **依存**: T078
+- **MCP**: --play (API自動テスト)
+- **TDDフェーズ**:
+  - [⏳RED]: APIテストスクリプト作成
+  - [⏳GREEN]: エンドポイント実装確認
+  - [⏳REFACTOR]: エラーハンドリング改善
+- **テストファイル**: `backend/tests/integration/test_api_endpoints.py`
+
+#### T081: Supabase Auth統合テスト [P] 🔴 [⏳PENDING]
+- **説明**: Supabase認証機能の動作確認
+- **テスト内容**:
+  - ユーザー登録フロー
+  - ログイン/ログアウト
+  - JWTトークン検証
+  - セッション管理
+- **依存**: T080
+- **MCP**: --play (認証フローE2Eテスト)
+- **TDDフェーズ**:
+  - [⏳RED]: 認証テストケース作成
+  - [⏳GREEN]: 基本認証実装
+  - [⏳REFACTOR]: セキュリティ強化
+- **テストファイル**: `backend/tests/integration/test_auth_flow.py`
+- **チェックポイント**: Supabaseダッシュボードでユーザー作成確認
+
+### D4: Frontend-Backend接続 🔴
+
+#### T082: API接続設定 🔴 [⏳PENDING]
+- **説明**: Frontend環境変数とAPI接続設定
+- **ファイル**: `frontend/.env.local`
+- **設定内容**:
+  ```env
+  NEXT_PUBLIC_API_URL=http://localhost:8000
+  NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+  ```
+- **依存**: T078, T079
+- **MCP**: なし
+- **TDDフェーズ**: 非適用（設定タスク）
+- **チェックポイント**:
+  ```bash
+  grep "NEXT_PUBLIC_API_URL" frontend/.env.local
+  # Expected: Backend URLが正しく設定
+  ```
+
+#### T083: データフロー統合テスト 🔴 [⏳PENDING]
+- **説明**: Frontend→Backend→DB→Frontendの完全なデータフロー確認
+- **テストシナリオ**:
+  1. 求人一覧ページ表示
+  2. 求人詳細モーダル表示
+  3. ユーザー登録・ログイン
+  4. マッチング結果表示
+- **依存**: T082
+- **MCP**: --play (E2Eデータフローテスト)
+- **TDDフェーズ**:
+  - [⏳RED]: データフローテスト作成
+  - [⏳GREEN]: 基本的なCRUD動作
+  - [⏳REFACTOR]: エラー処理とUX改善
+- **テストファイル**: `frontend/tests/e2e/test_data_flow.spec.ts`
+
+### D5: E2Eシナリオテスト 🟡
+
+#### T084: ユーザージャーニーテスト 🟡 [⏳PENDING]
+- **説明**: 実際のユーザー操作シナリオの完全テスト
+- **シナリオ**:
+  ```gherkin
+  Feature: 求人マッチングフロー
+    Scenario: 新規ユーザーの求人マッチング
+      Given ユーザーがトップページにアクセス
+      When ユーザー登録を行う
+      And プロフィール情報を入力
+      And 希望条件を設定
+      Then パーソナライズされた求人が表示される
+      And メール配信設定ができる
+  ```
+- **依存**: T083
+- **MCP**: --play (完全E2Eシナリオテスト)
+- **TDDフェーズ**:
+  - [⏳RED]: シナリオテスト定義
+  - [⏳GREEN]: 各ステップ実装確認
+  - [⏳REFACTOR]: テスト安定性向上
+- **テストファイル**: `frontend/tests/e2e/test_user_journey.spec.ts`
+
+#### T085: パフォーマンス・負荷テスト [P] 🟢 [⏳PENDING]
+- **説明**: システム全体のパフォーマンス検証
+- **テスト項目**:
+  - 10万件求人データのインポート時間（目標: 5分以内）
+  - 1万人×40件のマッチング処理時間（目標: 30分以内）
+  - 1000同時接続での応答時間（目標: 200ms以内）
+  - メモリ使用量（目標: 8GB以内）
+- **依存**: T083
+- **MCP**: --seq (パフォーマンス分析)
+- **TDDフェーズ**:
+  - [⏳RED]: パフォーマンス基準定義
+  - [⏳GREEN]: 基本的な性能達成
+  - [⏳REFACTOR]: 最適化実施
+- **テストファイル**: `backend/tests/performance/test_load.py`
+- **ツール**: locust, pytest-benchmark
+
+---
+
+## Group E: 実データ投入・本番検証（実際のデータでの動作確認）
+
+### E1: マスタデータ投入 [P] 🔴
+
+#### T086: マスタデータ投入 [P] 🔴 [⏳PENDING]
+- **説明**: 既存のマスタデータCSVをデータベースに投入
+- **対象ファイル**:
+  - `data/prefecture_view.csv` (50件)
+  - `data/city_view.csv` (1,919件)
+  - `data/occupation_view.csv` (173件)
+  - `data/employment_type_view.csv` (11件)
+  - `data/salary_type_view.csv` (7件)
+  - `data/feature_view.csv` (79件)
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/import_master_data.py --data-dir ../data
+  ```
+- **依存**: T077 (マイグレーション完了)
+- **MCP**: なし
+- **TDDフェーズ**:
+  - [⏳RED]: インポートテスト作成
+  - [⏳GREEN]: 基本インポート実装
+  - [⏳REFACTOR]: エラーハンドリング強化
+- **チェックポイント**:
+  ```sql
+  SELECT COUNT(*) FROM prefectures; -- Expected: 50
+  SELECT COUNT(*) FROM cities; -- Expected: 1919
+  SELECT COUNT(*) FROM occupations; -- Expected: 173
+  ```
+
+#### T087: SEOキーワードデータ投入 [P] 🟡 [⏳PENDING]
+- **説明**: SEMRushキーワードデータの投入とインデックス作成
+- **対象ファイル**: `data/semrush_kw20250824_sample.csv` (1,001件)
+- **作業内容**:
+  - キーワードデータのパース
+  - 検索ボリューム・難易度の格納
+  - 全文検索インデックス作成
+- **依存**: T086
+- **MCP**: --serena (データ構造変換)
+- **TDDフェーズ**:
+  - [⏳RED]: SEOデータテスト作成
+  - [⏳GREEN]: インポート実装
+  - [⏳REFACTOR]: インデックス最適化
+- **テストファイル**: `backend/tests/unit/test_seo_import.py`
+
+### E2: 求人データ大量投入 🔴
+
+#### T088: 求人データインポート 🔴 [⏳PENDING]
+- **説明**: 19万件の実求人データをデータベースに投入
+- **対象ファイル**: `data/sample_job_data.csv` (195,683件)
+- **作業内容**:
+  - CSVのバッチ読み込み（5000件ずつ）
+  - データ検証とクレンジング
+  - 一括INSERT処理
+  - 進捗表示とエラーログ
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/import_job_data.py \
+    --file ../data/sample_job_data.csv \
+    --batch-size 5000 \
+    --validate
+  ```
+- **依存**: T086
+- **MCP**: --seq (大量データ処理の最適化)
+- **TDDフェーズ**:
+  - [⏳RED]: 大量データインポートテスト
+  - [⏳GREEN]: バッチ処理実装
+  - [⏳REFACTOR]: パフォーマンス最適化
+- **パフォーマンス目標**: 5分以内で全件投入
+- **チェックポイント**:
+  ```sql
+  SELECT COUNT(*) FROM jobs; -- Expected: 195,683
+  SELECT COUNT(DISTINCT company_id) FROM jobs;
+  ```
+
+#### T089: データ整合性検証 [P] 🔴 [⏳PENDING]
+- **説明**: 投入されたデータの整合性と品質チェック
+- **検証項目**:
+  - 外部キー制約の確認
+  - NULL値の分布確認
+  - データ型の妥当性
+  - 重複データの検出
+- **スクリプト**: `backend/scripts/validate_data.py`
+- **依存**: T088
+- **MCP**: なし
+- **TDDフェーズ**:
+  - [⏳RED]: データ検証テスト定義
+  - [⏳GREEN]: 検証ロジック実装
+  - [⏳REFACTOR]: レポート生成改善
+- **出力**: `reports/data_validation_report.md`
+
+### E3: スコアリング実行 🔴
+
+#### T090: 基礎スコア計算 🔴 [⏳PENDING]
+- **説明**: 全求人データに対する基礎スコア計算
+- **処理内容**:
+  - 給与スコア計算
+  - 勤務地スコア計算
+  - 企業評価スコア計算
+  - 総合基礎スコア算出
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/calculate_base_scores.py --jobs all
+  ```
+- **依存**: T088
+- **MCP**: --seq (アルゴリズム最適化)
+- **TDDフェーズ**:
+  - [⏳RED]: スコアリングテスト作成
+  - [⏳GREEN]: 基本計算実装
+  - [⏳REFACTOR]: アルゴリズム改善
+- **パフォーマンス**: 10万件を3分以内
+- **チェックポイント**:
+  ```sql
+  SELECT COUNT(*) FROM job_scores WHERE base_score IS NOT NULL;
+  SELECT AVG(base_score), MIN(base_score), MAX(base_score) FROM job_scores;
+  ```
+
+#### T091: SEOスコア計算 [P] 🟡 [⏳PENDING]
+- **説明**: キーワードマッチングによるSEOスコア計算
+- **処理内容**:
+  - 求人タイトル・説明文のキーワード抽出
+  - SEOキーワードとのマッチング
+  - 検索ボリューム重み付け
+  - SEOスコア算出
+- **依存**: T087, T090
+- **MCP**: --serena (テキスト処理)
+- **TDDフェーズ**:
+  - [⏳RED]: SEOスコアテスト
+  - [⏳GREEN]: マッチング実装
+  - [⏳REFACTOR]: 精度向上
+- **テストファイル**: `backend/tests/unit/test_seo_scoring.py`
+
+### E4: マッチング実行 🔴
+
+#### T092: ユーザー×求人マッチング 🔴 [⏳PENDING]
+- **説明**: サンプルユーザーに対する実求人マッチング
+- **処理内容**:
+  - 100人のテストユーザー生成
+  - 各ユーザーに対して40件の求人選定
+  - 6セクション分類（S1-S6）
+  - マッチング結果の保存
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/run_matching.py \
+    --users 100 \
+    --jobs-per-user 40 \
+    --output ../reports/matching_results.csv
+  ```
+- **依存**: T091
+- **MCP**: --seq (マッチングアルゴリズム)
+- **TDDフェーズ**:
+  - [⏳RED]: マッチングテスト定義
+  - [⏳GREEN]: アルゴリズム実装
+  - [⏳REFACTOR]: 精度改善
+- **パフォーマンス**: 100人×40件を5分以内
+- **チェックポイント**:
+  ```sql
+  SELECT user_id, COUNT(*) FROM user_job_matches
+  GROUP BY user_id HAVING COUNT(*) = 40;
+  ```
+
+#### T093: メール生成テスト 🟡 [⏳PENDING]
+- **説明**: マッチング結果からのメール生成
+- **処理内容**:
+  - HTMLメールテンプレート適用
+  - 6セクション×40件の構成
+  - パーソナライズ要素の挿入
+  - プレビュー用HTML生成
+- **依存**: T092
+- **MCP**: --magic (HTMLテンプレート)
+- **TDDフェーズ**:
+  - [⏳RED]: メール生成テスト
+  - [⏳GREEN]: テンプレート実装
+  - [⏳REFACTOR]: デザイン改善
+- **出力サンプル**: `reports/sample_emails/`
+- **チェックポイント**:
+  - メールサイズ < 100KB
+  - 全セクションに求人が配置
+  - パーソナライズ要素の確認
+
+### E5: メール配信シミュレーション 🔴
+
+#### T094: 配信リスト生成 🔴 [⏳PENDING]
+- **説明**: 1万人分の配信リスト作成と検証
+- **処理内容**:
+  - テストユーザー1万人の生成
+  - メールアドレスの検証
+  - 配信スケジュール設定（日次）
+  - 配信優先度の設定
+  - オプトアウトリストの管理
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/generate_mailing_list.py \
+    --users 10000 \
+    --output ../reports/mailing_list.csv \
+    --validate-emails
+  ```
+- **依存**: T093
+- **MCP**: なし
+- **TDDフェーズ**:
+  - [⏳RED]: 配信リスト生成テスト
+  - [⏳GREEN]: リスト生成ロジック
+  - [⏳REFACTOR]: バリデーション強化
+- **チェックポイント**:
+  ```sql
+  SELECT COUNT(*) FROM mailing_list WHERE status = 'active';
+  -- Expected: 10,000
+  SELECT COUNT(*) FROM mailing_list WHERE email_verified = true;
+  ```
+
+#### T095: バッチ配信シミュレーション 🔴 [⏳PENDING]
+- **説明**: 1万通のメール配信をシミュレーション
+- **処理内容**:
+  - 配信キューへの登録（1000件/バッチ）
+  - レート制限の実装（100通/分）
+  - 配信ステータスの追跡
+  - エラーハンドリング
+  - 配信レポート生成
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/simulate_batch_delivery.py \
+    --list ../reports/mailing_list.csv \
+    --batch-size 1000 \
+    --rate-limit 100 \
+    --dry-run  # 実際には送信しない
+  ```
+- **依存**: T094
+- **MCP**: --seq (バッチ処理最適化)
+- **TDDフェーズ**:
+  - [⏳RED]: バッチ配信テスト
+  - [⏳GREEN]: 配信シミュレーション実装
+  - [⏳REFACTOR]: パフォーマンス最適化
+- **パフォーマンス目標**:
+  - 1万通の配信準備: 10分以内
+  - 配信完了（シミュレーション）: 100分
+- **出力**:
+  ```
+  reports/delivery_simulation/
+  ├── delivery_report.json
+  ├── error_log.csv
+  ├── success_rate.txt (Expected: >99%)
+  └── performance_metrics.json
+  ```
+
+#### T096: 配信結果分析 [P] 🟢 [⏳PENDING]
+- **説明**: 配信シミュレーション結果の詳細分析
+- **分析項目**:
+  - 配信成功率の統計
+  - エラー種別の分類
+  - 配信時間の分布
+  - メールサイズの分布
+  - パーソナライズ要素のカバレッジ
+- **コマンド**:
+  ```bash
+  cd backend
+  python scripts/analyze_delivery_results.py \
+    --report ../reports/delivery_simulation/ \
+    --output ../reports/delivery_analysis.md
+  ```
+- **依存**: T095
+- **MCP**: --seq (統計分析)
+- **TDDフェーズ**:
+  - [⏳RED]: 分析テスト定義
+  - [⏳GREEN]: 分析ロジック実装
+  - [⏳REFACTOR]: レポート改善
+- **成果物**:
+  ```markdown
+  # 配信分析レポート
+  - 総配信数: 10,000
+  - 成功率: 99.8%
+  - 平均配信時間: 0.6秒
+  - メールサイズ: 平均85KB
+  - セクション充足率: 100%
+  ```
 
 ---
 

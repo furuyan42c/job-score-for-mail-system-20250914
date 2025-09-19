@@ -1,1 +1,0 @@
-export { JobApplicationForm } from '../placeholder';

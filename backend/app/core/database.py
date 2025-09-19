@@ -9,7 +9,6 @@ Supabase PostgreSQLへの接続とSQLAlchemy設定
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import QueuePool
 from sqlalchemy import text, event
 import asyncio
 import logging
@@ -25,26 +24,39 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 # 非同期エンジン（高並行性対応）
-engine = create_async_engine(
-    settings.database_url_async,
-    poolclass=QueuePool,
-    pool_size=settings.DB_POOL_SIZE,  # 100
-    max_overflow=settings.DB_MAX_OVERFLOW,  # 200
-    pool_timeout=settings.DB_POOL_TIMEOUT,  # 10
-    pool_recycle=settings.DB_POOL_RECYCLE,  # 3600
-    pool_pre_ping=settings.DB_POOL_PRE_PING,  # True
-    echo=settings.DB_ECHO,  # False in production
-    future=True,
-    # 高並行性のための追加設定
-    connect_args={
-        "server_settings": {
-            "application_name": "job_matching_api",
-            "tcp_keepalives_idle": "600",
-            "tcp_keepalives_interval": "30",
-            "tcp_keepalives_count": "3",
+# SQLiteかPostgreSQLかで設定を分ける
+if "sqlite" in settings.database_url_async:
+    # SQLite用設定（プールなし、connect_args調整）
+    engine = create_async_engine(
+        settings.database_url_async,
+        echo=settings.DB_ECHO,
+        future=True,
+        connect_args={
+            "check_same_thread": False,  # SQLiteのマルチスレッド対応
         }
-    }
-)
+    )
+else:
+    # PostgreSQL/Supabase用設定
+    engine = create_async_engine(
+        settings.database_url_async,
+        # poolclass=QueuePool を削除（非同期エンジンではデフォルトで適切なプールが使用される）
+        pool_size=settings.DB_POOL_SIZE,  # 100
+        max_overflow=settings.DB_MAX_OVERFLOW,  # 200
+        pool_timeout=settings.DB_POOL_TIMEOUT,  # 10
+        pool_recycle=settings.DB_POOL_RECYCLE,  # 3600
+        pool_pre_ping=settings.DB_POOL_PRE_PING,  # True
+        echo=settings.DB_ECHO,  # False in production
+        future=True,
+        # 高並行性のための追加設定
+        connect_args={
+            "server_settings": {
+                "application_name": "job_matching_api",
+                "tcp_keepalives_idle": "600",
+                "tcp_keepalives_interval": "30",
+                "tcp_keepalives_count": "3",
+            }
+        }
+    )
 
 # 非同期セッションファクトリ
 AsyncSessionLocal = sessionmaker(
@@ -73,6 +85,16 @@ class ConnectionPoolStats:
     @staticmethod
     def get_pool_stats() -> dict:
         """プール統計取得"""
+        if "sqlite" in settings.database_url_async:
+            # SQLiteではプール統計は利用不可
+            return {
+                "pool_size": "N/A",
+                "checked_in": "N/A",
+                "checked_out": "N/A",
+                "overflow": "N/A",
+                "invalidated": "N/A",
+                "utilization": 0
+            }
         pool = engine.pool
         return {
             "pool_size": pool.size(),
@@ -80,7 +102,7 @@ class ConnectionPoolStats:
             "checked_out": pool.checkedout(),
             "overflow": pool.overflow(),
             "invalidated": pool.invalidated(),
-            "utilization": (pool.checkedout() / (pool.size() + pool.overflow())) * 100
+            "utilization": (pool.checkedout() / (pool.size() + pool.overflow())) * 100 if (pool.size() + pool.overflow()) > 0 else 0
         }
 
 
@@ -155,8 +177,9 @@ async def get_db_read_only() -> AsyncGenerator[AsyncSession, None]:
     """
     session = AsyncSessionLocal()
     try:
-        # 読み取り専用モードに設定
-        await session.execute(text("SET TRANSACTION READ ONLY"))
+        # PostgreSQLの場合のみ読み取り専用モードに設定
+        if "postgresql" in settings.database_url_async:
+            await session.execute(text("SET TRANSACTION READ ONLY"))
         yield session
     except Exception as e:
         logger.error(f"Read-only session error: {e}")
@@ -201,6 +224,17 @@ class DatabaseMetrics:
     @staticmethod
     async def get_connection_info():
         """接続情報取得"""
+        if "sqlite" in settings.database_url_async:
+            # SQLiteの場合は簡易的な情報のみ
+            return {
+                "connections": {
+                    "total": 1,
+                    "active": 1,
+                    "idle": 0
+                },
+                "database_size": "N/A (SQLite)"
+            }
+
         async with AsyncSessionLocal() as session:
             try:
                 # 接続数
@@ -235,6 +269,10 @@ class DatabaseMetrics:
     @staticmethod
     async def get_slow_queries(limit: int = 10):
         """スロークエリ取得"""
+        if "sqlite" in settings.database_url_async:
+            # SQLiteではスロークエリ統計は利用不可
+            return []
+
         async with AsyncSessionLocal() as session:
             try:
                 result = await session.execute(text("""
@@ -259,6 +297,15 @@ class DatabaseMetrics:
 # 接続プール監視
 async def monitor_connection_pool():
     """接続プール状態監視"""
+    if "sqlite" in settings.database_url_async:
+        # SQLiteではプール監視は利用不可
+        return {
+            "size": "N/A",
+            "checked_in": "N/A",
+            "checked_out": "N/A",
+            "overflow": "N/A",
+            "invalidated": "N/A"
+        }
     pool = engine.pool
     return {
         "size": pool.size(),

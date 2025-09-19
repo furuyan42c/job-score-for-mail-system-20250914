@@ -1,1 +1,0 @@
-export { JobsPagination } from '../placeholder';

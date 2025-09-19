@@ -117,10 +117,18 @@ class Settings(BaseSettings):
         return ["*"]  # Default fallback
 
     @validator("DATABASE_URL")
-    def validate_database_url(cls, v):
+    def validate_database_url(cls, v, values):
         """データベースURLの検証"""
-        if not v.startswith(("postgresql://", "postgresql+asyncpg://")):
-            raise ValueError("DATABASE_URLはPostgreSQLのURLである必要があります")
+        # 開発環境ではSQLiteも許可
+        env = values.get("ENVIRONMENT", "development")
+        if env == "development":
+            # 開発環境では幅広いDBを許可
+            if not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://", "sqlite+aiosqlite://")):
+                raise ValueError("Invalid DATABASE_URL format")
+        else:
+            # 本番/ステージング環境ではPostgreSQL/Supabaseのみ
+            if not v.startswith(("postgresql://", "postgresql+asyncpg://")):
+                raise ValueError("DATABASE_URLはPostgreSQLのURLである必要があります")
         return v
 
     @validator("SECRET_KEY")

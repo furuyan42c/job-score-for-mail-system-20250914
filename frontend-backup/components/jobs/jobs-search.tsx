@@ -1,1 +1,0 @@
-export { JobsSearch } from '../placeholder';
