@@ -19,20 +19,26 @@ logger = logging.getLogger(__name__)
 class AIScorer:
     """AI scorer for semantic job-user matching using GPT."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
         """
         Initialize AIScorer.
 
         Args:
             api_key: OpenAI API key (optional)
+            model: OpenAI model to use for scoring
         """
         self.api_key = api_key
+        self.model = model
         self.client = None
+        self.max_tokens = 10
+        self.temperature = 0.1
+        self.fallback_score = 0.0
 
         if self.api_key and OPENAI_AVAILABLE:
             try:
                 openai.api_key = self.api_key
                 self.client = openai
+                logger.info(f"AIScorer initialized with model: {self.model}")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI client: {e}")
 
@@ -95,19 +101,20 @@ Do not include any explanation, just the number.
         """
         # Return default score if no API key or OpenAI not available
         if not self.api_key or not OPENAI_AVAILABLE or not self.client:
-            return 0.0
+            logger.debug("AI scoring not available, returning fallback score")
+            return self.fallback_score
 
         try:
             prompt = self._create_prompt(job_data, user_preferences)
 
             response = self.client.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a job matching expert. Respond only with a number between 0.0 and 1.0."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=10,
-                temperature=0.1
+                max_tokens=self.max_tokens,
+                temperature=self.temperature
             )
 
             score_text = response.choices[0].message.content.strip()
@@ -123,4 +130,16 @@ Do not include any explanation, just the number.
 
         except Exception as e:
             logger.warning(f"AI scoring failed: {e}")
-            return 0.0
+            return self.fallback_score
+
+    def set_fallback_score(self, score: float) -> None:
+        """
+        Set the fallback score for when AI is not available.
+
+        Args:
+            score: Fallback score between 0.0 and 1.0
+        """
+        if 0.0 <= score <= 1.0:
+            self.fallback_score = score
+        else:
+            raise ValueError("Fallback score must be between 0.0 and 1.0")

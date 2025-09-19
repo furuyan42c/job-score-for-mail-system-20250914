@@ -4,6 +4,9 @@ Handles skills and requirements matching using keyword extraction and comparison
 """
 from typing import Dict, Any, List, Set
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class KeywordScorer:
@@ -11,14 +14,45 @@ class KeywordScorer:
 
     def __init__(self):
         """Initialize KeywordScorer."""
-        # Common technical keywords for extraction
+        # Common technical keywords for extraction - expanded set
         self.tech_keywords = {
-            'python', 'java', 'javascript', 'typescript', 'react', 'angular', 'vue',
-            'node', 'django', 'flask', 'spring', 'express', 'postgresql', 'mysql',
-            'mongodb', 'redis', 'aws', 'azure', 'gcp', 'docker', 'kubernetes',
-            'git', 'ci/cd', 'agile', 'scrum', 'html', 'css', 'sql', 'nosql',
-            'rest', 'api', 'microservices', 'devops', 'linux', 'unix', 'bash'
+            # Programming languages
+            'python', 'java', 'javascript', 'typescript', 'go', 'rust', 'c++', 'c#',
+            'php', 'ruby', 'swift', 'kotlin', 'scala', 'clojure', 'r', 'matlab',
+
+            # Frontend frameworks
+            'react', 'angular', 'vue', 'svelte', 'next.js', 'nuxt', 'gatsby',
+
+            # Backend frameworks
+            'django', 'flask', 'fastapi', 'spring', 'express', 'nest.js', 'laravel',
+
+            # Databases
+            'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'cassandra',
+            'dynamodb', 'sqlite', 'oracle', 'sql server',
+
+            # Cloud platforms
+            'aws', 'azure', 'gcp', 'heroku', 'vercel', 'netlify', 'digitalocean',
+
+            # DevOps tools
+            'docker', 'kubernetes', 'terraform', 'ansible', 'jenkins', 'gitlab',
+            'github', 'circleci', 'travis', 'git', 'ci/cd',
+
+            # Methodologies
+            'agile', 'scrum', 'kanban', 'waterfall', 'tdd', 'bdd',
+
+            # Web technologies
+            'html', 'css', 'sass', 'less', 'webpack', 'babel', 'typescript',
+
+            # APIs and architecture
+            'rest', 'graphql', 'api', 'microservices', 'serverless', 'websockets',
+
+            # Operating systems
+            'linux', 'unix', 'windows', 'macos', 'bash', 'powershell'
         }
+
+        # Scoring weights
+        self.skill_match_bonus = 1.2  # Bonus for having more skills than required
+        self.min_match_threshold = 0.0  # Minimum score threshold
 
     def extract_keywords(self, job_data: Dict[str, Any]) -> List[str]:
         """
@@ -39,17 +73,28 @@ class KeywordScorer:
         # Combine all text and normalize
         combined_text = " ".join(text_fields).lower()
 
-        # Extract words
-        words = re.findall(r'\b\w+\b', combined_text)
+        # Extract words and normalize
+        words = re.findall(r'\b\w+(?:\.\w+)*\b', combined_text)  # Handle words with dots (e.g., next.js)
 
         # Filter for technical keywords and common patterns
         keywords = []
         for word in words:
+            # Check for exact matches
             if word in self.tech_keywords:
+                keywords.append(word)
+            # Check for partial matches (e.g., 'javascript' matches 'js')
+            elif any(tech_word in word or word in tech_word for tech_word in self.tech_keywords):
                 keywords.append(word)
             # Add patterns for years of experience
             elif re.match(r'\d+\+?', word):
                 keywords.append(word)
+
+        # Handle compound technologies (e.g., "next.js", "c++")
+        # Look for patterns in the original text
+        compound_patterns = [r'next\.js', r'vue\.js', r'node\.js', r'c\+\+', r'c#']
+        for pattern in compound_patterns:
+            matches = re.findall(pattern, combined_text, re.IGNORECASE)
+            keywords.extend(matches)
 
         # Remove duplicates while preserving order
         seen = set()
@@ -89,7 +134,7 @@ class KeywordScorer:
         match_ratio = len(matches) / len(job_set)
 
         # Bonus for having more skills than required
-        skill_bonus = min(len(user_set) / len(job_set), 1.2) if len(job_set) > 0 else 1.0
+        skill_bonus = min(len(user_set) / len(job_set), self.skill_match_bonus) if len(job_set) > 0 else 1.0
 
         score = match_ratio * skill_bonus
 
