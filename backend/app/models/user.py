@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
 """
-T017: User Model (GREEN Phase)
+T017: User Model (REFACTORED)
 
-Minimal implementation to pass tests
+User model with authentication, preferences, and subscription management.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, Float, ForeignKey
+from typing import Optional, Dict, Any, List
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, Float, ForeignKey, Index
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timedelta
-import json
 import re
+import logging
 
 from app.core.database import Base
+
+logger = logging.getLogger(__name__)
 
 
 class User(Base):
     """User model for users table"""
 
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        Index('idx_user_email', 'email'),
+        Index('idx_user_active', 'is_active'),
+        {'extend_existing': True}
+    )
     
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -55,31 +62,64 @@ class User(Base):
     search_alerts = relationship("SearchAlert", back_populates="user")
     
     def verify_password(self, password: str) -> bool:
-        """Verify password"""
-        # Simplified for testing - should use proper hashing
-        from app.core.security import verify_password
-        return verify_password(password, self.hashed_password)
+        """Verify password against stored hash.
+
+        Args:
+            password: Plain text password to verify
+
+        Returns:
+            True if password matches, False otherwise
+        """
+        if not self.hashed_password:
+            return False
+        try:
+            from app.core.security import verify_password
+            return verify_password(password, self.hashed_password)
+        except Exception as e:
+            logger.error(f"Password verification failed: {e}")
+            return False
     
-    def set_preference(self, key: str, value):
-        """Set user preference"""
-        if not self.preferences:
+    def set_preference(self, key: str, value: Any) -> None:
+        """Set user preference.
+
+        Args:
+            key: Preference key
+            value: Preference value
+        """
+        if self.preferences is None:
             self.preferences = {}
-        self.preferences[key] = value
-    
-    def get_preference(self, key: str, default=None):
-        """Get user preference"""
+        self.preferences = {**self.preferences, key: value}  # Ensure SQLAlchemy detects change
+
+    def get_preference(self, key: str, default: Any = None) -> Any:
+        """Get user preference.
+
+        Args:
+            key: Preference key
+            default: Default value if key not found
+
+        Returns:
+            Preference value or default
+        """
         if not self.preferences:
             return default
         return self.preferences.get(key, default)
     
-    def add_search_history(self, search_data: dict):
-        """Add to search history"""
-        if not self.search_history:
+    # Configuration constants
+    MAX_SEARCH_HISTORY = 100
+    EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    def add_search_history(self, search_data: dict) -> None:
+        """Add to search history, maintaining max history limit.
+
+        Args:
+            search_data: Search information to store
+        """
+        if self.search_history is None:
             self.search_history = []
-        # Add to beginning of list (most recent first)
-        self.search_history.insert(0, search_data)
-        # Keep only last 100 searches
-        self.search_history = self.search_history[:100]
+
+        # Create new list to ensure SQLAlchemy detects change
+        new_history = [search_data] + (self.search_history or [])
+        self.search_history = new_history[:self.MAX_SEARCH_HISTORY]
     
     def get_search_history(self, limit: int = 10):
         """Get search history"""
@@ -108,11 +148,23 @@ class User(Base):
             return False
         return self.subscription_expires_at > datetime.utcnow()
     
-    def validate_email(self):
-        """Validate email format"""
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_pattern, self.email):
-            raise ValueError("Invalid email format")
+    @validates('email')
+    def validate_email(self, key: str, email: str) -> str:
+        """Validate email format on assignment.
+
+        Args:
+            key: Field name (email)
+            email: Email value to validate
+
+        Returns:
+            Validated email
+
+        Raises:
+            ValueError: If email format is invalid
+        """
+        if not email or not re.match(self.EMAIL_REGEX, email):
+            raise ValueError(f"Invalid email format: {email}")
+        return email.lower()  # Normalize to lowercase
     
     async def check_email_unique(self, db_session):
         """Check if email is unique"""
@@ -127,8 +179,16 @@ class User(Base):
         """Update last login timestamp"""
         self.last_login_at = datetime.utcnow()
     
-    def to_dict(self, exclude_sensitive: bool = False):
-        """Convert to dictionary"""
+    def to_dict(self, exclude_sensitive: bool = True, include_preferences: bool = False) -> Dict[str, Any]:
+        """Convert user to dictionary representation.
+
+        Args:
+            exclude_sensitive: Whether to exclude sensitive data
+            include_preferences: Whether to include user preferences
+
+        Returns:
+            Dictionary representation of user
+        """
         data = {
             'id': self.id,
             'user_id': self.user_id,
@@ -137,14 +197,19 @@ class User(Base):
             'is_active': self.is_active,
             'is_verified': self.is_verified,
             'subscription_type': self.subscription_type,
+            'is_premium': self.is_premium(),
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'last_login_at': self.last_login_at.isoformat() if self.last_login_at else None,
         }
-        
+
+        if include_preferences and self.preferences:
+            data['preferences'] = self.preferences
+
         if not exclude_sensitive:
             data['hashed_password'] = self.hashed_password
-        
+            data['search_history_count'] = len(self.search_history) if self.search_history else 0
+
         return data
 
 

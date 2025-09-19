@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-T020: BatchJob Model (GREEN Phase)
+T020: BatchJob Model (REFACTORED)
 
-Minimal implementation to pass tests
+Batch job management system with scheduling, retry logic, and performance tracking.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Enum as SQLEnum, select
+from typing import Optional, Dict, Any, List, ClassVar
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Enum as SQLEnum, select, Index, CheckConstraint
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 import enum
+import logging
 
 from app.core.database import Base
+
+logger = logging.getLogger(__name__)
 
 
 class JobStatus(str, enum.Enum):
@@ -39,24 +44,37 @@ class BatchJob(Base):
     """Batch job model"""
     
     __tablename__ = "batch_jobs"
+    __table_args__ = (
+        Index('idx_batch_job_status', 'status'),
+        Index('idx_batch_job_type', 'job_type'),
+        Index('idx_batch_job_scheduled', 'scheduled_at'),
+        CheckConstraint('retry_count >= 0', name='check_retry_count_positive'),
+        CheckConstraint('max_retries >= 0', name='check_max_retries_positive'),
+        {'extend_existing': True}
+    )
     
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
     
+    # Configuration constants
+    DEFAULT_MAX_RETRIES: ClassVar[int] = 3
+    DEFAULT_TIMEOUT_SECONDS: ClassVar[int] = 3600  # 1 hour
+    CLEANUP_DAYS_DEFAULT: ClassVar[int] = 30
+
     # Job details
-    job_name = Column(String)
-    job_type = Column(SQLEnum(JobType))
-    status = Column(SQLEnum(JobStatus), default=JobStatus.PENDING)
-    
+    job_name = Column(String, nullable=False)
+    job_type = Column(SQLEnum(JobType), nullable=False, index=True)
+    status = Column(SQLEnum(JobStatus), default=JobStatus.PENDING, nullable=False)
+
     # Timing
-    scheduled_at = Column(DateTime(timezone=True))
+    scheduled_at = Column(DateTime(timezone=True), index=True)
     started_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
-    
+
     # Error handling
     error_message = Column(Text)
-    retry_count = Column(Integer, default=0)
-    max_retries = Column(Integer, default=3)
+    retry_count = Column(Integer, default=0, nullable=False)
+    max_retries = Column(Integer, default=DEFAULT_MAX_RETRIES, nullable=False)
     
     # Job data
     parameters = Column(JSON, default={})
@@ -67,29 +85,56 @@ class BatchJob(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    def start(self):
-        """Start the job"""
+    def start(self) -> None:
+        """Start the job execution.
+
+        Raises:
+            RuntimeError: If job is not in a startable state
+        """
+        if self.status not in [JobStatus.PENDING, JobStatus.RETRYING]:
+            raise RuntimeError(f"Cannot start job in status {self.status}")
         self.status = JobStatus.RUNNING
         self.started_at = datetime.utcnow()
+        logger.info(f"Started batch job {self.job_name} (ID: {self.id})")
     
-    def complete(self, result: dict = None, performance_metrics: dict = None):
-        """Complete the job"""
+    def complete(
+        self,
+        result: Optional[Dict[str, Any]] = None,
+        performance_metrics: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Mark job as completed successfully.
+
+        Args:
+            result: Job execution results
+            performance_metrics: Performance statistics
+        """
         self.status = JobStatus.COMPLETED
         self.completed_at = datetime.utcnow()
         if result:
-            self.result = result
+            self.result = result or {}
         if performance_metrics:
+            # Add duration if not already present
+            if 'duration_seconds' not in performance_metrics:
+                performance_metrics['duration_seconds'] = self.get_duration()
             self.performance_metrics = performance_metrics
+        logger.info(f"Completed batch job {self.job_name} (ID: {self.id})")
     
-    def fail(self, error_message: str):
-        """Mark job as failed"""
+    def fail(self, error_message: str) -> None:
+        """Mark job as failed with error message.
+
+        Args:
+            error_message: Description of failure
+        """
         self.error_message = error_message
-        self.retry_count += 1
-        
-        if self.retry_count <= self.max_retries:
-            self.status = JobStatus.FAILED
+        self.retry_count = (self.retry_count or 0) + 1
+
+        if self.should_retry():
+            self.status = JobStatus.RETRYING
+            logger.warning(f"Job {self.job_name} failed (attempt {self.retry_count}/{self.max_retries}): {error_message}")
         else:
             self.status = JobStatus.FAILED
+            self.completed_at = datetime.utcnow()
+            logger.error(f"Job {self.job_name} permanently failed after {self.retry_count} attempts: {error_message}")
     
     def retry(self):
         """Retry the job"""
@@ -104,8 +149,15 @@ class BatchJob(Base):
             self.error_message = reason
     
     def should_retry(self) -> bool:
-        """Check if job should be retried"""
-        return self.retry_count < self.max_retries and self.status == JobStatus.FAILED
+        """Check if job should be retried based on retry count and status.
+
+        Returns:
+            True if job can be retried
+        """
+        return (
+            self.retry_count < self.max_retries and
+            self.status in [JobStatus.FAILED, JobStatus.RETRYING]
+        )
     
     def get_duration(self) -> float:
         """Get job duration in seconds"""
@@ -116,7 +168,7 @@ class BatchJob(Base):
         return 0
     
     @classmethod
-    async def get_ready_jobs(cls, db_session):
+    async def get_ready_jobs(cls, db_session: AsyncSession) -> List['BatchJob']:
         """Get jobs ready to run"""
         result = await db_session.execute(
             select(cls)
@@ -138,7 +190,11 @@ class BatchJob(Base):
         return result.scalars().all()
     
     @classmethod
-    async def cleanup_old_jobs(cls, db_session, days_to_keep: int = 30):
+    async def cleanup_old_jobs(
+        cls,
+        db_session: AsyncSession,
+        days_to_keep: int = CLEANUP_DAYS_DEFAULT
+    ) -> int:
         """Clean up old completed/failed jobs"""
         cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
         

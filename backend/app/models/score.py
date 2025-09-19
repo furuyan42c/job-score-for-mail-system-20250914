@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-T018: Score Model (GREEN Phase)
+T018: Score Model (REFACTORED)
 
-Minimal implementation to pass tests
+Comprehensive scoring system for jobs with multiple scoring components.
 """
 
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum as SQLEnum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from typing import Optional, Dict, Any, List, Tuple
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum as SQLEnum, Index, CheckConstraint
+from sqlalchemy.sql import func, and_
+from sqlalchemy.orm import relationship, validates
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import enum
+import logging
 
 from app.core.database import Base
+
+logger = logging.getLogger(__name__)
 
 
 class ScoreType(str, enum.Enum):
@@ -26,6 +31,13 @@ class Score(Base):
     """Score model for scores table"""
     
     __tablename__ = "scores"
+    __table_args__ = (
+        Index('idx_score_job_user', 'job_id', 'user_id'),
+        Index('idx_score_type', 'score_type'),
+        Index('idx_score_calculated', 'calculated_at'),
+        CheckConstraint('total_score >= 0 AND total_score <= 100', name='check_total_score_range'),
+        {'extend_existing': True}
+    )
     
     # Primary Key
     id = Column(Integer, primary_key=True, index=True)
@@ -57,36 +69,74 @@ class Score(Base):
     job = relationship("Job", back_populates="scores")
     user = relationship("User")
     
-    def calculate_total_score(self, weights: dict = None):
-        """Calculate weighted total score"""
-        if not weights:
-            weights = {
-                'base': 0.4,
-                'seo': 0.3,
-                'match': 0.3
-            }
-        
-        self.total_score = (
-            self.base_score * weights.get('base', 0) +
-            self.seo_score * weights.get('seo', 0) +
-            self.match_score * weights.get('match', 0)
-        )
+    # Default scoring weights
+    DEFAULT_WEIGHTS = {
+        'base': 0.3,
+        'seo': 0.2,
+        'match': 0.3,
+        'salary': 0.1,
+        'location': 0.05,
+        'company': 0.05
+    }
+
+    SCORE_MIN = 0.0
+    SCORE_MAX = 100.0
+
+    def calculate_total_score(self, weights: Optional[Dict[str, float]] = None) -> None:
+        """Calculate weighted total score from components.
+
+        Args:
+            weights: Optional custom weights for score components
+        """
+        if weights is None:
+            weights = self.DEFAULT_WEIGHTS
+
+        # Normalize weights to sum to 1.0
+        weight_sum = sum(weights.values())
+        if weight_sum > 0:
+            normalized_weights = {k: v / weight_sum for k, v in weights.items()}
+        else:
+            normalized_weights = weights
+
+        # Calculate weighted score
+        self.total_score = sum([
+            (self.base_score or 0) * normalized_weights.get('base', 0),
+            (self.seo_score or 0) * normalized_weights.get('seo', 0),
+            (self.match_score or 0) * normalized_weights.get('match', 0),
+            (self.salary_score or 0) * normalized_weights.get('salary', 0),
+            (self.location_score or 0) * normalized_weights.get('location', 0),
+            (self.company_score or 0) * normalized_weights.get('company', 0)
+        ])
+
+        self.total_score = round(min(self.SCORE_MAX, max(self.SCORE_MIN, self.total_score)), 2)
     
-    def validate_score_range(self):
-        """Validate that scores are in valid range"""
-        scores_to_check = [
-            self.base_score, self.salary_score, self.location_score,
-            self.company_score, self.freshness_score, self.completeness_score,
-            self.seo_score, self.match_score, self.total_score
-        ]
-        
-        for score in scores_to_check:
-            if score is not None:
-                if score < 0 or score > 100:
-                    raise ValueError("Score must be between 0 and 100")
+    @validates('base_score', 'salary_score', 'location_score', 'company_score',
+               'freshness_score', 'completeness_score', 'seo_score', 'match_score', 'total_score')
+    def validate_score_range(self, key: str, score: Optional[float]) -> Optional[float]:
+        """Validate that scores are in valid range.
+
+        Args:
+            key: Field name
+            score: Score value to validate
+
+        Returns:
+            Validated score value
+
+        Raises:
+            ValueError: If score is outside valid range
+        """
+        if score is not None:
+            if score < self.SCORE_MIN or score > self.SCORE_MAX:
+                raise ValueError(f"Score {key} must be between {self.SCORE_MIN} and {self.SCORE_MAX}, got {score}")
+        return score
     
     @classmethod
-    async def get_latest_scores(cls, db_session, job_ids: list, score_type: ScoreType):
+    async def get_latest_scores(
+        cls,
+        db_session: AsyncSession,
+        job_ids: List[int],
+        score_type: ScoreType
+    ) -> Dict[int, float]:
         """Get latest scores for given jobs"""
         from sqlalchemy import select, and_
         from sqlalchemy.sql import func
@@ -126,7 +176,11 @@ class Score(Base):
         }
     
     @classmethod
-    async def get_score_statistics(cls, db_session, job_id: int = None):
+    async def get_score_statistics(
+        cls,
+        db_session: AsyncSession,
+        job_id: Optional[int] = None
+    ) -> Dict[str, float]:
         """Get score statistics"""
         from sqlalchemy import select, func
         
@@ -150,9 +204,16 @@ class Score(Base):
             'max': float(row.max or 0)
         }
     
-    def to_dict(self):
-        """Convert to dictionary"""
-        return {
+    def to_dict(self, include_components: bool = True) -> Dict[str, Any]:
+        """Convert score to dictionary representation.
+
+        Args:
+            include_components: Whether to include all score components
+
+        Returns:
+            Dictionary representation of score
+        """
+        data = {
             'id': self.id,
             'job_id': self.job_id,
             'user_id': self.user_id,
