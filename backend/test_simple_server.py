@@ -624,7 +624,78 @@ def get_distribution_status(list_id: str):
     }
 
 
+# ============= T096: Distribution Result Analysis =============
+@app.post("/api/v1/distribution/analyze")
+def analyze_distribution_results(data: Dict[str, Any]):
+    """Analyze distribution results (hardcoded)"""
+    distribution_id = data.get("distribution_id", "default")
+
+    # Hardcoded analytics data
+    return {
+        "analysis": {
+            "total_sent": 100,
+            "total_delivered": 98,
+            "total_opened": 45,
+            "total_clicked": 23,
+            "delivery_rate": 98.0,
+            "open_rate": 45.0,
+            "click_rate": 23.0,
+            "conversion_rate": 12.5,
+            "average_open_time_minutes": 32.5,
+            "peak_engagement_hour": 10,
+            "distribution_id": distribution_id
+        }
+    }
+
+
+@app.get("/api/v1/distribution/analytics/{distribution_id}")
+def get_distribution_analytics(distribution_id: str):
+    """Get detailed distribution analytics (hardcoded)"""
+    return {
+        "distribution_id": distribution_id,
+        "performance_summary": {
+            "status": "completed",
+            "total_recipients": 100,
+            "successful_deliveries": 98,
+            "engagement_score": 75.5
+        },
+        "engagement_breakdown": {
+            "by_hour": {
+                "9": 15,
+                "10": 25,
+                "11": 20,
+                "12": 10
+            },
+            "by_job_category": {
+                "飲食": 35,
+                "小売": 30,
+                "サービス": 20,
+                "その他": 15
+            },
+            "by_user_segment": {
+                "active": 60,
+                "occasional": 30,
+                "new": 10
+            }
+        },
+        "recommendations": [
+            {
+                "type": "timing",
+                "message": "10時台の配信が最も効果的です"
+            },
+            {
+                "type": "content",
+                "message": "飲食カテゴリの求人への関心が高いです"
+            },
+            {
+                "type": "segmentation",
+                "message": "アクティブユーザーのエンゲージメント率が高いです"
+            }
+        ]
+    }
+
+
 if __name__ == "__main__":
     print("🚀 Starting extended test server on http://localhost:8000")
-    print("📋 GREEN Phase implementation for T081-T095")
+    print("📋 GREEN Phase implementation for T081-T096")
     uvicorn.run(app, host="0.0.0.0", port=8000)
