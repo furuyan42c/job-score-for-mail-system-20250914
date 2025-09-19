@@ -7,10 +7,13 @@
 
 import asyncio
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
 import sys
+import time
+import argparse
+from contextlib import asynccontextmanager
 
 # プロジェクトルートをPythonパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,18 +22,45 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# ログ設定
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+def setup_logging(level: str = 'INFO', log_file: Optional[str] = None) -> logging.Logger:
+    """ログ設定の初期化"""
+    log_level = getattr(logging, level.upper())
+
+    # フォーマッター
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    )
+
+    # ロガー設定
+    logger = logging.getLogger(__name__)
+    logger.setLevel(log_level)
+
+    # コンソールハンドラー
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # ファイルハンドラー（オプション）
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
+
+# ログ設定（後で初期化）
+logger = setup_logging()
 
 # データベース接続URL（環境変数から取得）
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+asyncpg://postgres:postgres@localhost:5432/job_matching"
 )
+
+# スクリプト設定
+MAX_RETRIES = 3
+RETRY_DELAY = 1.0
+CONNECTION_TIMEOUT = 30
 
 # =============================================================================
 # マスターデータ定義
@@ -203,201 +233,315 @@ SEMRUSH_KEYWORDS_DATA = [
 ]
 
 # =============================================================================
+# ヘルパー関数
+# =============================================================================
+
+@asynccontextmanager
+async def transaction_context(session: AsyncSession, operation_name: str, dry_run: bool = False):
+    """トランザクション管理コンテキスト"""
+    context = {'operation': operation_name, 'dry_run': dry_run, 'inserted_count': 0}
+    start_time = time.time()
+
+    try:
+        if dry_run:
+            logger.info(f"🧪 DRY RUN: {operation_name}データの投入をシミュレーション中...")
+        else:
+            logger.info(f"📝 {operation_name}データの投入を開始...")
+
+        yield context
+
+        if not dry_run:
+            await session.commit()
+
+        elapsed = time.time() - start_time
+        if dry_run:
+            logger.info(f"✅ DRY RUN完了: {operation_name} | {context['inserted_count']:,}件 | {elapsed:.2f}秒")
+        else:
+            logger.info(f"✅ {operation_name}: {context['inserted_count']:,}件投入完了 | {elapsed:.2f}秒")
+
+    except Exception as e:
+        if not dry_run:
+            await session.rollback()
+        logger.error(f"❌ {operation_name}投入エラー: {e}")
+        raise
+
+async def retry_on_db_error(func, *args, max_retries: int = 3, delay: float = 1.0, **kwargs):
+    """データベースエラー時のリトライ処理"""
+    for attempt in range(max_retries):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logger.error(f"最大リトライ回数({max_retries})に達しました: {e}")
+                raise
+
+            logger.warning(f"リトライ {attempt + 1}/{max_retries}: {e}")
+            await asyncio.sleep(delay * (2 ** attempt))  # 指数バックオフ
+
+async def check_database_connection(engine):
+    """データベース接続の確認"""
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+        logger.info("✅ データベース接続確認完了")
+        return True
+    except Exception as e:
+        logger.error(f"❌ データベース接続失敗: {e}")
+        return False
+
+async def detailed_validation(session: AsyncSession, validation_errors: List[str]):
+    """詳細データ検証"""
+    try:
+        # 都道府県の重複チェック
+        result = await session.execute(text(
+            "SELECT code, COUNT(*) as cnt FROM prefecture_master GROUP BY code HAVING COUNT(*) > 1"
+        ))
+        duplicates = result.fetchall()
+        if duplicates:
+            validation_errors.append(f"都道府県コード重複: {[row[0] for row in duplicates]}")
+
+        # 特徴コードのフォーマットチェック
+        result = await session.execute(text(
+            "SELECT feature_code FROM feature_master WHERE feature_code !~ '^F[0-9]{2}$'"
+        ))
+        invalid_features = result.fetchall()
+        if invalid_features:
+            validation_errors.append(f"無効な特徴コード: {[row[0] for row in invalid_features]}")
+
+        # 市区町村の都道府県コード整合性チェック
+        result = await session.execute(text(
+            """SELECT c.code, c.pref_cd
+               FROM city_master c
+               LEFT JOIN prefecture_master p ON c.pref_cd = p.code
+               WHERE p.code IS NULL"""
+        ))
+        orphaned_cities = result.fetchall()
+        if orphaned_cities:
+            validation_errors.append(f"無効な都道府県コードを持つ市区町村: {len(orphaned_cities)}件")
+
+    except Exception as e:
+        logger.warning(f"詳細検証でエラー: {e}")
+
+# =============================================================================
 # データ投入関数
 # =============================================================================
 
-async def insert_prefecture_data(session: AsyncSession):
+async def insert_prefecture_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """都道府県マスターデータを投入"""
-    try:
-        # 既存データをクリア
-        await session.execute(text("TRUNCATE prefecture_master CASCADE"))
+    async with transaction_context(session, "都道府県マスター", dry_run) as ctx:
+        if not dry_run:
+            # 既存データをクリア（冪等性確保）
+            await session.execute(text("DELETE FROM prefecture_master WHERE 1=1"))
 
         # データ投入
+        inserted_count = 0
         for pref in PREFECTURE_DATA:
-            query = text("""
-                INSERT INTO prefecture_master (code, name, region, sort_order)
-                VALUES (:code, :name, :region, :sort_order)
-                ON CONFLICT (code) DO UPDATE
-                SET name = EXCLUDED.name,
-                    region = EXCLUDED.region,
-                    sort_order = EXCLUDED.sort_order
-            """)
-            await session.execute(query, pref)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO prefecture_master (code, name, region, sort_order)
+                    VALUES (:code, :name, :region, :sort_order)
+                    ON CONFLICT (code) DO UPDATE
+                    SET name = EXCLUDED.name,
+                        region = EXCLUDED.region,
+                        sort_order = EXCLUDED.sort_order,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, pref)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ 都道府県マスター: {len(PREFECTURE_DATA)}件投入完了")
+            # 進捗表示（大量データの場合）
+            if inserted_count % 10 == 0:
+                logger.debug(f"都道府県データ投入進捗: {inserted_count}/{len(PREFECTURE_DATA)}")
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ 都道府県マスター投入エラー: {e}")
-        raise
+        ctx['inserted_count'] = inserted_count
+        return True
 
-async def insert_city_data(session: AsyncSession):
+async def insert_city_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """市区町村マスターデータを投入"""
-    try:
+    async with transaction_context(session, "市区町村マスター", dry_run) as ctx:
         # データ投入
+        inserted_count = 0
         for city in CITY_DATA:
-            query = text("""
-                INSERT INTO city_master (code, pref_cd, name, latitude, longitude)
-                VALUES (:code, :pref_cd, :name, :latitude, :longitude)
-                ON CONFLICT (code) DO UPDATE
-                SET pref_cd = EXCLUDED.pref_cd,
-                    name = EXCLUDED.name,
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude
-            """)
-            await session.execute(query, city)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO city_master (code, pref_cd, name, latitude, longitude)
+                    VALUES (:code, :pref_cd, :name, :latitude, :longitude)
+                    ON CONFLICT (code) DO UPDATE
+                    SET pref_cd = EXCLUDED.pref_cd,
+                        name = EXCLUDED.name,
+                        latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, city)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ 市区町村マスター: {len(CITY_DATA)}件投入完了")
+        ctx['inserted_count'] = inserted_count
+        return True
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ 市区町村マスター投入エラー: {e}")
-        raise
-
-async def insert_occupation_data(session: AsyncSession):
+async def insert_occupation_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """職種マスターデータを投入"""
-    try:
-        # 既存データをクリア
-        await session.execute(text("TRUNCATE occupation_master CASCADE"))
+    async with transaction_context(session, "職種マスター", dry_run) as ctx:
+        if not dry_run:
+            # 既存データをクリア（冪等性確保）
+            await session.execute(text("DELETE FROM occupation_master WHERE 1=1"))
 
         # データ投入
+        inserted_count = 0
         for occ in OCCUPATION_DATA:
-            query = text("""
-                INSERT INTO occupation_master (
-                    code, name, major_category_code, major_category_name,
-                    minor_category_code, minor_category_name, description,
-                    display_order, is_active
-                ) VALUES (
-                    :code, :name, :major_category_code, :major_category_name,
-                    NULL, NULL, NULL, :display_order, TRUE
-                )
-                ON CONFLICT (code) DO UPDATE
-                SET name = EXCLUDED.name,
-                    major_category_code = EXCLUDED.major_category_code,
-                    major_category_name = EXCLUDED.major_category_name,
-                    display_order = EXCLUDED.display_order
-            """)
-            await session.execute(query, occ)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO occupation_master (
+                        code, name, major_category_code, major_category_name,
+                        minor_category_code, minor_category_name, description,
+                        display_order, is_active
+                    ) VALUES (
+                        :code, :name, :major_category_code, :major_category_name,
+                        NULL, NULL, NULL, :display_order, TRUE
+                    )
+                    ON CONFLICT (code) DO UPDATE
+                    SET name = EXCLUDED.name,
+                        major_category_code = EXCLUDED.major_category_code,
+                        major_category_name = EXCLUDED.major_category_name,
+                        display_order = EXCLUDED.display_order,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, occ)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ 職種マスター: {len(OCCUPATION_DATA)}件投入完了")
+        ctx['inserted_count'] = inserted_count
+        return True
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ 職種マスター投入エラー: {e}")
-        raise
-
-async def insert_employment_type_data(session: AsyncSession):
+async def insert_employment_type_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """雇用形態マスターデータを投入"""
-    try:
-        # 既存データをクリア
-        await session.execute(text("TRUNCATE employment_type_master CASCADE"))
+    async with transaction_context(session, "雇用形態マスター", dry_run) as ctx:
+        if not dry_run:
+            # 既存データをクリア（冪等性確保）
+            await session.execute(text("DELETE FROM employment_type_master WHERE 1=1"))
 
         # データ投入
+        inserted_count = 0
         for emp in EMPLOYMENT_TYPE_DATA:
-            query = text("""
-                INSERT INTO employment_type_master (
-                    code, name, description, is_valid_for_matching
-                ) VALUES (
-                    :code, :name, :description, :is_valid_for_matching
-                )
-                ON CONFLICT (code) DO UPDATE
-                SET name = EXCLUDED.name,
-                    description = EXCLUDED.description,
-                    is_valid_for_matching = EXCLUDED.is_valid_for_matching
-            """)
-            await session.execute(query, emp)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO employment_type_master (
+                        code, name, description, is_valid_for_matching
+                    ) VALUES (
+                        :code, :name, :description, :is_valid_for_matching
+                    )
+                    ON CONFLICT (code) DO UPDATE
+                    SET name = EXCLUDED.name,
+                        description = EXCLUDED.description,
+                        is_valid_for_matching = EXCLUDED.is_valid_for_matching,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, emp)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ 雇用形態マスター: {len(EMPLOYMENT_TYPE_DATA)}件投入完了")
+        ctx['inserted_count'] = inserted_count
+        return True
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ 雇用形態マスター投入エラー: {e}")
-        raise
-
-async def insert_feature_data(session: AsyncSession):
+async def insert_feature_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """特徴マスターデータを投入"""
-    try:
-        # 既存データをクリア
-        await session.execute(text("TRUNCATE feature_master CASCADE"))
+    async with transaction_context(session, "特徴マスター", dry_run) as ctx:
+        if not dry_run:
+            # 既存データをクリア（冪等性確保）
+            await session.execute(text("DELETE FROM feature_master WHERE 1=1"))
 
         # データ投入
+        inserted_count = 0
         for feature in FEATURE_DATA:
-            query = text("""
-                INSERT INTO feature_master (
-                    feature_code, feature_name, category, display_priority, is_active
-                ) VALUES (
-                    :feature_code, :feature_name, :category, :display_priority, TRUE
-                )
-                ON CONFLICT (feature_code) DO UPDATE
-                SET feature_name = EXCLUDED.feature_name,
-                    category = EXCLUDED.category,
-                    display_priority = EXCLUDED.display_priority
-            """)
-            await session.execute(query, feature)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO feature_master (
+                        feature_code, feature_name, category, display_priority, is_active
+                    ) VALUES (
+                        :feature_code, :feature_name, :category, :display_priority, TRUE
+                    )
+                    ON CONFLICT (feature_code) DO UPDATE
+                    SET feature_name = EXCLUDED.feature_name,
+                        category = EXCLUDED.category,
+                        display_priority = EXCLUDED.display_priority,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, feature)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ 特徴マスター: {len(FEATURE_DATA)}件投入完了")
+        ctx['inserted_count'] = inserted_count
+        return True
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ 特徴マスター投入エラー: {e}")
-        raise
-
-async def insert_semrush_keywords_data(session: AsyncSession):
+async def insert_semrush_keywords_data(session: AsyncSession, dry_run: bool = False) -> bool:
     """SEMRUSHキーワードデータを投入"""
-    try:
+    async with transaction_context(session, "SEMRUSHキーワード", dry_run) as ctx:
         # データ投入
+        inserted_count = 0
         for keyword in SEMRUSH_KEYWORDS_DATA:
-            query = text("""
-                INSERT INTO semrush_keywords (
-                    keyword, search_volume, keyword_difficulty, intent, category
-                ) VALUES (
-                    :keyword, :search_volume, :keyword_difficulty, :intent, :category
-                )
-                ON CONFLICT (keyword) DO UPDATE
-                SET search_volume = EXCLUDED.search_volume,
-                    keyword_difficulty = EXCLUDED.keyword_difficulty,
-                    intent = EXCLUDED.intent,
-                    category = EXCLUDED.category
-            """)
-            await session.execute(query, keyword)
+            if not dry_run:
+                query = text("""
+                    INSERT INTO semrush_keywords (
+                        keyword, search_volume, keyword_difficulty, intent, category
+                    ) VALUES (
+                        :keyword, :search_volume, :keyword_difficulty, :intent, :category
+                    )
+                    ON CONFLICT (keyword) DO UPDATE
+                    SET search_volume = EXCLUDED.search_volume,
+                        keyword_difficulty = EXCLUDED.keyword_difficulty,
+                        intent = EXCLUDED.intent,
+                        category = EXCLUDED.category,
+                        updated_at = CURRENT_TIMESTAMP
+                """)
+                await session.execute(query, keyword)
+            inserted_count += 1
 
-        await session.commit()
-        logger.info(f"✅ SEMRUSHキーワード: {len(SEMRUSH_KEYWORDS_DATA)}件投入完了")
+        ctx['inserted_count'] = inserted_count
+        return True
 
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"❌ SEMRUSHキーワード投入エラー: {e}")
-        raise
-
-async def verify_data(session: AsyncSession):
-    """投入データの検証"""
+async def verify_data(session: AsyncSession) -> Dict[str, int]:
+    """投入データの検証と詳細チェック"""
     try:
         # 各テーブルのレコード数を確認
         checks = [
-            ("prefecture_master", "都道府県"),
-            ("city_master", "市区町村"),
-            ("occupation_master", "職種"),
-            ("employment_type_master", "雇用形態"),
-            ("feature_master", "特徴"),
-            ("semrush_keywords", "SEMRUSHキーワード"),
+            ("prefecture_master", "都道府県", 47),  # 期待値を追加
+            ("city_master", "市区町村", len(CITY_DATA)),
+            ("occupation_master", "職種", len(OCCUPATION_DATA)),
+            ("employment_type_master", "雇用形態", len(EMPLOYMENT_TYPE_DATA)),
+            ("feature_master", "特徴", len(FEATURE_DATA)),
+            ("semrush_keywords", "SEMRUSHキーワード", len(SEMRUSH_KEYWORDS_DATA)),
         ]
 
         logger.info("\n📊 データ投入結果:")
-        logger.info("-" * 50)
+        logger.info("-" * 60)
 
-        for table_name, label in checks:
+        results = {}
+        validation_errors = []
+
+        for table_name, label, expected_count in checks:
             result = await session.execute(
                 text(f"SELECT COUNT(*) FROM {table_name}")
             )
             count = result.scalar()
-            logger.info(f"  {label:20s}: {count:,}件")
+            results[table_name] = count
 
-        logger.info("-" * 50)
+            status = "✅" if count == expected_count else "⚠️"
+            logger.info(f"  {status} {label:20s}: {count:,}件 (期待値: {expected_count})")
+
+            if count != expected_count:
+                validation_errors.append(f"{label}: 期待値{expected_count}、実際{count}")
+
+        # 詳細検証
+        await detailed_validation(session, validation_errors)
+
+        logger.info("-" * 60)
+
+        if validation_errors:
+            logger.warning(f"⚠️ 検証で{len(validation_errors)}件の問題を検出:")
+            for error in validation_errors:
+                logger.warning(f"   - {error}")
+        else:
+            logger.info("✅ 全ての検証がパスしました")
+
+        return results
 
     except Exception as e:
         logger.error(f"❌ データ検証エラー: {e}")
@@ -407,48 +551,161 @@ async def verify_data(session: AsyncSession):
 # メイン処理
 # =============================================================================
 
-async def main():
+async def main(dry_run: bool = False, log_level: str = 'INFO', log_file: Optional[str] = None):
     """メイン処理"""
-    logger.info("🚀 マスターデータ投入を開始します")
+    # ログ設定
+    global logger
+    logger = setup_logging(log_level, log_file)
+
+    mode_text = "DRY RUN" if dry_run else "実行"
+    logger.info(f"🚀 マスターデータ投入を開始します ({mode_text}モード)")
     logger.info(f"📍 データベース: {DATABASE_URL.split('@')[-1]}")
+
+    # 統計情報
+    total_records = (
+        len(PREFECTURE_DATA) + len(CITY_DATA) + len(OCCUPATION_DATA) +
+        len(EMPLOYMENT_TYPE_DATA) + len(FEATURE_DATA) + len(SEMRUSH_KEYWORDS_DATA)
+    )
+    logger.info(f"📊 投入予定レコード数: {total_records:,}件")
 
     # データベースエンジン作成
     engine = create_async_engine(
         DATABASE_URL,
-        echo=False,
+        echo=(log_level.upper() == 'DEBUG'),
         pool_size=5,
-        max_overflow=10
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=3600
     )
 
-    # セッション作成
-    async_session = sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
+    try:
+        # データベース接続確認
+        if not await check_database_connection(engine):
+            raise Exception("データベース接続に失敗しました")
+
+        # セッション作成
+        async_session = sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
+
+        async with async_session() as session:
+            total_start_time = time.time()
+            results = {}
+
+            try:
+                # 各マスターデータを投入（リトライ付き）
+                operations = [
+                    ("prefecture", insert_prefecture_data),
+                    ("city", insert_city_data),
+                    ("occupation", insert_occupation_data),
+                    ("employment_type", insert_employment_type_data),
+                    ("feature", insert_feature_data),
+                    ("semrush_keywords", insert_semrush_keywords_data),
+                ]
+
+                for op_name, op_func in operations:
+                    logger.info(f"\n--- {op_name.upper()} データ処理開始 ---")
+                    success = await retry_on_db_error(op_func, session, dry_run, max_retries=3)
+                    results[op_name] = success
+
+                # データ検証
+                if not dry_run:
+                    logger.info("\n--- データ検証開始 ---")
+                    verification_results = await verify_data(session)
+                    results['verification'] = verification_results
+
+                total_elapsed = time.time() - total_start_time
+
+                logger.info(f"\n{'=' * 60}")
+                if dry_run:
+                    logger.info("✅ DRY RUN が正常に完了しました！")
+                    logger.info("💡 実際の投入を行う場合は --dry-run フラグを外してください")
+                else:
+                    logger.info("✅ マスターデータ投入が正常に完了しました！")
+
+                logger.info(f"⏱️  総処理時間: {total_elapsed:.2f}秒")
+                logger.info(f"⚡ 処理速度: {total_records/total_elapsed:.0f} rec/s")
+                logger.info(f"{'=' * 60}")
+
+                return results
+
+            except Exception as e:
+                logger.error(f"\n❌ マスターデータ投入に失敗しました: {e}")
+                logger.error(f"💡 詳細なログは DEBUG レベルで確認してください")
+                raise
+
+    finally:
+        await engine.dispose()
+
+def parse_arguments():
+    """コマンドライン引数の解析"""
+    parser = argparse.ArgumentParser(
+        description="マスターデータ投入スクリプト",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+使用例:
+  # 通常実行
+  python seed_master_data.py
+
+  # DRY RUN（シミュレーション）
+  python seed_master_data.py --dry-run
+
+  # DEBUGログでファイル出力
+  python seed_master_data.py --log-level DEBUG --log-file seed.log
+        """
     )
 
-    async with async_session() as session:
-        try:
-            # 各マスターデータを投入
-            await insert_prefecture_data(session)
-            await insert_city_data(session)
-            await insert_occupation_data(session)
-            await insert_employment_type_data(session)
-            await insert_feature_data(session)
-            await insert_semrush_keywords_data(session)
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='実際の投入を行わず、シミュレーションのみ実行'
+    )
 
-            # データ検証
-            await verify_data(session)
+    parser.add_argument(
+        '--log-level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+        default='INFO',
+        help='ログレベル (デフォルト: INFO)'
+    )
 
-            logger.info("\n✅ マスターデータ投入が正常に完了しました！")
+    parser.add_argument(
+        '--log-file',
+        help='ログファイルパス（指定時はファイルにも出力）'
+    )
 
-        except Exception as e:
-            logger.error(f"\n❌ マスターデータ投入に失敗しました: {e}")
-            raise
+    parser.add_argument(
+        '--database-url',
+        help='データベース接続URL（環境変数 DATABASE_URL より優先）'
+    )
 
-        finally:
-            await engine.dispose()
+    return parser.parse_args()
 
 if __name__ == "__main__":
+    args = parse_arguments()
+
+    # データベースURL上書き
+    if args.database_url:
+        DATABASE_URL = args.database_url
+
     # スクリプトを実行
-    asyncio.run(main())
+    try:
+        results = asyncio.run(main(
+            dry_run=args.dry_run,
+            log_level=args.log_level,
+            log_file=args.log_file
+        ))
+
+        # 終了コード
+        if args.dry_run or (results and all(results.values())):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    except KeyboardInterrupt:
+        logger.info("\n⚠️ ユーザーによって中断されました")
+        sys.exit(130)
+    except Exception as e:
+        logger.error(f"❌ 予期しないエラー: {e}")
+        sys.exit(1)

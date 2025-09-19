@@ -542,7 +542,7 @@ async def system_info():
 # 認証関連エンドポイント（認証不要パスとして設定済み）
 app.include_router(
     auth.router,
-    prefix="/auth",
+    prefix="/api/v1/auth",
     tags=["authentication"]
 )
 
