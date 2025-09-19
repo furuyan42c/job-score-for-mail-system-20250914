@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .section h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .section h2 .emoji {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        .job-card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .job-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .company-name {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .job-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .salary {
+            color: #FF5722;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .score-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 20px auto;
+            display: block;
+            text-align: center;
+            width: 200px;
+        }
+        .footer {
+            background: #333;
+            color: #ccc;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .unsubscribe {
+            color: #999;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>{{ greeting }} {{ user_name }}様</h1>
+            <p>本日のおすすめ求人をお届けします！</p>
+        </div>
+
+        <!-- Section 1: Editorial Picks / Top Picks -->
+        <div class="section">
+            <h2>
+                <span class="emoji">🎯</span>
+                編集部のおすすめ
+            </h2>
+            {% for job in sections.editorial_picks %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Section 2: High Salary -->
+        <div class="section">
+            <h2>
+                <span class="emoji">💰</span>
+                高時給の求人
+            </h2>
+            {% for job in sections.high_salary %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Section 3: Nearby -->
+        <div class="section">
+            <h2>
+                <span class="emoji">📍</span>
+                近場の求人
+            </h2>
+            {% for job in sections.nearby %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Section 4: Popular -->
+        <div class="section">
+            <h2>
+                <span class="emoji">⭐</span>
+                人気の求人
+            </h2>
+            {% for job in sections.popular %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Section 5: New Jobs -->
+        <div class="section">
+            <h2>
+                <span class="emoji">🆕</span>
+                新着の求人
+            </h2>
+            {% for job in sections.new_jobs %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Section 6: Recommended -->
+        <div class="section">
+            <h2>
+                <span class="emoji">👍</span>
+                あなたへのおすすめ
+            </h2>
+            {% for job in sections.recommended %}
+            <div class="job-card">
+                <div class="job-title">{{ job.title }}</div>
+                <div class="company-name">{{ job.company }}</div>
+                <div class="job-details">
+                    <span class="salary">時給 ¥{{ job.hourly_wage }}〜</span>
+                    <span class="score-badge">マッチ度 {{ job.score }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- CTA Button -->
+        <div style="text-align: center; padding: 30px;">
+            <a href="{{ cta_url }}" class="cta-button">もっと見る</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>このメールは {{ user_email }} 宛に送信されました</p>
+            <p><a href="{{ unsubscribe_url }}" class="unsubscribe">配信停止はこちら</a></p>
+            <p>© 2025 バイト求人マッチングシステム</p>
+        </div>
+    </div>
+</body>
+</html>
