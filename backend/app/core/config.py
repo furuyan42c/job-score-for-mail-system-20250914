@@ -109,8 +109,12 @@ class Settings(BaseSettings):
     def parse_allowed_hosts(cls, v):
         """ALLOWED_HOSTSを文字列からリストに変換"""
         if isinstance(v, str):
+            if v.strip() == "":
+                return ["*"]  # Default if empty
             return [host.strip() for host in v.split(",")]
-        return v
+        if isinstance(v, list):
+            return v
+        return ["*"]  # Default fallback
 
     @validator("DATABASE_URL")
     def validate_database_url(cls, v):
@@ -167,8 +171,24 @@ class ProductionSettings(Settings):
 class TestSettings(Settings):
     """テスト環境設定"""
     DEBUG: bool = True
-    DATABASE_URL: str = "sqlite:///./test.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
     CACHE_TTL: int = 1
+
+    # Required fields with test defaults
+    SECRET_KEY: str = "test-secret-key-for-testing-only-minimum-32-characters"
+    SUPABASE_URL: str = "https://test.supabase.co"
+    SUPABASE_ANON_KEY: str = "test-anon-key"
+    SUPABASE_SERVICE_ROLE_KEY: str = "test-service-role-key"
+    SMTP_USER: str = "test@example.com"
+    SMTP_PASSWORD: str = "testpassword"
+    FROM_EMAIL: str = "test@example.com"
+
+    # Override defaults for testing
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "testserver"]
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    BATCH_SIZE: int = 10
+    MAX_WORKERS: int = 1
 
 
 def get_settings() -> Settings:

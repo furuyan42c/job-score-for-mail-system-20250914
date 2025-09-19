@@ -55,3 +55,21 @@ class RateLimitErrorResponse(BaseModel):
     """Rate limit error response schema"""
     detail: str = Field(..., description="Rate limit error message")
     retry_after: Optional[int] = Field(None, description="Seconds to wait before retrying")
+
+
+class UserRegistrationRequest(BaseModel):
+    """User registration request schema"""
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., description="User password", min_length=6)
+    age_group: str = Field(..., description="User age group")
+    gender: str = Field(..., description="User gender")
+    estimated_pref_cd: str = Field(..., description="Estimated prefecture code")
+    estimated_city_cd: str = Field(..., description="Estimated city code")
+
+
+class UserRegistrationResponse(BaseModel):
+    """User registration response schema"""
+    user_id: int = Field(..., description="Created user ID")
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    message: str = Field(..., description="Registration success message")
