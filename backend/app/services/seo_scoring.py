@@ -1,44 +1,93 @@
 #!/usr/bin/env python3
 """
-T022: SEO Scoring Service (GREEN Phase)
+T022: SEO Scoring Service (REFACTOR Phase)
 
 Provides keyword-based scoring functionality using SEMrush keyword data.
 Calculates scores based on keyword matching in job fields with weighted priorities.
-Updated with minimal implementation to pass tests.
+Refactored for improved code quality and maintainability.
 """
 import logging
-from typing import List, Dict, Any, Optional
-from app.models.job import Job
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass
 import unicodedata
 import re
 
+from app.models.job import Job
+
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SEOConfig:
+    """Configuration for SEO scoring"""
+    field_weights: Dict[str, float]
+    default_search_volume: int = 1000
+    volume_normalization_factor: int = 10000
+    score_multiplier: int = 100
+    max_score: int = 100
+    title_weight: float = 0.7
+    description_weight: float = 0.3
+    catch_copy_weight: float = 0.1
+    multiple_keyword_bonus: float = 1.2
+    keyword_density_limit: float = 10.0
 
 class SEOScoringService:
     """Service for calculating SEO-based job scores."""
 
-    # Field weight constants for SEO scoring
-    FIELD_WEIGHTS = {
+    # Default field weight constants for SEO scoring
+    DEFAULT_FIELD_WEIGHTS = {
         "application_name": 1.5,  # Highest priority
         "title": 1.2,              # High priority
         "description": 1.0,         # Normal priority
         "company": 0.8              # Lower priority
     }
 
-    # Scoring parameters
-    DEFAULT_SEARCH_VOLUME = 1000
-    VOLUME_NORMALIZATION_FACTOR = 10000
-    SCORE_MULTIPLIER = 100
-    MAX_SCORE = 100
+    def __init__(self, config: Optional[SEOConfig] = None):
+        """Initialize SEO scoring service with optional configuration.
 
-    def __init__(self):
-        """Initialize SEO scoring service."""
-        self.field_weights = self.FIELD_WEIGHTS.copy()
-        logger.info("SEOScoringService initialized with field weights: %s", self.field_weights)
+        Args:
+            config: Optional SEO configuration. Uses defaults if not provided.
+        """
+        if config is None:
+            config = SEOConfig(
+                field_weights=self.DEFAULT_FIELD_WEIGHTS.copy(),
+            )
+        self.config = config
+        self.field_weights = config.field_weights
+        logger.info("SEOScoringService initialized with config: %s", self.config)
+
+    def _normalize_text(self, text: str) -> str:
+        """Advanced text normalization for consistent matching.
+
+        Args:
+            text: Text to normalize
+
+        Returns:
+            Normalized text
+        """
+        if not text:
+            return ""
+
+        # Unicode normalization (全角→半角変換)
+        text = unicodedata.normalize('NFKC', text)
+
+        # Convert to lowercase
+        text = text.lower()
+
+        # Convert hiragana to katakana for Japanese text
+        hiragana_to_katakana = str.maketrans(
+            'ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろわをん',
+            'ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロワヲン'
+        )
+        text = text.translate(hiragana_to_katakana)
+
+        # Replace common separators with spaces for better matching
+        text = re.sub(r'[-_]+', ' ', text)
+
+        return text.strip()
 
     async def normalize_keywords(self, keywords: List[str]) -> List[str]:
-        """
-        Normalize keywords for consistent matching.
+        """Normalize keywords for consistent matching.
 
         Args:
             keywords: List of raw keywords
@@ -50,8 +99,8 @@ class SEOScoringService:
             normalized = []
             for keyword in keywords:
                 if keyword:
-                    normalized_keyword = keyword.lower().replace("-", " ").replace("_", " ").strip()
-                    if normalized_keyword:
+                    normalized_keyword = self._normalize_text(keyword)
+                    if normalized_keyword and normalized_keyword not in normalized:
                         normalized.append(normalized_keyword)
             return normalized
         except Exception as e:
@@ -95,9 +144,31 @@ class SEOScoringService:
             logger.error("Error generating keyword variations: %s", e)
             return [keyword]
 
-    async def calculate_seo_score(self, job: Job, semrush_keywords: List[Dict[str, Any]]) -> float:
+    def _count_keyword_matches(self, text: str, keywords: List[str]) -> int:
+        """Count how many keywords match in the text.
+
+        Args:
+            text: Text to search in
+            keywords: Keywords to search for
+
+        Returns:
+            Number of matching keywords
         """
-        Calculate SEO score for a job based on keyword matching.
+        if not text or not keywords:
+            return 0
+
+        normalized_text = self._normalize_text(text)
+        matches = 0
+
+        for keyword in keywords:
+            normalized_keyword = self._normalize_text(keyword)
+            if normalized_keyword and normalized_keyword in normalized_text:
+                matches += 1
+
+        return matches
+
+    async def calculate_seo_score(self, job: Job, semrush_keywords: List[Dict[str, Any]]) -> float:
+        """Calculate SEO score for a job based on keyword matching.
 
         Args:
             job: Job object to score
@@ -111,84 +182,44 @@ class SEOScoringService:
             return 0.0
 
         try:
-            total_score = 0.0
-
+            # Extract keywords from SEMrush data
+            keywords = []
             for kw_data in semrush_keywords:
-                if not isinstance(kw_data, dict):
-                    continue
+                if isinstance(kw_data, dict):
+                    keyword = kw_data.get("keyword", "")
+                    if keyword:
+                        keywords.append(keyword)
 
-                keyword = kw_data.get("keyword", "")
-                if not keyword:
-                    continue
+            if not keywords:
+                return 0.0
 
-                keyword = keyword.lower()
-                search_volume = kw_data.get("search_volume", self.DEFAULT_SEARCH_VOLUME)
+            # Get job text fields
+            title = getattr(job, "title", "") or ""
+            description = getattr(job, "description", "") or ""
 
-                # Calculate field scores
-                field_scores = []
-
-                # Check application name
-                if hasattr(job, "application_name") and job.application_name:
-                    if keyword in job.application_name.lower():
-                        field_scores.append(self.field_weights["application_name"])
-
-                # Check title
-                if hasattr(job, "title") and job.title:
-                    if keyword in job.title.lower():
-                        field_scores.append(self.field_weights["title"])
-
-                # Check description
-                if hasattr(job, "description") and job.description:
-                    if keyword in job.description.lower():
-                        field_scores.append(self.field_weights["description"])
-
-                # Check company
-                if hasattr(job, "company") and job.company:
-                    if keyword in job.company.lower():
-                        field_scores.append(self.field_weights["company"])
-
-                # Apply highest matching score
-                if field_scores:
-                    volume_factor = min(search_volume / self.VOLUME_NORMALIZATION_FACTOR, 1.0)
-                    keyword_score = max(field_scores) * volume_factor * self.SCORE_MULTIPLIER
-                    total_score += keyword_score
-                    logger.debug("Keyword '%s' matched with score %.2f", keyword, keyword_score)
-
-            final_score = min(self.MAX_SCORE, total_score)
-            logger.info("SEO score for job %s: %.2f", getattr(job, 'job_id', 'unknown'), final_score)
-            return final_score
+            # Use the combined SEO score calculation
+            return await self.calculate_combined_seo_score(title, description, keywords)
 
         except Exception as e:
             logger.error("Error calculating SEO score: %s", e)
             return 0.0
 
-    # New methods for T022 GREEN phase - minimal implementation to pass tests
-
-    def _normalize_text(self, text: str) -> str:
-        """テキスト正規化（全角半角、大文字小文字の統一）"""
-        # 全角を半角に変換
-        text = unicodedata.normalize('NFKC', text)
-        # 小文字に変換
-        text = text.lower()
-        # ひらがなをカタカナに統一
-        text = text.translate(str.maketrans('ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろわをん',
-                                           'ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロワヲン'))
-        return text
+    # Methods required for test compatibility
 
     async def calculate_title_match_score(self, title: str, keywords: List[str]) -> float:
-        """タイトルとキーワードのマッチングスコア計算"""
+        """Calculate keyword matching score for title.
+
+        Args:
+            title: Job title text
+            keywords: Keywords to match
+
+        Returns:
+            Score between 0 and 100
+        """
         if not keywords:
             return 0.0
 
-        normalized_title = self._normalize_text(title)
-        matches = 0
-
-        for keyword in keywords:
-            normalized_keyword = self._normalize_text(keyword)
-            if normalized_keyword in normalized_title:
-                matches += 1
-
-        # マッチ率をスコアに変換（0-100）
+        matches = self._count_keyword_matches(title, keywords)
         return (matches / len(keywords)) * 100.0
 
     async def calculate_with_variations(
@@ -225,7 +256,15 @@ class SEOScoringService:
         description: str,
         keywords: List[str]
     ) -> float:
-        """キーワード密度の計算"""
+        """Calculate keyword density in text.
+
+        Args:
+            description: Text to analyze
+            keywords: Keywords to count
+
+        Returns:
+            Keyword density percentage (max 10%)
+        """
         if not description or not keywords:
             return 0.0
 
@@ -240,9 +279,8 @@ class SEOScoringService:
             normalized_keyword = self._normalize_text(keyword)
             keyword_count += normalized_desc.count(normalized_keyword)
 
-        # 密度をパーセンテージで返す
         density = (keyword_count / word_count) * 100
-        return min(density, 10.0)  # 最大10%に制限
+        return min(density, self.config.keyword_density_limit)
 
     async def calculate_combined_seo_score(
         self,
@@ -250,34 +288,41 @@ class SEOScoringService:
         description: str,
         keywords: List[str]
     ) -> float:
-        """タイトルと説明文を組み合わせたSEOスコア計算"""
-        if not keywords:
-            return 50.0  # デフォルトスコア
+        """Calculate combined SEO score from title and description.
 
-        # タイトルスコア（重み70%）
+        Args:
+            title: Job title
+            description: Job description
+            keywords: Keywords to match
+
+        Returns:
+            Combined SEO score between 0 and 100
+        """
+        if not keywords:
+            return 50.0  # Default score for no keywords
+
+        # Calculate title score
         title_score = await self.calculate_title_match_score(title, keywords)
 
-        # 説明文スコア（重み30%）
+        # Calculate description score
         desc_score = 0.0
         if description:
-            normalized_desc = self._normalize_text(description)
-            matches = 0
-            for keyword in keywords:
-                normalized_keyword = self._normalize_text(keyword)
-                if normalized_keyword in normalized_desc:
-                    matches += 1
-            desc_score = (matches / len(keywords)) * 100.0
+            desc_matches = self._count_keyword_matches(description, keywords)
+            desc_score = (desc_matches / len(keywords)) * 100.0
 
-        # 重み付け合計（タイトルの重みを高く）
-        combined = title_score * 0.7 + desc_score * 0.3
+        # Weighted combination
+        combined = (
+            title_score * self.config.title_weight +
+            desc_score * self.config.description_weight
+        )
 
-        # 複数キーワードボーナス
+        # Multiple keyword bonus
         if title and description:
-            title_matches = sum(1 for k in keywords if self._normalize_text(k) in self._normalize_text(title))
+            title_matches = self._count_keyword_matches(title, keywords)
             if title_matches >= 3:
-                combined *= 1.2  # 20%ボーナス
+                combined *= self.config.multiple_keyword_bonus
 
-        return min(combined, 100.0)
+        return min(combined, float(self.config.max_score))
 
     async def calculate_with_catch_copy(
         self,
