@@ -5,8 +5,13 @@ Complete TDD cycle without application dependencies
 """
 
 import asyncio
+import sys
+import os
 from typing import List, Any, Optional
 from dataclasses import dataclass
+
+# Add path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # ===== IMPLEMENTATION (GREEN PHASE) =====
 
@@ -209,19 +214,87 @@ async def test_no_supplement_when_already_sufficient():
 
     print("✅ PASSED")
 
+async def test_configuration_validation():
+    """REFACTOR: Test configuration validation."""
+    print("Testing: configuration validation...")
+
+    # Test valid config
+    from app.services.supplement_logic import SupplementConfig
+    config = SupplementConfig(target_count=50, fallback_score=30.0)
+    assert config.target_count == 50
+    assert config.fallback_score == 30.0
+
+    # Test invalid config
+    try:
+        SupplementConfig(target_count=0)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass  # Expected
+
+    print("✅ PASSED")
+
+async def test_metrics_functionality():
+    """REFACTOR: Test metrics functionality."""
+    print("Testing: metrics functionality...")
+
+    # Import the refactored service
+    from app.services.supplement_logic import SupplementLogicService
+
+    # Arrange
+    service = SupplementLogicService()
+    user = MockUser("user_001", {"location": "Tokyo"})
+    jobs = [MockJob(f"job_{i}", 80) for i in range(10)]
+
+    # Act
+    result = await service.ensure_minimum_items_with_metrics(jobs, user, 40)
+
+    # Assert
+    assert result.original_count == 10
+    assert result.supplemented_count == 30
+    assert result.fallback_count == 30
+    assert result.total_count == 40
+    assert 0 < result.supplemented_ratio <= 1
+
+    print("✅ PASSED")
+
+async def test_error_handling():
+    """REFACTOR: Test enhanced error handling."""
+    print("Testing: error handling...")
+
+    from app.services.supplement_logic import SupplementLogicService
+
+    service = SupplementLogicService()
+    user = MockUser("user_001")
+    jobs = [MockJob("job_1", 80)]
+
+    # Test invalid target count
+    try:
+        await service.ensure_minimum_items(jobs, user, 0)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass  # Expected
+
+    print("✅ PASSED")
+
 async def run_all_tests():
-    """Run all TDD tests for GREEN phase."""
-    print("🟢 Running TDD GREEN PHASE tests...\n")
+    """Run all TDD tests including REFACTOR phase."""
+    print("🔵 Running TDD REFACTOR PHASE tests...\n")
 
     try:
+        # GREEN phase tests (should still pass)
         await test_ensures_minimum_40_items_when_insufficient()
         await test_fallback_selection_when_not_enough_matches()
         await test_priority_ordering_for_supplementation()
         await test_avoids_already_selected_items()
         await test_no_supplement_when_already_sufficient()
 
-        print("\n🎉 All GREEN phase tests PASSED!")
-        print("✅ T026 40-item supplement logic implementation is working")
+        # REFACTOR phase tests (new features)
+        await test_configuration_validation()
+        await test_metrics_functionality()
+        await test_error_handling()
+
+        print("\n🎉 All REFACTOR phase tests PASSED!")
+        print("✅ T026 40-item supplement logic is refactored and improved")
 
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
