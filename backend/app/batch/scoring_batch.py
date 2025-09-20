@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """
-T028: Scoring Batch - GREEN Phase Implementation
+T028: Scoring Batch - REFACTOR Phase Implementation
 
-Minimal implementation to pass RED phase tests.
+Improved implementation with better error handling and performance optimization.
 """
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
+from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -21,6 +29,16 @@ class ScoringConfig:
     cache_enabled: bool = True
     performance_monitoring: bool = True
     score_threshold: float = 0.1
+    timeout_seconds: int = 3600
+    max_retries: int = 3
+    checkpoint_interval: int = 1000
+    algorithm_weights: Dict[str, float] = field(default_factory=lambda: {
+        'skill_match': 0.4,
+        'location': 0.2,
+        'experience': 0.2,
+        'salary': 0.1,
+        'company_preference': 0.1
+    })
 
 
 @dataclass
@@ -38,10 +56,21 @@ class ScoringBatch:
     """Scoring batch processor for parallel scoring operations"""
 
     def __init__(self, config: ScoringConfig):
-        self.config = config
+        self.config = self.validate_config(config)
+        self._cache = {} if config.cache_enabled else None
+        self._metrics = {
+            'start_time': None,
+            'scores_calculated': 0,
+            'users_processed': 0,
+            'cache_hits': 0,
+            'cache_misses': 0,
+            'errors_encountered': 0
+        }
+        self._progress = {'total_users': 0, 'processed_users': 0, 'calculated_scores': 0}
+        self._executor = ThreadPoolExecutor(max_workers=config.max_parallel_workers)
 
     @staticmethod
-    def validate_config(config: ScoringConfig) -> bool:
+    def validate_config(config: ScoringConfig) -> ScoringConfig:
         """Validate scoring configuration"""
         if config.batch_size <= 0:
             raise ValueError("batch_size must be positive")
@@ -49,7 +78,16 @@ class ScoringBatch:
             raise ValueError("max_parallel_workers must be positive")
         if not 0 <= config.score_threshold <= 1:
             raise ValueError("score_threshold must be between 0 and 1")
-        return True
+        if config.scoring_algorithm not in ['basic', 'advanced', 'ml_enhanced']:
+            raise ValueError("scoring_algorithm must be one of: basic, advanced, ml_enhanced")
+
+        # Validate algorithm weights sum to 1.0
+        total_weight = sum(config.algorithm_weights.values())
+        if abs(total_weight - 1.0) > 0.01:
+            raise ValueError(f"Algorithm weights must sum to 1.0, got {total_weight}")
+
+        logger.info(f"Scoring configuration validated: {config}")
+        return config
 
     async def load_users_in_batches(self, limit: int = 1000, offset: int = 0) -> List[List]:
         """Load users in batches"""
@@ -78,13 +116,32 @@ class ScoringBatch:
         return 0.8  # Default score
 
     async def calculate_skill_match_score(self, user_skills: List[str], job_requirements: List[str]) -> float:
-        """Calculate skill matching score"""
+        """Calculate skill matching score with advanced algorithm"""
         if not user_skills or not job_requirements:
             return 0.0
 
-        # Simple intersection-based scoring
-        skill_intersection = set(user_skills) & set(job_requirements)
-        return len(skill_intersection) / len(job_requirements)
+        # Convert to lowercase for case-insensitive matching
+        user_skills_lower = [skill.lower().strip() for skill in user_skills]
+        job_requirements_lower = [req.lower().strip() for req in job_requirements]
+
+        # Exact matches
+        exact_matches = set(user_skills_lower) & set(job_requirements_lower)
+        exact_score = len(exact_matches) / len(job_requirements_lower)
+
+        # Partial matches (using simple string containment)
+        partial_matches = 0
+        for req in job_requirements_lower:
+            if req not in exact_matches:
+                for skill in user_skills_lower:
+                    if req in skill or skill in req:
+                        partial_matches += 0.5  # Half weight for partial matches
+                        break
+
+        partial_score = partial_matches / len(job_requirements_lower)
+        total_score = min(1.0, exact_score + partial_score)
+
+        logger.debug(f"Skill match: {len(exact_matches)} exact, {partial_matches} partial, score: {total_score:.3f}")
+        return total_score
 
     async def calculate_location_score(self, user_location: str, job_location: str, remote_allowed: bool) -> float:
         """Calculate location-based score"""
@@ -116,17 +173,42 @@ class ScoringBatch:
             return 1.0
         return 0.3
 
-    async def calculate_composite_score(self, score_components: Dict, weights: Dict) -> float:
-        """Calculate composite score from components"""
+    async def calculate_composite_score(self, score_components: Dict, weights: Dict = None) -> float:
+        """Calculate composite score from components with validation"""
+        if weights is None:
+            weights = self.config.algorithm_weights
+
         total_score = 0.0
         total_weight = 0.0
+        missing_components = []
 
-        for component, score in score_components.items():
-            weight = weights.get(component, 0.0)
-            total_score += score * weight
-            total_weight += weight
+        for component, weight in weights.items():
+            if component in score_components:
+                component_score = score_components[component]
+                # Validate score is in valid range
+                if not (0 <= component_score <= 1):
+                    logger.warning(f"Invalid score for {component}: {component_score}, clamping to [0,1]")
+                    component_score = max(0.0, min(1.0, component_score))
 
-        return total_score / total_weight if total_weight > 0 else 0.0
+                total_score += component_score * weight
+                total_weight += weight
+            else:
+                missing_components.append(component)
+
+        if missing_components:
+            logger.debug(f"Missing score components: {missing_components}")
+
+        # Normalize by actual total weight used
+        final_score = total_score / total_weight if total_weight > 0 else 0.0
+
+        # Apply algorithm-specific adjustments
+        if self.config.scoring_algorithm == 'advanced':
+            # Add slight boost for having more complete profiles
+            completeness_bonus = (len(score_components) / len(weights)) * 0.05
+            final_score = min(1.0, final_score + completeness_bonus)
+
+        logger.debug(f"Composite score: {final_score:.3f} from {score_components}")
+        return final_score
 
     async def persist_scores(self, scores: List[Dict]):
         """Persist scores to database"""

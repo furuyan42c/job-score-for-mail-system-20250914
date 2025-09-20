@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 """
-T030: Batch Scheduler - GREEN Phase Implementation
+T030: Batch Scheduler - REFACTOR Phase Implementation
 
-Minimal implementation to pass RED phase tests.
+Improved implementation with better job management and monitoring.
 """
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
+from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_MISSED
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
+from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -50,11 +59,22 @@ class BatchScheduler:
     """Batch scheduler using APScheduler for job management"""
 
     def __init__(self, config: SchedulerConfig):
-        self.config = config
-        self.scheduler = AsyncIOScheduler(timezone=config.timezone)
+        self.config = self.validate_config(config)
+        self.scheduler = AsyncIOScheduler(
+            timezone=config.timezone,
+            job_defaults=config.job_defaults
+        )
         self._job_configs = {}
         self._job_statuses = {}
         self._execution_info = {}
+        self._metrics = {
+            'jobs_executed': 0,
+            'jobs_failed': 0,
+            'jobs_missed': 0,
+            'total_execution_time': 0.0,
+            'scheduler_start_time': None
+        }
+        self._setup_event_listeners()
 
     @staticmethod
     def validate_config(config: SchedulerConfig) -> bool:

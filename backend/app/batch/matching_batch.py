@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """
-T029: Matching Batch - GREEN Phase Implementation
+T029: Matching Batch - REFACTOR Phase Implementation
 
-Minimal implementation to pass RED phase tests.
+Improved implementation with better algorithms and error handling.
 """
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from collections import defaultdict
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
+from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -39,7 +47,17 @@ class MatchingBatch:
     """Matching batch processor for parallel matching and recommendation generation"""
 
     def __init__(self, config: MatchingConfig):
-        self.config = config
+        self.config = self.validate_config(config)
+        self._metrics = {
+            'start_time': None,
+            'users_processed': 0,
+            'matches_generated': 0,
+            'matches_filtered': 0,
+            'diversity_injections': 0,
+            'errors_encountered': 0
+        }
+        self._progress = {'total_users': 0, 'processed_users': 0, 'generated_matches': 0}
+        self._cache = {} if config.category_distribution else None
 
     @staticmethod
     def validate_config(config: MatchingConfig) -> bool:
