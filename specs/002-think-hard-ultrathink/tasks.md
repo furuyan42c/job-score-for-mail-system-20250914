@@ -107,7 +107,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 
 ### A1: データベース設定 [P] 🔴
 
-#### T001: データベーススキーマ作成 [100%] [Q:95%] [✅DONE] [🟢P3]
+#### T001: データベーススキーマ作成 [100%] [Q:95%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: PostgreSQL/Supabaseのスキーマ定義（20テーブル）
 
@@ -130,7 +130,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 - [x] 外部キー制約設定
 - [x] マイグレーション動作確認
 
-#### T002: インデックス作成 [100%] [Q:95%] [✅DONE] [🟢P3]
+#### T002: インデックス作成 [100%] [Q:95%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: パフォーマンス最適化用インデックス作成（58個）
 
@@ -151,7 +151,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 - [x] 部分インデックス（10個）
 - [x] 複合インデックス（13個）
 
-#### T003: マスタデータ投入スクリプト [100%] [Q:90%] [✅DONE] [🟡P2]
+#### T003: マスタデータ投入スクリプト [100%] [Q:90%] [[DONE]] [[P2-MED]]
 
 📝 **タスク内容**: 都道府県、職種などのマスタデータ投入
 
@@ -175,7 +175,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 - [x] エラーハンドリング実装
 - [x] 重複投入防止機能
 
-#### T004: サンプルデータ生成 [100%] [Q:85%] [✅DONE] [🟢P3]
+#### T004: サンプルデータ生成 [100%] [Q:85%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: 開発用10万件の求人データ生成
 
@@ -201,7 +201,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 
 ### A2: 契約テスト（TDD - RED Phase） [P] 🔴
 
-#### T005: POST /batch/trigger 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T005: POST /batch/trigger 契約テスト [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: バッチ処理トリガーのテスト ✅ REFACTOR完了
 
@@ -215,9 +215,9 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 - **依存**: なし
 - **MCP**: --c7 (api-spec.yaml参照)
 - **TDDフェーズ**:
-  - [✅RED]: テスト作成完了（FAIL確認済み）
-  - [✅GREEN]: ハードコード実装でテストパス
-  - [✅REFACTOR]: BatchServiceクラス実装完了
+  - [[RED]]: テスト作成完了（FAIL確認済み）
+  - [[GREEN]]: ハードコード実装でテストパス
+  - [[REFACTOR]]: BatchServiceクラス実装完了
 ```python
 def test_batch_trigger_contract():
     response = client.post("/api/v1/batch/trigger",
@@ -226,7 +226,7 @@ def test_batch_trigger_contract():
     assert "batch_id" in response.json()
 ```
 
-#### T006: GET /batch/status/{id} 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T006: GET /batch/status/{id} 契約テスト [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: バッチ状態取得のテスト ✅ REFACTOR完了
 
@@ -240,11 +240,11 @@ def test_batch_trigger_contract():
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
-  - [✅RED]: テスト作成完了（FAIL確認済み）
-  - [✅GREEN]: ハードコード実装でテストパス
-  - [✅REFACTOR]: BatchServiceクラス実装完了
+  - [[RED]]: テスト作成完了（FAIL確認済み）
+  - [[GREEN]]: ハードコード実装でテストパス
+  - [[REFACTOR]]: BatchServiceクラス実装完了
 
-#### T007: POST /jobs/import 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T007: POST /jobs/import 契約テスト [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: CSV インポートのテスト ✅ REFACTOR完了
 
@@ -258,11 +258,11 @@ def test_batch_trigger_contract():
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
-  - [✅RED]: テスト作成完了（FAIL確認済み）
-  - [✅GREEN]: ハードコード実装でテストパス
-  - [✅REFACTOR]: データ処理サービス実装完了
+  - [[RED]]: テスト作成完了（FAIL確認済み）
+  - [[GREEN]]: ハードコード実装でテストパス
+  - [[REFACTOR]]: データ処理サービス実装完了
 
-#### T008: POST /scoring/calculate 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T008: POST /scoring/calculate 契約テスト [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: スコアリング計算のテスト ✅ REFACTOR完了
 
@@ -276,11 +276,11 @@ def test_batch_trigger_contract():
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
-  - [✅RED]: テスト作成完了（FAIL確認済み）
-  - [✅GREEN]: ハードコード実装でテストパス
-  - [✅REFACTOR]: ScoringServiceクラス実装完了
+  - [[RED]]: テスト作成完了（FAIL確認済み）
+  - [[GREEN]]: ハードコード実装でテストパス
+  - [[REFACTOR]]: ScoringServiceクラス実装完了
 
-#### T009: POST /matching/generate 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T009: POST /matching/generate 契約テスト [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: マッチング生成のテスト ✅ REFACTOR完了
 
@@ -294,11 +294,11 @@ def test_batch_trigger_contract():
 - **依存**: なし
 - **MCP**: --c7
 - **TDDフェーズ**:
-  - [✅RED]: テスト作成完了（FAIL確認済み）
-  - [✅GREEN]: ハードコード実装でテストパス
-  - [✅REFACTOR]: 統合サービス層実装完了
+  - [[RED]]: テスト作成完了（FAIL確認済み）
+  - [[GREEN]]: ハードコード実装でテストパス
+  - [[REFACTOR]]: 統合サービス層実装完了
 
-#### T010: GET /matching/user/{id} 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T010: GET /matching/user/{id} 契約テスト [66%] [Q:70%] [[GREEN]] [[P1-HIGH]]
 
 📝 **タスク内容**: ユーザー別マッチングのテスト
 
@@ -313,7 +313,7 @@ def test_batch_trigger_contract():
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T011: POST /email/generate 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T011: POST /email/generate 契約テスト [66%] [Q:70%] [[GREEN]] [[P1-HIGH]]
 
 📝 **タスク内容**: メール生成のテスト
 
@@ -328,7 +328,7 @@ def test_batch_trigger_contract():
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T012: POST /sql/execute 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T012: POST /sql/execute 契約テスト [66%] [Q:70%] [[GREEN]] [[P1-HIGH]]
 
 📝 **タスク内容**: SQL実行のテスト
 
@@ -343,7 +343,7 @@ def test_batch_trigger_contract():
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T013: GET /monitoring/metrics 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T013: GET /monitoring/metrics 契約テスト [66%] [Q:70%] [[GREEN]] [[P1-HIGH]]
 
 📝 **タスク内容**: メトリクス取得のテスト
 
@@ -360,7 +360,7 @@ def test_batch_trigger_contract():
 
 ### A3: フロントエンドコンポーネント（v0完成品） [P]
 
-#### T014: SqlEditor コンポーネント作成 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T014: SqlEditor コンポーネント作成 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: SQL入力・実行UI（v0で完成済み）
 
@@ -379,7 +379,7 @@ def test_batch_trigger_contract():
   - ✅ 結果表示テーブル
   - ✅ 実行時間表示
 
-#### T015: Dashboard コンポーネント作成 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T015: Dashboard コンポーネント作成 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: メトリクス表示ダッシュボード（v0で完成済み）
 
@@ -404,7 +404,7 @@ def test_batch_trigger_contract():
 
 ### B1: バックエンドモデル実装 [全体:20%] [Q:40%]
 
-#### T016: Job モデル実装 [100%] [Q:90%] [✅DONE] [🔴P1]
+#### T016: Job モデル実装 [100%] [Q:90%] [[DONE]] [[P1-HIGH]]
 
 📝 **タスク内容**: 求人情報の基本モデル実装（SQLAlchemy + Pydantic）
 
@@ -424,7 +424,7 @@ def test_batch_trigger_contract():
 ブロック中: T021, T022, T028
 変更時要確認: すべてのJob関連API
 
-#### T017: User モデル実装 [100%] [Q:90%] [✅DONE] [🔴P1]
+#### T017: User モデル実装 [100%] [Q:90%] [[DONE]] [[P1-HIGH]]
 
 📝 **タスク内容**: ユーザー情報モデル実装（認証情報含む）
 
@@ -444,7 +444,7 @@ def test_batch_trigger_contract():
 ブロック中: T019, T023, T026
 変更時要確認: T066(Supabase Auth)
 
-#### T018: Score モデル実装 [100%] [Q:85%] [✅DONE] [🔴P1]
+#### T018: Score モデル実装 [100%] [Q:85%] [[DONE]] [[P1-HIGH]]
 
 📝 **タスク内容**: スコアデータモデル実装（各種スコア定義）
 
@@ -464,7 +464,7 @@ def test_batch_trigger_contract():
 ブロック中: T021, T022, T023, T024
 変更時要確認: T028(Score API)
 
-#### T019: EmailSection モデル実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T019: EmailSection モデル実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: メールセクションモデル実装
 
@@ -484,7 +484,7 @@ def test_batch_trigger_contract():
 ブロック中: T031, T032
 変更時要確認: T033(Email API)
 
-#### T020: BatchJob モデル実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T020: BatchJob モデル実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: バッチジョブモデル実装（ジョブ管理）
 
@@ -506,7 +506,7 @@ def test_batch_trigger_contract():
 
 ### B2: スコアリングサービス実装 [全体:33%] [Q:70%]
 
-#### T021: 基礎スコア計算実装 [75%] [Q:85%] [🔄REFACTOR] [🔴P1]
+#### T021: 基礎スコア計算実装 [100%] [Q:95%] [[DONE]] [[P1-HIGH]]
 
 📝 **タスク内容**: fee、時給、企業人気度のスコア計算アルゴリズム
 
@@ -544,7 +544,7 @@ def test_batch_trigger_contract():
 - [ ] 10万件を5分以内で処理
 - [ ] メモリ使用量4GB以内
 
-#### T022: SEOスコア計算実装 [0%] [Q:0%] [⚠️BLOCKED] [🔴P1]
+#### T022: SEOスコア計算実装 [100%] [Q:90%] [[DONE]] [[P1-HIGH]]
 
 📝 **タスク内容**: semrush_keywordsとのマッチングスコア
 
@@ -567,7 +567,7 @@ def test_batch_trigger_contract():
   - ✅ 検索ボリュームベーススコアリング
   - ✅ keyword_scoringテーブルへの保存
 
-#### T023: パーソナライズスコア計算実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T023: パーソナライズスコア計算実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: implicit ALSによる協調フィルタリング
 
@@ -589,7 +589,7 @@ def test_batch_trigger_contract():
 
 ### B3: マッチングサービス実装 🔴
 
-#### T024: 6セクション選定ロジック実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T024: 6セクション選定ロジック実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: editorial_picks, top5等の選定
 
@@ -609,7 +609,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
     return selected[:5]
 ```
 
-#### T025: 重複制御実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T025: 重複制御実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: 2週間以内応募企業の除外
 
@@ -624,7 +624,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **MCP**: --serena
 - **TDD**: 統合テスト作成
 
-#### T026: 40件補充ロジック実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T026: 40件補充ロジック実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: 不足時の補充処理
 
@@ -641,7 +641,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B4: バッチ処理実装 🔴
 
-#### T027: データインポートバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T027: データインポートバッチ実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: CSV→DB の並列インポート
 
@@ -657,7 +657,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T007のテストをパス
 - **パフォーマンス目標**: 10万件を5分以内
 
-#### T028: スコアリングバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T028: スコアリングバッチ実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: 並列スコアリング処理
 
@@ -673,7 +673,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T008のテストをパス
 - **パフォーマンス目標**: 1万人を10分以内
 
-#### T029: マッチングバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T029: マッチングバッチ実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: 並列マッチング処理
 
@@ -689,7 +689,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T009のテストをパス
 - **パフォーマンス目標**: 1万人×40件を10分以内
 
-#### T030: バッチスケジューラ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T030: バッチスケジューラ実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: APSchedulerによる定期実行
 
@@ -706,7 +706,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B5: メール生成サービス 🔴
 
-#### T031: HTMLテンプレート作成 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T031: HTMLテンプレート作成 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 6セクション構成のメールテンプレート
 
@@ -721,7 +721,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **MCP**: --magic (HTMLテンプレート)
 - **TDD**: スナップショットテスト
 
-#### T032: GPT-5 nano 統合実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T032: GPT-5 nano 統合実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 件名・本文の自動生成
 
@@ -740,7 +740,7 @@ from openai import OpenAI
 client = OpenAI(model="gpt-5-nano")
 ```
 
-#### T033: フォールバック実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T033: フォールバック実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: GPT-5エラー時のテンプレート処理
 
@@ -757,7 +757,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B6: API実装（GREEN Phase） 🔴
 
-#### T034: バッチAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T034: バッチAPIエンドポイント実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: /batch/* エンドポイント
 
@@ -772,7 +772,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **TDD**: T005-T006をパス
 
-#### T035: スコアリングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T035: スコアリングAPIエンドポイント実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: /scoring/* エンドポイント
 
@@ -787,7 +787,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **TDD**: T008をパス
 
-#### T036: マッチングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T036: マッチングAPIエンドポイント実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: /matching/* エンドポイント
 
@@ -802,7 +802,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **TDD**: T009-T010をパス
 
-#### T037: メールAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T037: メールAPIエンドポイント実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: /email/* エンドポイント
 
@@ -817,7 +817,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **TDD**: T011をパス
 
-#### T038: モニタリングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
+#### T038: モニタリングAPIエンドポイント実装 [25%] [Q:50%] [[RED]] [[P1-HIGH]]
 
 📝 **タスク内容**: /monitoring/* エンドポイント
 
@@ -832,7 +832,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **TDD**: T013をパス
 
-#### T039: SQL実行APIエンドポイント実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T039: SQL実行APIエンドポイント実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: /sql/execute エンドポイント（読み取り専用）
 
@@ -850,7 +850,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B7: フロントエンド実装（v0完成） [P]
 
-#### T040: APIクライアント実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T040: APIクライアント実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: バックエンドAPI呼び出しラッパー（v0システムでは独立動作のため不要）
 
@@ -865,7 +865,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: なし
 - **状態**: v0 SQLite管理画面は独立したモック実装のため非対象
 
-#### T041: SQL実行画面実装 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T041: SQL実行画面実装 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: SQL実行画面（v0で完成済み）
 
@@ -884,7 +884,7 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ クエリ実行とリアルタイム結果表示
   - ✅ シンタックスハイライト
 
-#### T042: モニタリング画面実装 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T042: モニタリング画面実装 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: モニタリング画面（v0で完成済み）
 
@@ -903,7 +903,7 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ テーブル構造表示
   - ✅ リアルタイムデータブラウザ
 
-#### T043: メールプレビュー実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T043: メールプレビュー実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: EmailPreview コンポーネント（現在のv0システムでは対象外）
 
@@ -918,7 +918,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: なし
 - **状態**: SQLite管理画面には不要な機能
 
-#### T044: エラーハンドリング実装 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T044: エラーハンドリング実装 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: エラーハンドリング（v0で実装済み）
 
@@ -936,7 +936,7 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ ユーザーフレンドリーなエラー表示
   - ✅ ローディング状態管理
 
-#### T045: スタイリング実装 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T045: スタイリング実装 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: UI/UXデザイン（v0で完成済み）
 
@@ -961,7 +961,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C1: 統合テスト 🔴
 
-#### T046: データフロー統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T046: データフロー統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: CSV→スコアリング→マッチング→メール
 
@@ -976,7 +976,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --seq (複雑なフロー)
 - **期待結果**: 30分以内完了
 
-#### T047: 6セクション選定統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T047: 6セクション選定統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 各セクションの正確な選定確認
 
@@ -991,7 +991,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --seq
 - **チェックポイント**: 40件の正確な分配
 
-#### T048: 重複制御統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T048: 重複制御統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 2週間以内応募企業の除外確認
 
@@ -1006,7 +1006,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: なし
 - **チェックポイント**: endcl_cdの重複なし
 
-#### T049: パフォーマンス統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T049: パフォーマンス統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 処理時間の測定
 
@@ -1023,7 +1023,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C2: E2Eテスト（v0対応） 🔴
 
-#### T050: SQL実行E2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T050: SQL実行E2Eテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: ブラウザからのSQL実行フロー（v0システム対応）
 
@@ -1041,7 +1041,7 @@ client = OpenAI(model="gpt-5-nano")
   - ⏳ SQLクエリ入力→実行→結果表示
   - ⏳ 3タブ切り替え（SQLクエリ、データ閲覧、テーブル構造）
 
-#### T051: ダッシュボードE2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T051: ダッシュボードE2Eテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: データベース管理画面の確認フロー（v0システム対応）
 
@@ -1059,7 +1059,7 @@ client = OpenAI(model="gpt-5-nano")
   - ⏳ データ閲覧タブでのページング機能
   - ⏳ 検索機能（テーブル名・説明での絞り込み）
 
-#### T052: UIレスポンシブE2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T052: UIレスポンシブE2Eテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: レスポンシブデザインの確認フロー
 
@@ -1079,7 +1079,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C3: 最適化 🟡
 
-#### T053: データベースクエリ最適化 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T053: データベースクエリ最適化 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: EXPLAIN分析とクエリ改善
 
@@ -1094,7 +1094,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --seq (パフォーマンス分析)
 - **目標**: 各クエリ3秒以内
 
-#### T054: 並列処理最適化 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T054: 並列処理最適化 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: ProcessPoolExecutor の調整
 
@@ -1109,7 +1109,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --seq
 - **目標**: CPU使用率80%以上
 
-#### T055: キャッシュ実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T055: キャッシュ実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Redis/インメモリキャッシュ
 
@@ -1124,7 +1124,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **目標**: 2回目以降のクエリ50%高速化
 
-#### T056: フロントエンド最適化 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T056: フロントエンド最適化 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: バンドルサイズ削減、遅延ロード（v0で最適化済み）
 
@@ -1146,7 +1146,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C4: セキュリティ・監視 🔴
 
-#### T057: SQLインジェクション対策テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T057: SQLインジェクション対策テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 悪意のあるクエリのブロック確認
 
@@ -1161,7 +1161,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: なし
 - **チェックポイント**: DROP, UPDATE等のブロック
 
-#### T058: API認証実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T058: API認証実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: X-API-Key認証の実装
 
@@ -1176,7 +1176,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **テストファイル**: `backend/tests/unit/test_auth.py`
 
-#### T059: レート制限実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T059: レート制限実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: API呼び出し制限（50req/s）
 
@@ -1191,7 +1191,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **テストファイル**: `backend/tests/unit/test_rate_limiter.py`
 
-#### T060: ログ実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T060: ログ実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 構造化ログ（JSON形式）
 
@@ -1206,7 +1206,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **形式**: `{"timestamp": "", "level": "", "message": ""}`
 
-#### T061: エラー監視実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T061: エラー監視実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Sentry統合
 
@@ -1223,7 +1223,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C5: ドキュメント・デプロイ準備 🟢
 
-#### T062: API ドキュメント生成 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T062: API ドキュメント生成 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: OpenAPI UIの設定
 
@@ -1238,7 +1238,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: なし
 - **URL**: http://localhost:8000/docs
 
-#### T063: デプロイメント設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T063: デプロイメント設定 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Docker/docker-compose設定
 
@@ -1253,7 +1253,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **チェックポイント**: 1コマンドで起動
 
-#### T064: CI/CD パイプライン設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T064: CI/CD パイプライン設定 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: GitHub Actions設定
 
@@ -1268,7 +1268,7 @@ client = OpenAI(model="gpt-5-nano")
 - **MCP**: --serena
 - **トリガー**: PR時にテスト自動実行
 
-#### T065: 運用マニュアル作成 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T065: 運用マニュアル作成 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 運用手順書の作成
 
@@ -1285,7 +1285,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C6: Supabase統合（TDD駆動） 🔴
 
-#### T066: Supabase環境セットアップ [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T066: Supabase環境セットアップ [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Supabaseローカル開発環境の起動とDB初期化
 
@@ -1299,13 +1299,13 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T001（既存DBスキーマ）
 - **MCP**: --c7 (Supabase公式ドキュメント参照)
 - **TDDフェーズ**:
-  - [🔴RED]: 接続テスト作成（必須失敗確認）
+  - [[RED]]: 接続テスト作成（必須失敗確認）
   - [⏳GREEN]: 最小限のSupabase接続実装
   - [⏳REFACTOR]: 設定最適化とエラーハンドリング
 - **テストファイル**: `backend/tests/unit/test_supabase_connection.py`
 - **コマンド**: `supabase start`（localhost:54321で起動）
 
-#### T067: Supabaseスキーマ移行 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T067: Supabaseスキーマ移行 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 既存PostgreSQLスキーマをSupabaseに移行
 
@@ -1319,13 +1319,13 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T066
 - **MCP**: --serena (スキーマ変換作業)
 - **TDDフェーズ**:
-  - [🔴RED]: スキーマ検証テスト作成（20テーブル確認）
+  - [[RED]]: スキーマ検証テスト作成（20テーブル確認）
   - [⏳GREEN]: 基本テーブル作成
   - [⏳REFACTOR]: RLS・インデックス・制約追加
 - **テストファイル**: `backend/tests/integration/test_supabase_schema.py`
 - **チェックポイント**: `SELECT count(*) FROM information_schema.tables;` = 20
 
-#### T068: v0フロントエンドSupabase統合 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T068: v0フロントエンドSupabase統合 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: v0 管理画面にSupabaseクライアント追加
 
@@ -1339,13 +1339,13 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T067, T041（v0 SQL実行画面）
 - **MCP**: --magic (v0コードとの統合)
 - **TDDフェーズ**:
-  - [🔴RED]: Supabase接続テスト作成（ブラウザテスト）
+  - [[RED]]: Supabase接続テスト作成（ブラウザテスト）
   - [⏳GREEN]: 基本的な SELECT クエリ実行
   - [⏳REFACTOR]: エラーハンドリングと型安全性強化
 - **テストファイル**: `frontend/tests/e2e/supabase-integration.spec.ts`
 - **依存関係追加**: `@supabase/supabase-js`, `@supabase/ssr`
 
-#### T069: リアルタイムクエリ実行機能 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T069: リアルタイムクエリ実行機能 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: v0画面から実際のSupabaseへのクエリ実行
 
@@ -1359,13 +1359,13 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T068
 - **MCP**: --seq (リアルタイム処理ロジック)
 - **TDDフェーズ**:
-  - [🔴RED]: SQL実行結果テスト作成（実データ確認）
+  - [[RED]]: SQL実行結果テスト作成（実データ確認）
   - [⏳GREEN]: 基本的なSELECTクエリ実行
   - [⏳REFACTOR]: パフォーマンス最適化・セキュリティ強化
 - **テストファイル**: `frontend/tests/integration/test_real_sql_execution.py`
 - **セキュリティ**: SELECT専用、DDL/DML制限
 
-#### T070: Supabaseリアルタイム機能統合 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T070: Supabaseリアルタイム機能統合 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: データベース変更のリアルタイム更新
 
@@ -1379,13 +1379,13 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T069
 - **MCP**: --seq (リアルタイム処理)
 - **TDDフェーズ**:
-  - [🔴RED]: リアルタイム更新テスト作成
+  - [[RED]]: リアルタイム更新テスト作成
   - [⏳GREEN]: 基本的なデータベース変更通知
   - [⏳REFACTOR]: パフォーマンス最適化・エラーハンドリング
 - **テストファイル**: `frontend/tests/integration/test_realtime_updates.py`
 - **機能**: INSERT/UPDATE/DELETE の即座反映
 
-#### T071: Supabase統合E2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T071: Supabase統合E2Eテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 完全なSupabase統合フローの検証
 
@@ -1399,7 +1399,7 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T066-T070
 - **MCP**: --play (Playwright使用)
 - **TDDフェーズ**:
-  - [🔴RED]: 統合フローテスト作成
+  - [[RED]]: 統合フローテスト作成
   - [⏳GREEN]: 基本フローの動作確認
   - [⏳REFACTOR]: エラーケース・パフォーマンステスト
 - **シナリオ**:
@@ -1407,7 +1407,7 @@ client = OpenAI(model="gpt-5-nano")
   - セキュリティ制限テスト
   - 複数ユーザー同時接続テスト
 
-#### T074: Supabaseデプロイメント設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T074: Supabaseデプロイメント設定 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 本番環境向けSupabase設定
 
@@ -1421,7 +1421,7 @@ client = OpenAI(model="gpt-5-nano")
 - **依存**: T073
 - **MCP**: --c7 (Supabaseデプロイメントガイド)
 - **TDDフェーズ**:
-  - [🔴RED]: 本番環境テスト作成
+  - [[RED]]: 本番環境テスト作成
   - [⏳GREEN]: 基本的なデプロイメント設定
   - [⏳REFACTOR]: セキュリティ・パフォーマンス最適化
 - **設定内容**: 本番DB接続、API キー管理、CDN設定
@@ -1546,7 +1546,7 @@ gantt
 
 ### D1: 環境準備 [P] 🔴
 
-#### T075: Supabaseプロジェクト設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T075: Supabaseプロジェクト設定 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Supabaseプロジェクト　確認と認証情報取得
 
@@ -1571,7 +1571,7 @@ gantt
   # Expected: 実際のSupabase URLが設定されている
   ```
 
-#### T076: Backend設定調整 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T076: Backend設定調整 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: PostgreSQL/Supabase接続設定の最適化
 
@@ -1595,7 +1595,7 @@ gantt
   import os; os.environ['ENVIRONMENT'] = 'development'
   ```
 
-#### T077: データベースマイグレーション [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T077: データベースマイグレーション [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Supabaseデータベースへのスキーマ適用
 
@@ -1624,7 +1624,7 @@ gantt
 
 ### D2: サービス起動確認 🔴
 
-#### T078: Backend起動テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T078: Backend起動テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: FastAPIサーバーの起動と基本動作確認
 
@@ -1647,7 +1647,7 @@ gantt
   - http://localhost:8000/docs → Swagger UI表示
   - http://localhost:8000/health → 正常レスポンス
 
-#### T079: Frontend起動確認 [100%] [Q:90%] [✅DONE] [🟢P3]
+#### T079: Frontend起動確認 [100%] [Q:90%] [[DONE]] [[P3-LOW]]
 
 📝 **タスク内容**: Next.jsサーバーの起動と表示確認
 
@@ -1670,7 +1670,7 @@ gantt
 
 ### D3: API統合テスト [P] 🔴
 
-#### T080: 基本APIエンドポイントテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T080: 基本APIエンドポイントテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 主要APIエンドポイントの動作確認
 
@@ -1701,7 +1701,7 @@ gantt
   - [⏳REFACTOR]: エラーハンドリング改善
 - **テストファイル**: `backend/tests/integration/test_api_endpoints.py`
 
-#### T081: Supabase Auth統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T081: Supabase Auth統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Supabase認証機能の動作確認
 
@@ -1727,7 +1727,7 @@ gantt
 
 ### D4: Frontend-Backend接続 🔴
 
-#### T082: API接続設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T082: API接続設定 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Frontend環境変数とAPI接続設定
 
@@ -1753,7 +1753,7 @@ gantt
   # Expected: Backend URLが正しく設定
   ```
 
-#### T083: データフロー統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T083: データフロー統合テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: Frontend→Backend→DB→Frontendの完全なデータフロー確認
 
@@ -1778,7 +1778,7 @@ gantt
 
 ### D5: E2Eシナリオテスト 🟡
 
-#### T084: ユーザージャーニーテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T084: ユーザージャーニーテスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 実際のユーザー操作シナリオの完全テスト
 
@@ -1807,7 +1807,7 @@ gantt
   - [⏳REFACTOR]: テスト安定性向上
 - **テストファイル**: `frontend/tests/e2e/test_user_journey.spec.ts`
 
-#### T085: パフォーマンス・負荷テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T085: パフォーマンス・負荷テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: システム全体のパフォーマンス検証
 
@@ -1837,7 +1837,7 @@ gantt
 
 ### E1: マスタデータ投入 [P] 🔴
 
-#### T086: マスタデータ投入 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T086: マスタデータ投入 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 既存のマスタデータCSVをデータベースに投入
 
@@ -1872,7 +1872,7 @@ gantt
   SELECT COUNT(*) FROM occupations; -- Expected: 173
   ```
 
-#### T087: SEOキーワードデータ投入 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T087: SEOキーワードデータ投入 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: SEMRushキーワードデータの投入とインデックス作成
 
@@ -1897,7 +1897,7 @@ gantt
 
 ### E2: 求人データ大量投入 🔴
 
-#### T088: 求人データインポート [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T088: 求人データインポート [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 19万件の実求人データをデータベースに投入
 
@@ -1934,7 +1934,7 @@ gantt
   SELECT COUNT(DISTINCT company_id) FROM jobs;
   ```
 
-#### T089: データ整合性検証 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T089: データ整合性検証 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 投入されたデータの整合性と品質チェック
 
@@ -1960,7 +1960,7 @@ gantt
 
 ### E3: スコアリング実行 🔴
 
-#### T090: 基礎スコア計算 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T090: 基礎スコア計算 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 全求人データに対する基礎スコア計算
 
@@ -1993,7 +1993,7 @@ gantt
   SELECT AVG(base_score), MIN(base_score), MAX(base_score) FROM job_scores;
   ```
 
-#### T091: SEOスコア計算 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T091: SEOスコア計算 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: キーワードマッチングによるSEOスコア計算
 
@@ -2018,7 +2018,7 @@ gantt
 
 ### E4: マッチング実行 🔴
 
-#### T092: ユーザー×求人マッチング [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T092: ユーザー×求人マッチング [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: サンプルユーザーに対する実求人マッチング
 
@@ -2054,7 +2054,7 @@ gantt
   GROUP BY user_id HAVING COUNT(*) = 40;
   ```
 
-#### T093: メール生成テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T093: メール生成テスト [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: マッチング結果からのメール生成
 
@@ -2083,7 +2083,7 @@ gantt
 
 ### E5: メール配信シミュレーション 🔴
 
-#### T094: 配信リスト生成 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T094: 配信リスト生成 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 1万人分の配信リスト作成と検証
 
@@ -2120,7 +2120,7 @@ gantt
   SELECT COUNT(*) FROM mailing_list WHERE email_verified = true;
   ```
 
-#### T095: バッチ配信シミュレーション [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T095: バッチ配信シミュレーション [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 1万通のメール配信をシミュレーション
 
@@ -2163,7 +2163,7 @@ gantt
   └── performance_metrics.json
   ```
 
-#### T096: 配信結果分析 [0%] [Q:0%] [⏳TODO] [🟡P2]
+#### T096: 配信結果分析 [0%] [Q:0%] [[TODO]] [[P2-MED]]
 
 📝 **タスク内容**: 配信シミュレーション結果の詳細分析
 

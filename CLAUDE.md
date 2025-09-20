@@ -366,6 +366,44 @@ quality_gates:
 8. テストを最後にまとめて実行
 9. ビジネス価値の検討なしでの実装
 
+## ⚠️ API 400エラー対策
+
+### 重要: ファイル編集時の必須ルール
+```yaml
+file_size_limits:
+  - MultiEdit/Edit: 100KB以下のファイルのみ
+  - 大きなファイル: 分割編集を使用
+  - tasks.md: 特に注意が必要（300KB+）
+
+prohibited_operations:
+  - tasks.mdの一括編集禁止
+  - 絵文字の連続使用禁止（🔴P1など）
+  - サロゲートペア文字の使用禁止
+
+safe_editing_rules:
+  - 大きなファイルは Read → 小さな Edit のみ
+  - 絵文字は単独使用のみ
+  - tasks.md編集時は行番号指定で部分編集
+
+api_safe_mode:
+  - ASCII優先
+  - 小さな更新で確認
+  - エラー時は即座に中断
+```
+
+### 実装時の必須チェック
+```bash
+# ファイルサイズ確認
+ls -lh specs/002-think-hard-ultrathink/tasks.md
+
+# 絵文字の削除スクリプト使用
+python3 /tmp/clean_tasks.py
+
+# 部分編集のみ実行
+# NG: tasks.md全体を編集
+# OK: 特定行のみ編集
+```
+
 ## 🆘 トラブルシューティング
 
 ### コマンドが動作しない
