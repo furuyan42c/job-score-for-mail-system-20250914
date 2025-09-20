@@ -53,7 +53,25 @@ DANGEROUS_SQL_PATTERNS = [
     r'\b(CONCAT|SUBSTRING|ASCII|CHAR)\s*\(',  # SQL injection関数
     r"'[^']*'[^']*'",  # クォート抜けの可能性
     r'\b(WAITFOR|SLEEP|DELAY)\b',  # 時間遅延攻撃
-    r'\b(LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE)\b'  # ファイル操作
+    r'\b(LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE)\b',  # ファイル操作
+    # Advanced injection patterns (T039 enhancement)
+    r'\bEXISTS\s*\(',  # EXISTS subquery (blind injection)
+    r'\b0x[0-9A-Fa-f]+',  # Hex encoding
+    r'\b(BENCHMARK|EXTRACTVALUE|UPDATEXML)\s*\(',  # Advanced injection functions
+    r'\b(VERSION|USER|DATABASE|CURRENT_USER|SESSION_USER|SYSTEM_USER)\s*\(',  # Information functions
+    r'\bINFORMATION_SCHEMA\b',  # Information schema access
+    r'\b(GRANT|REVOKE)\s+',  # Privilege escalation
+    r'\bCREATE\s+USER\b',  # User creation
+    r'\b(MD5|SHA1|SHA2)\s*\(',  # Hash functions (can be used for blind injection)
+    # Encoding and evasion patterns
+    r'%[0-9A-Fa-f]{2}',  # URL encoding
+    r'\\u[0-9A-Fa-f]{4}',  # Unicode encoding
+    r'\bFROM_BASE64\s*\(',  # Base64 decoding
+    r'\bCONVERT\s*\(',  # Character set conversion
+    r'@@[a-zA-Z_]+',  # MySQL system variables
+    r'\b(HEX|UNHEX)\s*\(',  # Hex conversion functions
+    r'\b(NOW|UNIX_TIMESTAMP|CONNECTION_ID)\s*\(',  # Time/connection functions
+    r'\bSCHEMA_NAME\b',  # Schema information
 ]
 
 # 許可されるテーブル名パターン

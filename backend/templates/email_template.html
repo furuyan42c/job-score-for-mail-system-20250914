@@ -100,6 +100,43 @@
             color: #999;
             text-decoration: none;
         }
+
+        /* Responsive Design */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .header h1 {
+                font-size: 20px !important;
+            }
+            .section {
+                padding: 15px !important;
+            }
+            .job-card {
+                padding: 12px !important;
+            }
+            .job-details {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+            }
+            .cta-button {
+                width: 90% !important;
+                padding: 15px !important;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            .header {
+                padding: 20px 15px !important;
+            }
+            .section h2 {
+                font-size: 16px !important;
+            }
+            .job-title {
+                font-size: 14px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -111,9 +148,9 @@
         </div>
 
         <!-- Section 1: Editorial Picks / Top Picks -->
-        <div class="section">
-            <h2>
-                <span class="emoji">🎯</span>
+        <div class="section" role="region" aria-labelledby="editorial-picks-heading">
+            <h2 id="editorial-picks-heading">
+                <span class="emoji" aria-label="ターゲット">🎯</span>
                 編集部のおすすめ
             </h2>
             {% for job in sections.editorial_picks %}
