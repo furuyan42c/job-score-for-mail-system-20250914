@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ===== 基本設定（環境変数で上書き可）=====
 SESSION="${SESSION:-cc}"
-TARGET="${TARGET:-cc:1.0}"                # Claude Code の tmux pane
+TARGET="${TARGET:-cc:0.0}"                # Claude Code の tmux pane
 START_CMD="${START_CMD:-claude --dangerously-skip-permissions}"  # Initial startup command
 RESTART_CMD="${RESTART_CMD:-$START_CMD}"   # Restart command
 TASKS_PATH="${TASKS_PATH:-/Users/furuyanaoki/Project/new.mail.score/specs/002-think-hard-ultrathink/tasks.md}"
@@ -181,10 +181,38 @@ check_blockers(){
     fi
 }
 
-# チェックポイント
+# チェックポイント（TodoWrite強制付き）
 LAST_CKPT_FILE="$LOG_DIR/${SESSION}-LAST"
+
+# TodoWrite状況チェック機能
+check_todowrite_compliance(){
+    log "Checking TodoWrite compliance before save/load operation"
+
+    # TodoWrite強制リマインダー
+    local todowrite_reminder="
+/note 🚨 チェックポイント操作前のTodoWrite確認 🚨
+
+【必須確認事項】
+✅ 現在のTodoWriteは最新状態ですか？
+✅ 完了したタスクをcompletedにマークしましたか？
+✅ 進行中タスクをin_progressに設定しましたか？
+✅ 新しく発見したタスクを追加しましたか？
+✅ ブロッカーを明記しましたか？
+
+【重要】チェックポイント保存/復元の前後で必ずTodoWriteを更新してください。
+作業の継続性を保つため、TodoWrite管理は最優先事項です。"
+
+    send_multiline "$todowrite_reminder"
+    log "TodoWrite compliance check sent"
+    sleep 2
+}
+
 save_ckpt(){
     local n="ckpt-$(date +%Y%m%d-%H%M%S)"
+
+    # 軽いTodoWrite確認（邪魔にならない程度）
+    send "/note 💾 チェックポイント保存中... TodoWriteも更新済みでしょうか？"
+
     echo "$n" > "$LAST_CKPT_FILE"
     send "/sc-save $n"
     log "checkpoint saved: $n"
@@ -193,10 +221,16 @@ save_ckpt(){
 load_last(){
     if [[ -f "$LAST_CKPT_FILE" ]]; then
         local ckpt=$(cat "$LAST_CKPT_FILE")
+
+        send "/note 📁 チェックポイント $ckpt から復元中..."
         send "/sc-load $ckpt"
         log "checkpoint loaded: $ckpt"
+
+        # 軽いリマインダー
+        send "/note ✅ 復元完了。TodoWriteの状況確認もお忘れなく"
     else
         log "no previous checkpoint found"
+        send "/note 🆕 新規セッション開始。TodoWriteで作業計画を立てることをお勧めします"
     fi
 }
 
@@ -230,18 +264,54 @@ probe_ctx(){
     echo ""; return 1
 }
 
-# カスタム /continue コマンド送信（TDD分析付き）
+# TodoWrite強制実行機能（Claude Codeのサボり防止）
+enforce_todowrite(){
+    log "Enforcing TodoWrite usage (anti-procrastination measure)"
+
+    # TodoWrite強制実行コマンドを送信
+    local todo_enforcement="
+/note TodoWrite更新が必要です。以下を必ず実行してください：
+
+1. 【必須】TodoWrite更新:
+   - 現在の作業状況をTodoWriteで記録
+   - 完了したタスクをcompletedに変更
+   - 次のタスクをin_progressに設定
+   - 新しく発見したタスクを追加
+
+2. 【必須】進捗の可視化:
+   - TodoWriteでタスクの依存関係を明確化
+   - ブロッカーをTodoWriteで明記
+   - 並列実行可能なタスクをTodoWriteで特定
+
+3. 【厳守】TodoWrite使用ルール:
+   - 作業開始時: TodoWrite必須
+   - 30分毎: TodoWrite更新必須
+   - タスク完了時: TodoWrite完了マーク必須
+   - 新タスク発見時: TodoWrite追加必須
+
+TodoWriteを使わない作業は禁止です。即座にTodoWriteを更新してから作業を継続してください。"
+
+    send_multiline "$todo_enforcement"
+    log "TodoWrite enforcement command sent"
+}
+
+# カスタム /continue コマンド送信（適度なTodoWrite促進）
 send_continue(){
     if [[ -f "$CONTINUE_PROMPT_FILE" ]]; then
         log "sending custom continue prompt from: $CONTINUE_PROMPT_FILE"
+
         # 送信前にTDD状況を分析
         analyze_tdd_phase
+
+        # メインの継続プロンプト送信
         local content=$(cat "$CONTINUE_PROMPT_FILE")
         send_multiline "$content"
+
         log "custom continue prompt sent with TDD analysis"
     else
-        log "sending default /continue"
+        log "sending default /continue with minimal TodoWrite reminder"
         send "/continue"
+        send "/note 💡 TodoWriteでの進捗管理もお忘れなく"
     fi
 }
 
@@ -356,6 +426,7 @@ load_last
 log "Entering main monitoring loop..."
 LAST_TDD_ANALYSIS=$(now)
 LAST_BLOCKER_CHECK=$(now)
+LAST_TODOWRITE_REMINDER=$(now)
 
 while :; do
     sleep 5
@@ -385,6 +456,13 @@ while :; do
             log "Blockers detected - consider intervention"
         fi
         LAST_BLOCKER_CHECK=$(now)
+    fi
+
+    # 1.7) 軽量TodoWriteリマインダー（30分毎、邪魔にならない程度）
+    if (( $(now) - LAST_TODOWRITE_REMINDER >= 1800 )); then
+        log "Sending gentle TodoWrite reminder (30min interval)"
+        send "/note 💡 TodoWrite更新タイミングです（30分経過）"
+        LAST_TODOWRITE_REMINDER=$(now)
     fi
 
     # 2) 定期オートセーブ
