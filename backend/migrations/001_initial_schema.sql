@@ -292,11 +292,7 @@ CREATE INDEX idx_actions_user ON user_actions(user_id, action_timestamp DESC);
 CREATE INDEX idx_actions_job ON user_actions(job_id, action_type);
 CREATE INDEX idx_actions_endcl ON user_actions(endcl_cd, action_type, action_timestamp DESC);
 
--- 初期パーティション作成（例：2025年9月）
-CREATE TABLE user_actions_2025_09 PARTITION OF user_actions
-    FOR VALUES FROM ('2025-09-01') TO ('2025-10-01');
-
-COMMENT ON TABLE user_actions IS 'ユーザー行動履歴（パーティション化）';
+COMMENT ON TABLE user_actions IS 'ユーザー行動履歴（シンプルストック型）';
 
 -- ----------------------------------------------------------------------------
 -- 2.4 user_profiles: ユーザープロファイル（集計データ）
@@ -467,9 +463,6 @@ CREATE INDEX idx_map_batch ON user_job_mapping(batch_id, user_id);
 CREATE INDEX idx_map_user_score ON user_job_mapping(user_id, composite_score DESC);
 CREATE INDEX idx_map_job_score ON user_job_mapping(job_id, composite_score DESC);
 
--- 初期パーティション（例：2025年9月）
-CREATE TABLE user_job_mapping_2025_09_18 PARTITION OF user_job_mapping
-    FOR VALUES FROM ('2025-09-18') TO ('2025-09-19');
 
 COMMENT ON TABLE user_job_mapping IS '日次マッチング結果（1万人×最大100件）';
 
@@ -506,9 +499,6 @@ CREATE INDEX idx_pick_user_date ON daily_job_picks(user_id, pick_date DESC);
 CREATE INDEX idx_pick_date_sent ON daily_job_picks(pick_date, is_sent);
 CREATE INDEX idx_pick_score ON daily_job_picks(composite_score DESC);
 
--- 初期パーティション
-CREATE TABLE daily_job_picks_2025_09_18 PARTITION OF daily_job_picks
-    FOR VALUES FROM ('2025-09-18') TO ('2025-09-19');
 
 COMMENT ON TABLE daily_job_picks IS '日次選定求人（1万人×40件）';
 COMMENT ON COLUMN daily_job_picks.section IS '6セクション分類';
