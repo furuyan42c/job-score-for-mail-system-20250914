@@ -4,9 +4,11 @@ Batch Execution Model - Minimal GREEN Phase Implementation
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, JSON
+from typing import Any, Dict, Optional
+
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
+
 from app.core.database import Base
 
 
@@ -18,7 +20,7 @@ class BatchExecution(Base):
     id = Column(Integer, primary_key=True, index=True)
     batch_id = Column(String(255), unique=True, index=True, nullable=False)
     batch_type = Column(String(100), nullable=False)
-    status = Column(String(50), nullable=False, default='pending')
+    status = Column(String(50), nullable=False, default="pending")
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)

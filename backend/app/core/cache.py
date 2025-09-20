@@ -5,14 +5,14 @@ Redisベースのキャッシュ管理機能を提供
 開発環境では簡易的なインメモリキャッシュにフォールバック
 """
 
+import asyncio
 import json
-import pickle
-from typing import Any, Optional, Union
-from datetime import timedelta
 import logging
+import pickle
+from datetime import timedelta
 from functools import wraps
 from hashlib import md5
-import asyncio
+from typing import Any, Optional, Union
 
 from app.core.config import settings
 
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 try:
     import redis.asyncio as aioredis
     from redis.exceptions import RedisError
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -106,7 +107,7 @@ class CacheManager:
                         1: 1,  # TCP_KEEPINTVL
                         2: 3,  # TCP_KEEPCNT
                         3: 5,  # TCP_KEEPIDLE
-                    }
+                    },
                 )
                 # 接続確認
                 await self.redis_client.ping()
@@ -148,12 +149,7 @@ class CacheManager:
             logger.error(f"Cache get error for key {key}: {e}")
             return default
 
-    async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[int] = None
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """キャッシュに値を設定"""
         if not self._initialized:
             await self.initialize()
@@ -209,8 +205,7 @@ class CacheManager:
             if isinstance(self.redis_client, InMemoryCache):
                 # インメモリキャッシュの場合
                 keys_to_delete = [
-                    k for k in self.redis_client._cache.keys()
-                    if pattern.replace("*", "") in k
+                    k for k in self.redis_client._cache.keys() if pattern.replace("*", "") in k
                 ]
                 return await self.redis_client.delete(*keys_to_delete)
             else:
@@ -218,9 +213,7 @@ class CacheManager:
                 cursor = 0
                 deleted = 0
                 while True:
-                    cursor, keys = await self.redis_client.scan(
-                        cursor, match=pattern, count=100
-                    )
+                    cursor, keys = await self.redis_client.scan(cursor, match=pattern, count=100)
                     if keys:
                         deleted += await self.redis_client.delete(*keys)
                     if cursor == 0:
@@ -244,12 +237,7 @@ class CacheManager:
         parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
         return ":".join(parts)
 
-    async def get_or_set(
-        self,
-        key: str,
-        func: callable,
-        ttl: Optional[int] = None
-    ) -> Any:
+    async def get_or_set(self, key: str, func: callable, ttl: Optional[int] = None) -> Any:
         """キャッシュから取得、なければ関数実行して設定"""
         value = await self.get(key)
         if value is not None:
@@ -265,12 +253,9 @@ class CacheManager:
         return value
 
 
-def cached(
-    prefix: str,
-    ttl: Optional[int] = None,
-    key_builder: Optional[callable] = None
-):
+def cached(prefix: str, ttl: Optional[int] = None, key_builder: Optional[callable] = None):
     """キャッシュデコレータ"""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -300,11 +285,13 @@ def cached(
             return value
 
         return wrapper
+
     return decorator
 
 
 def invalidate_cache(pattern: str):
     """キャッシュ無効化デコレータ"""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -317,6 +304,7 @@ def invalidate_cache(pattern: str):
             return result
 
         return wrapper
+
     return decorator
 
 
@@ -360,10 +348,4 @@ class CacheKeys:
     SYSTEM_METRICS = "system:metrics"
 
 
-__all__ = [
-    "cache_manager",
-    "CacheManager",
-    "CacheKeys",
-    "cached",
-    "invalidate_cache"
-]
+__all__ = ["cache_manager", "CacheManager", "CacheKeys", "cached", "invalidate_cache"]

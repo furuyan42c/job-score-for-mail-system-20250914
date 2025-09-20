@@ -4,9 +4,11 @@ Scheduled Job Model - Minimal GREEN Phase Implementation
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON
+from typing import Any, Dict, Optional
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
+
 from app.core.database import Base
 
 

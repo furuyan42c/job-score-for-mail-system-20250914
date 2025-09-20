@@ -14,25 +14,26 @@ Version: 1.0.0
 """
 
 import asyncio
-import logging
-import numpy as np
-import pandas as pd
-import json
-import pickle
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any, Union, Set
-from dataclasses import dataclass, field, asdict
-from enum import Enum
 import hashlib
+import json
+import logging
 import math
-from collections import defaultdict, Counter
-from concurrent.futures import ThreadPoolExecutor
+import pickle
 
 # ML/Data Science imports (would be sklearn, etc. in production)
 # For now, implementing core algorithms from scratch
 import random
+from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from app.services.gpt5_integration import UserProfile, JobMatch
+import numpy as np
+import pandas as pd
+
+from app.services.gpt5_integration import JobMatch, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,10 @@ logger = logging.getLogger(__name__)
 # ENUMS AND CONSTANTS
 # ============================================================================
 
+
 class MatchingAlgorithm(Enum):
     """Available matching algorithms"""
+
     COLLABORATIVE_FILTERING = "collaborative_filtering"
     CONTENT_BASED = "content_based"
     HYBRID = "hybrid"
@@ -49,8 +52,10 @@ class MatchingAlgorithm(Enum):
     POPULARITY_BASED = "popularity_based"
     DEEP_LEARNING = "deep_learning"
 
+
 class RecommendationType(Enum):
     """Types of recommendations"""
+
     PERSONAL = "personal"
     TRENDING = "trending"
     SIMILAR_USERS = "similar_users"
@@ -58,20 +63,25 @@ class RecommendationType(Enum):
     SKILL_MATCH = "skill_match"
     CAREER_GROWTH = "career_growth"
 
+
 class MatchingQuality(Enum):
     """Quality levels for matching"""
+
     BASIC = "basic"
     STANDARD = "standard"
     PREMIUM = "premium"
     ULTRA = "ultra"
 
+
 # ============================================================================
 # DATA MODELS
 # ============================================================================
 
+
 @dataclass
 class UserInteraction:
     """User interaction with jobs"""
+
     user_id: int
     job_id: int
     interaction_type: str  # view, apply, save, share, reject
@@ -79,9 +89,11 @@ class UserInteraction:
     interaction_strength: float = 1.0  # Weighted importance
     context_data: Dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class UserFeatures:
     """Extracted user features for ML"""
+
     user_id: int
     skills_vector: List[float]
     experience_level: float
@@ -93,9 +105,11 @@ class UserFeatures:
     career_stage: str
     last_active: datetime
 
+
 @dataclass
 class JobFeatures:
     """Extracted job features for ML"""
+
     job_id: int
     skills_required: List[float]
     experience_required: float
@@ -107,9 +121,11 @@ class JobFeatures:
     freshness_score: float
     company_rating: float
 
+
 @dataclass
 class MatchingResult:
     """Result of matching algorithm"""
+
     user_id: int
     job_id: int
     match_score: float
@@ -119,9 +135,11 @@ class MatchingResult:
     feature_contributions: Dict[str, float]
     recommendation_type: RecommendationType
 
+
 @dataclass
 class RecommendationSet:
     """Set of recommendations for a user"""
+
     user_id: int
     recommendations: List[MatchingResult]
     algorithm_mix: Dict[MatchingAlgorithm, int]
@@ -130,9 +148,11 @@ class RecommendationSet:
     coverage_score: float
     quality_metrics: Dict[str, float]
 
+
 # ============================================================================
 # FEATURE EXTRACTION
 # ============================================================================
+
 
 class FeatureExtractor:
     """Extract numerical features from user and job data"""
@@ -148,34 +168,70 @@ class FeatureExtractor:
         """Build vocabularies for feature encoding"""
         # This would typically be built from historical data
         self.skill_vocabulary = {
-            "python", "java", "javascript", "react", "node.js", "sql", "aws",
-            "machine learning", "data analysis", "project management", "agile",
-            "marketing", "sales", "customer service", "accounting", "finance",
-            "design", "ui/ux", "photoshop", "illustrator", "writing", "content"
+            "python",
+            "java",
+            "javascript",
+            "react",
+            "node.js",
+            "sql",
+            "aws",
+            "machine learning",
+            "data analysis",
+            "project management",
+            "agile",
+            "marketing",
+            "sales",
+            "customer service",
+            "accounting",
+            "finance",
+            "design",
+            "ui/ux",
+            "photoshop",
+            "illustrator",
+            "writing",
+            "content",
         }
 
         self.location_vocabulary = {
-            "tokyo", "osaka", "kyoto", "nagoya", "fukuoka", "sendai", "hiroshima",
-            "sapporo", "yokohama", "kobe", "shibuya", "shinjuku", "ginza"
+            "tokyo",
+            "osaka",
+            "kyoto",
+            "nagoya",
+            "fukuoka",
+            "sendai",
+            "hiroshima",
+            "sapporo",
+            "yokohama",
+            "kobe",
+            "shibuya",
+            "shinjuku",
+            "ginza",
         }
 
         self.industry_vocabulary = {
-            "technology", "finance", "healthcare", "education", "retail",
-            "manufacturing", "consulting", "media", "gaming", "startup",
-            "enterprise", "government", "non-profit", "entertainment"
+            "technology",
+            "finance",
+            "healthcare",
+            "education",
+            "retail",
+            "manufacturing",
+            "consulting",
+            "media",
+            "gaming",
+            "startup",
+            "enterprise",
+            "government",
+            "non-profit",
+            "entertainment",
         }
 
     def extract_user_features(
-        self,
-        user_profile: UserProfile,
-        interaction_history: List[UserInteraction]
+        self, user_profile: UserProfile, interaction_history: List[UserInteraction]
     ) -> UserFeatures:
         """Extract numerical features from user profile and interactions"""
 
         # Skills vector (one-hot encoding)
-        skills_vector = self._encode_skills(
-            user_profile.job_preferences.get("skills", [])
-        )
+        skills_vector = self._encode_skills(user_profile.job_preferences.get("skills", []))
 
         # Experience level (normalized 0-1)
         experience_level = self._normalize_experience(
@@ -188,7 +244,9 @@ class FeatureExtractor:
         )
 
         # Location preferences
-        location_preferences = self._encode_locations([user_profile.location] if user_profile.location else [])
+        location_preferences = self._encode_locations(
+            [user_profile.location] if user_profile.location else []
+        )
 
         # Industry preferences
         industry_preferences = self._encode_industries(
@@ -216,13 +274,11 @@ class FeatureExtractor:
             job_type_preferences=job_type_preferences,
             activity_score=activity_score,
             career_stage=career_stage,
-            last_active=user_profile.last_active or datetime.now()
+            last_active=user_profile.last_active or datetime.now(),
         )
 
     def extract_job_features(
-        self,
-        job: JobMatch,
-        popularity_data: Dict[str, Any] = None
+        self, job: JobMatch, popularity_data: Dict[str, Any] = None
     ) -> JobFeatures:
         """Extract numerical features from job data"""
 
@@ -267,7 +323,7 @@ class FeatureExtractor:
             job_type_vector=job_type_vector,
             popularity_score=popularity_score,
             freshness_score=freshness_score,
-            company_rating=company_rating
+            company_rating=company_rating,
         )
 
     def _encode_skills(self, skills: List[str]) -> List[float]:
@@ -317,8 +373,12 @@ class FeatureExtractor:
         """Encode job types as vector"""
         # Simple job type encoding
         type_map = {
-            "full_time": 0, "part_time": 1, "contract": 2,
-            "freelance": 3, "internship": 4, "remote": 5
+            "full_time": 0,
+            "part_time": 1,
+            "contract": 2,
+            "freelance": 3,
+            "internship": 4,
+            "remote": 5,
         }
 
         vector = [0.0] * len(type_map)
@@ -345,11 +405,12 @@ class FeatureExtractor:
         try:
             # Simple extraction logic
             import re
-            numbers = re.findall(r'\d+', salary_str.replace(',', ''))
+
+            numbers = re.findall(r"\d+", salary_str.replace(",", ""))
             if numbers:
                 base_salary = float(numbers[0])
                 # Handle different units (万, thousand, etc.)
-                if '万' in salary_str:
+                if "万" in salary_str:
                     base_salary *= 10000
                 return base_salary
         except:
@@ -373,7 +434,7 @@ class FeatureExtractor:
                 "save": 2.0,
                 "view": 1.0,
                 "share": 2.5,
-                "reject": 0.5
+                "reject": 0.5,
             }.get(interaction.interaction_type, 1.0)
 
             score += recency_weight * interaction_weight * interaction.interaction_strength
@@ -382,9 +443,7 @@ class FeatureExtractor:
         return min(score / 100.0, 1.0)
 
     def _infer_career_stage(
-        self,
-        user_profile: UserProfile,
-        interactions: List[UserInteraction]
+        self, user_profile: UserProfile, interactions: List[UserInteraction]
     ) -> str:
         """Infer user's career stage"""
         experience_years = user_profile.job_preferences.get("experience_years", 0)
@@ -406,9 +465,11 @@ class FeatureExtractor:
         else:
             return 0.5  # Default value
 
+
 # ============================================================================
 # MATCHING ALGORITHMS
 # ============================================================================
+
 
 class CollaborativeFilteringMatcher:
     """Collaborative filtering recommendation engine"""
@@ -436,13 +497,9 @@ class CollaborativeFilteringMatcher:
             i_idx = item_idx[interaction.job_id]
 
             # Weight different interaction types
-            weight = {
-                "apply": 5.0,
-                "save": 3.0,
-                "view": 1.0,
-                "share": 4.0,
-                "reject": -2.0
-            }.get(interaction.interaction_type, 1.0)
+            weight = {"apply": 5.0, "save": 3.0, "view": 1.0, "share": 4.0, "reject": -2.0}.get(
+                interaction.interaction_type, 1.0
+            )
 
             matrix[u_idx, i_idx] += weight * interaction.interaction_strength
 
@@ -456,7 +513,9 @@ class CollaborativeFilteringMatcher:
         # Calculate item similarity
         self.item_similarity_matrix = self._calculate_cosine_similarity(matrix.T)
 
-        logger.info(f"Collaborative filtering model trained with {len(users)} users and {len(items)} items")
+        logger.info(
+            f"Collaborative filtering model trained with {len(users)} users and {len(items)} items"
+        )
 
     def _calculate_cosine_similarity(self, matrix: np.ndarray) -> np.ndarray:
         """Calculate cosine similarity matrix"""
@@ -499,6 +558,7 @@ class CollaborativeFilteringMatcher:
         # Normalize to 0-1 scale
         return max(0.0, min(1.0, (predicted_score + 5) / 10))  # Assume range -5 to 5
 
+
 class ContentBasedMatcher:
     """Content-based filtering using feature similarity"""
 
@@ -506,9 +566,7 @@ class ContentBasedMatcher:
         self.feature_extractor = feature_extractor
 
     async def calculate_match_score(
-        self,
-        user_features: UserFeatures,
-        job_features: JobFeatures
+        self, user_features: UserFeatures, job_features: JobFeatures
     ) -> Tuple[float, Dict[str, float]]:
         """Calculate match score between user and job features"""
 
@@ -516,22 +574,19 @@ class ContentBasedMatcher:
 
         # Skills match (most important)
         skills_similarity = self._cosine_similarity(
-            user_features.skills_vector,
-            job_features.skills_required
+            user_features.skills_vector, job_features.skills_required
         )
         scores["skills"] = skills_similarity
 
         # Location match
         location_similarity = self._cosine_similarity(
-            user_features.location_preferences,
-            job_features.location_vector
+            user_features.location_preferences, job_features.location_vector
         )
         scores["location"] = location_similarity
 
         # Industry match
         industry_similarity = self._cosine_similarity(
-            user_features.industry_preferences,
-            job_features.industry_vector
+            user_features.industry_preferences, job_features.industry_vector
         )
         scores["industry"] = industry_similarity
 
@@ -550,8 +605,7 @@ class ContentBasedMatcher:
 
         # Job type match
         job_type_similarity = self._cosine_similarity(
-            user_features.job_type_preferences,
-            job_features.job_type_vector
+            user_features.job_type_preferences, job_features.job_type_vector
         )
         scores["job_type"] = job_type_similarity
 
@@ -570,7 +624,7 @@ class ContentBasedMatcher:
             "salary": 0.10,
             "job_type": 0.05,
             "company_quality": 0.03,
-            "freshness": 0.02
+            "freshness": 0.02,
         }
 
         overall_score = sum(scores[feature] * weights[feature] for feature in scores)
@@ -591,13 +645,14 @@ class ContentBasedMatcher:
 
         return dot_product / (norm1 * norm2)
 
+
 class HybridMatcher:
     """Hybrid recommendation combining multiple algorithms"""
 
     def __init__(
         self,
         collaborative_matcher: CollaborativeFilteringMatcher,
-        content_based_matcher: ContentBasedMatcher
+        content_based_matcher: ContentBasedMatcher,
     ):
         self.collaborative_matcher = collaborative_matcher
         self.content_based_matcher = content_based_matcher
@@ -608,7 +663,7 @@ class HybridMatcher:
         user_features: UserFeatures,
         job_id: int,
         job_features: JobFeatures,
-        user_popularity_score: float = 0.5
+        user_popularity_score: float = 0.5,
     ) -> Tuple[float, Dict[str, Any]]:
         """Calculate hybrid recommendation score"""
 
@@ -639,9 +694,7 @@ class HybridMatcher:
 
         # Combine scores
         hybrid_score = (
-            cf_score * cf_weight +
-            cb_score * cb_weight +
-            popularity_score * popularity_weight
+            cf_score * cf_weight + cb_score * cb_weight + popularity_score * popularity_weight
         )
 
         # Add diversity bonus for career growth recommendations
@@ -655,18 +708,16 @@ class HybridMatcher:
             "weights": {
                 "collaborative": cf_weight,
                 "content_based": cb_weight,
-                "popularity": popularity_weight
+                "popularity": popularity_weight,
             },
             "diversity_bonus": diversity_bonus,
-            "feature_scores": cb_features
+            "feature_scores": cb_features,
         }
 
         return hybrid_score, explanation_data
 
     def _calculate_diversity_bonus(
-        self,
-        user_features: UserFeatures,
-        job_features: JobFeatures
+        self, user_features: UserFeatures, job_features: JobFeatures
     ) -> float:
         """Calculate bonus for diverse recommendations"""
         # Encourage career growth and skill expansion
@@ -683,9 +734,11 @@ class HybridMatcher:
 
         return skill_expansion_potential
 
+
 # ============================================================================
 # MAIN MATCHING SERVICE
 # ============================================================================
+
 
 class AdvancedMatchingService:
     """
@@ -704,21 +757,20 @@ class AdvancedMatchingService:
         self.feature_extractor = FeatureExtractor()
         self.collaborative_matcher = CollaborativeFilteringMatcher()
         self.content_based_matcher = ContentBasedMatcher(self.feature_extractor)
-        self.hybrid_matcher = HybridMatcher(
-            self.collaborative_matcher,
-            self.content_based_matcher
-        )
+        self.hybrid_matcher = HybridMatcher(self.collaborative_matcher, self.content_based_matcher)
 
         self.is_trained = False
         self.training_stats = {}
 
-        logger.info(f"AdvancedMatchingService initialized with quality level: {quality_level.value}")
+        logger.info(
+            f"AdvancedMatchingService initialized with quality level: {quality_level.value}"
+        )
 
     async def train_models(
         self,
         user_profiles: List[UserProfile],
         job_data: List[JobMatch],
-        interaction_history: List[UserInteraction]
+        interaction_history: List[UserInteraction],
     ):
         """Train all matching models with historical data"""
         logger.info("Starting model training...")
@@ -735,8 +787,7 @@ class AdvancedMatchingService:
         # Process users
         for user_profile in user_profiles:
             user_interactions = [
-                i for i in interaction_history
-                if i.user_id == user_profile.user_id
+                i for i in interaction_history if i.user_id == user_profile.user_id
             ]
             user_features = self.feature_extractor.extract_user_features(
                 user_profile, user_interactions
@@ -755,7 +806,7 @@ class AdvancedMatchingService:
             "users_processed": len(user_profiles),
             "jobs_processed": len(job_data),
             "interactions_processed": len(interaction_history),
-            "trained_at": datetime.now()
+            "trained_at": datetime.now(),
         }
 
         self.is_trained = True
@@ -773,7 +824,7 @@ class AdvancedMatchingService:
         interaction_history: List[UserInteraction] = None,
         algorithm: MatchingAlgorithm = MatchingAlgorithm.HYBRID,
         num_recommendations: int = 40,
-        diversify: bool = True
+        diversify: bool = True,
     ) -> RecommendationSet:
         """
         Get personalized job recommendations for a user
@@ -805,12 +856,7 @@ class AdvancedMatchingService:
         # Score all available jobs
         scoring_tasks = []
         for job in available_jobs:
-            task = self._score_job_for_user(
-                user_profile.user_id,
-                user_features,
-                job,
-                algorithm
-            )
+            task = self._score_job_for_user(user_profile.user_id, user_features, job, algorithm)
             scoring_tasks.append(task)
 
         # Execute scoring concurrently
@@ -827,7 +873,7 @@ class AdvancedMatchingService:
                 confidence=explanation_data.get("confidence", 0.7),
                 explanation=self._generate_explanation(explanation_data, job),
                 feature_contributions=explanation_data.get("feature_scores", {}),
-                recommendation_type=self._determine_recommendation_type(explanation_data, job)
+                recommendation_type=self._determine_recommendation_type(explanation_data, job),
             )
             matching_results.append(result)
 
@@ -853,7 +899,7 @@ class AdvancedMatchingService:
             generated_at=datetime.now(),
             diversity_score=quality_metrics["diversity_score"],
             coverage_score=quality_metrics["coverage_score"],
-            quality_metrics=quality_metrics
+            quality_metrics=quality_metrics,
         )
 
         logger.info(
@@ -864,11 +910,7 @@ class AdvancedMatchingService:
         return recommendation_set
 
     async def _score_job_for_user(
-        self,
-        user_id: int,
-        user_features: UserFeatures,
-        job: JobMatch,
-        algorithm: MatchingAlgorithm
+        self, user_id: int, user_features: UserFeatures, job: JobMatch, algorithm: MatchingAlgorithm
     ) -> Tuple[float, Dict[str, Any]]:
         """Score a single job for a user"""
 
@@ -881,14 +923,14 @@ class AdvancedMatchingService:
             explanation_data = {
                 "content_based_score": score,
                 "feature_scores": feature_scores,
-                "confidence": 0.8
+                "confidence": 0.8,
             }
 
         elif algorithm == MatchingAlgorithm.COLLABORATIVE_FILTERING:
             score = await self.collaborative_matcher.predict_user_job_score(user_id, job.job_id)
             explanation_data = {
                 "collaborative_score": score,
-                "confidence": 0.7 if self.is_trained else 0.3
+                "confidence": 0.7 if self.is_trained else 0.3,
             }
 
         elif algorithm == MatchingAlgorithm.HYBRID:
@@ -902,7 +944,7 @@ class AdvancedMatchingService:
             explanation_data = {
                 "popularity_score": job_features.popularity_score,
                 "freshness_score": job_features.freshness_score,
-                "confidence": 0.6
+                "confidence": 0.6,
             }
 
         else:
@@ -913,7 +955,7 @@ class AdvancedMatchingService:
             explanation_data = {
                 "content_based_score": score,
                 "feature_scores": feature_scores,
-                "confidence": 0.8
+                "confidence": 0.8,
             }
 
         return score, explanation_data
@@ -956,9 +998,7 @@ class AdvancedMatchingService:
         return "。".join(explanations) + "。"
 
     def _determine_recommendation_type(
-        self,
-        explanation_data: Dict[str, Any],
-        job: JobMatch
+        self, explanation_data: Dict[str, Any], job: JobMatch
     ) -> RecommendationType:
         """Determine the type of recommendation"""
 
@@ -980,9 +1020,7 @@ class AdvancedMatchingService:
         return RecommendationType.PERSONAL
 
     def _diversify_recommendations(
-        self,
-        recommendations: List[MatchingResult],
-        available_jobs: List[JobMatch]
+        self, recommendations: List[MatchingResult], available_jobs: List[JobMatch]
     ) -> List[MatchingResult]:
         """Apply diversification to avoid echo chamber effect"""
 
@@ -1014,9 +1052,7 @@ class AdvancedMatchingService:
         return diversified
 
     def _calculate_quality_metrics(
-        self,
-        recommendations: List[MatchingResult],
-        available_jobs: List[JobMatch]
+        self, recommendations: List[MatchingResult], available_jobs: List[JobMatch]
     ) -> Dict[str, float]:
         """Calculate quality metrics for the recommendation set"""
 
@@ -1061,7 +1097,7 @@ class AdvancedMatchingService:
             "medium_quality_count": medium_quality,
             "low_quality_count": low_quality,
             "unique_companies": len(companies),
-            "unique_locations": len(locations)
+            "unique_locations": len(locations),
         }
 
     def get_training_stats(self) -> Dict[str, Any]:
@@ -1078,33 +1114,32 @@ class AdvancedMatchingService:
             "salary": 0.10,
             "job_type": 0.05,
             "company_quality": 0.03,
-            "freshness": 0.02
+            "freshness": 0.02,
         }
+
 
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
+
 async def create_advanced_matching_service(
-    quality_level: MatchingQuality = MatchingQuality.STANDARD
+    quality_level: MatchingQuality = MatchingQuality.STANDARD,
 ) -> AdvancedMatchingService:
     """Create and configure an advanced matching service"""
     return AdvancedMatchingService(quality_level)
+
 
 async def batch_generate_recommendations(
     matching_service: AdvancedMatchingService,
     user_profiles: List[UserProfile],
     available_jobs: List[JobMatch],
-    algorithm: MatchingAlgorithm = MatchingAlgorithm.HYBRID
+    algorithm: MatchingAlgorithm = MatchingAlgorithm.HYBRID,
 ) -> List[RecommendationSet]:
     """Generate recommendations for multiple users concurrently"""
 
     tasks = [
-        matching_service.get_recommendations(
-            user_profile,
-            available_jobs,
-            algorithm=algorithm
-        )
+        matching_service.get_recommendations(user_profile, available_jobs, algorithm=algorithm)
         for user_profile in user_profiles
     ]
 
@@ -1120,9 +1155,11 @@ async def batch_generate_recommendations(
 
     return valid_results
 
+
 # ============================================================================
 # TESTING UTILITIES
 # ============================================================================
+
 
 async def test_advanced_matching():
     """Test the advanced matching service with sample data"""
@@ -1141,9 +1178,9 @@ async def test_advanced_matching():
             job_preferences={
                 "skills": ["Python", "機械学習", "データ分析"],
                 "industries": ["IT", "金融"],
-                "experience_years": 5
+                "experience_years": 5,
             },
-            salary_range={"min": 6000000, "max": 8000000}
+            salary_range={"min": 6000000, "max": 8000000},
         ),
         UserProfile(
             user_id=2,
@@ -1154,10 +1191,10 @@ async def test_advanced_matching():
             job_preferences={
                 "skills": ["JavaScript", "React", "Node.js"],
                 "industries": ["IT", "スタートアップ"],
-                "experience_years": 3
+                "experience_years": 3,
             },
-            salary_range={"min": 5000000, "max": 7000000}
-        )
+            salary_range={"min": 5000000, "max": 7000000},
+        ),
     ]
 
     # Create test jobs
@@ -1172,7 +1209,7 @@ async def test_advanced_matching():
             match_score=0.0,  # Will be calculated
             tags=["Python", "機械学習", "統計", "IT"],
             is_new=True,
-            is_popular=True
+            is_popular=True,
         ),
         JobMatch(
             job_id=2,
@@ -1184,7 +1221,7 @@ async def test_advanced_matching():
             match_score=0.0,
             tags=["JavaScript", "React", "CSS", "IT"],
             is_new=False,
-            is_popular=True
+            is_popular=True,
         ),
         JobMatch(
             job_id=3,
@@ -1196,8 +1233,8 @@ async def test_advanced_matching():
             match_score=0.0,
             tags=["Node.js", "API", "データベース", "IT"],
             is_new=True,
-            is_popular=False
-        )
+            is_popular=False,
+        ),
     ]
 
     # Create test interactions
@@ -1207,22 +1244,22 @@ async def test_advanced_matching():
             job_id=1,
             interaction_type="view",
             timestamp=datetime.now() - timedelta(days=1),
-            interaction_strength=1.0
+            interaction_strength=1.0,
         ),
         UserInteraction(
             user_id=1,
             job_id=1,
             interaction_type="save",
             timestamp=datetime.now() - timedelta(hours=12),
-            interaction_strength=2.0
+            interaction_strength=2.0,
         ),
         UserInteraction(
             user_id=2,
             job_id=2,
             interaction_type="apply",
             timestamp=datetime.now() - timedelta(days=2),
-            interaction_strength=3.0
-        )
+            interaction_strength=3.0,
+        ),
     ]
 
     # Train models
@@ -1232,7 +1269,7 @@ async def test_advanced_matching():
     algorithms = [
         MatchingAlgorithm.CONTENT_BASED,
         MatchingAlgorithm.COLLABORATIVE_FILTERING,
-        MatchingAlgorithm.HYBRID
+        MatchingAlgorithm.HYBRID,
     ]
 
     for algorithm in algorithms:
@@ -1261,6 +1298,8 @@ async def test_advanced_matching():
     for key, value in stats.items():
         print(f"{key}: {value}")
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(test_advanced_matching())

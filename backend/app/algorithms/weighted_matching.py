@@ -3,21 +3,23 @@ Advanced Weighted Matching Algorithm (T018)
 Implements sophisticated job matching with dynamic weights and machine learning features
 """
 
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
-import numpy as np
-import math
 import logging
+import math
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
-from .basic_matching import BasicMatchingAlgorithm, JobData, UserProfile, MatchScore
+import numpy as np
+
+from .basic_matching import BasicMatchingAlgorithm, JobData, MatchScore, UserProfile
 
 logger = logging.getLogger(__name__)
 
 
 class WeightingStrategy(str, Enum):
     """Weight adjustment strategies"""
+
     STATIC = "static"
     USER_HISTORY = "user_history"
     COLLABORATIVE = "collaborative"
@@ -27,6 +29,7 @@ class WeightingStrategy(str, Enum):
 @dataclass
 class UserBehaviorData:
     """User behavior data for weight adjustment"""
+
     user_id: int
     job_applications: List[int] = field(default_factory=list)
     job_clicks: List[int] = field(default_factory=list)
@@ -39,6 +42,7 @@ class UserBehaviorData:
 @dataclass
 class JobInteractionData:
     """Job interaction aggregated data"""
+
     job_id: int
     total_views: int = 0
     total_clicks: int = 0
@@ -59,10 +63,12 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
     - Machine learning feature extraction
     """
 
-    def __init__(self,
-                 base_weights: Optional[Dict[str, float]] = None,
-                 weighting_strategy: WeightingStrategy = WeightingStrategy.ADAPTIVE,
-                 learning_rate: float = 0.1):
+    def __init__(
+        self,
+        base_weights: Optional[Dict[str, float]] = None,
+        weighting_strategy: WeightingStrategy = WeightingStrategy.ADAPTIVE,
+        learning_rate: float = 0.1,
+    ):
         """
         Initialize weighted matching algorithm
 
@@ -77,11 +83,13 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         self.user_weights_cache: Dict[int, Dict[str, float]] = {}
         self.job_popularity_cache: Dict[int, float] = {}
 
-    def calculate_weighted_score(self,
-                                user: UserProfile,
-                                job: JobData,
-                                user_behavior: Optional[UserBehaviorData] = None,
-                                job_interactions: Optional[JobInteractionData] = None) -> MatchScore:
+    def calculate_weighted_score(
+        self,
+        user: UserProfile,
+        job: JobData,
+        user_behavior: Optional[UserBehaviorData] = None,
+        job_interactions: Optional[JobInteractionData] = None,
+    ) -> MatchScore:
         """
         Calculate match score with dynamic weights
 
@@ -111,11 +119,11 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
 
             # Calculate weighted total
             base_score = (
-                skills_score * weights["skills"] +
-                location_score * weights["location"] +
-                salary_score * weights["salary"] +
-                category_score * weights["category"] +
-                experience_score * weights["experience"]
+                skills_score * weights["skills"]
+                + location_score * weights["location"]
+                + salary_score * weights["salary"]
+                + category_score * weights["category"]
+                + experience_score * weights["experience"]
             )
 
             # Apply boosts and adjustments
@@ -141,18 +149,20 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
                     "base_score": base_score,
                     "weighting_strategy": self.weighting_strategy,
                     "user_id": user.user_id,
-                    "job_id": job.job_id
-                }
+                    "job_id": job.job_id,
+                },
             )
 
         except Exception as e:
-            logger.error(f"Error calculating weighted score for user {user.user_id}, job {job.job_id}: {e}")
+            logger.error(
+                f"Error calculating weighted score for user {user.user_id}, job {job.job_id}: {e}"
+            )
             # Fallback to basic algorithm
             return super().calculate_match_score(user, job)
 
-    def _get_personalized_weights(self,
-                                 user: UserProfile,
-                                 user_behavior: Optional[UserBehaviorData] = None) -> Dict[str, float]:
+    def _get_personalized_weights(
+        self, user: UserProfile, user_behavior: Optional[UserBehaviorData] = None
+    ) -> Dict[str, float]:
         """
         Get personalized weights based on user behavior
         """
@@ -168,7 +178,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         if self.weighting_strategy == WeightingStrategy.USER_HISTORY:
             weights = self._adjust_weights_by_user_history(base_weights, user_behavior)
         elif self.weighting_strategy == WeightingStrategy.COLLABORATIVE:
-            weights = self._adjust_weights_by_collaborative_filtering(base_weights, user, user_behavior)
+            weights = self._adjust_weights_by_collaborative_filtering(
+                base_weights, user, user_behavior
+            )
         elif self.weighting_strategy == WeightingStrategy.ADAPTIVE:
             weights = self._adjust_weights_adaptively(base_weights, user, user_behavior)
         else:
@@ -178,9 +190,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         self.user_weights_cache[user.user_id] = weights
         return weights
 
-    def _adjust_weights_by_user_history(self,
-                                       base_weights: Dict[str, float],
-                                       user_behavior: UserBehaviorData) -> Dict[str, float]:
+    def _adjust_weights_by_user_history(
+        self, base_weights: Dict[str, float], user_behavior: UserBehaviorData
+    ) -> Dict[str, float]:
         """
         Adjust weights based on user's historical behavior patterns
         """
@@ -189,15 +201,20 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         # Analyze user's job interaction patterns
         if user_behavior.job_applications:
             # Users who apply frequently might value salary more
-            application_rate = len(user_behavior.job_applications) / max(1, len(user_behavior.job_views))
+            application_rate = len(user_behavior.job_applications) / max(
+                1, len(user_behavior.job_views)
+            )
             if application_rate > 0.1:  # High application rate
                 weights["salary"] = min(0.5, weights["salary"] * 1.2)
                 weights["skills"] = max(0.2, weights["skills"] * 0.9)
 
         # Analyze feedback patterns
         if user_behavior.feedback_history:
-            positive_feedback = sum(1 for feedback in user_behavior.feedback_history.values()
-                                   if feedback in ["interested", "applied"])
+            positive_feedback = sum(
+                1
+                for feedback in user_behavior.feedback_history.values()
+                if feedback in ["interested", "applied"]
+            )
             total_feedback = len(user_behavior.feedback_history)
 
             if total_feedback > 5 and positive_feedback / total_feedback < 0.3:
@@ -209,10 +226,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         total = sum(weights.values())
         return {k: v / total for k, v in weights.items()}
 
-    def _adjust_weights_by_collaborative_filtering(self,
-                                                  base_weights: Dict[str, float],
-                                                  user: UserProfile,
-                                                  user_behavior: UserBehaviorData) -> Dict[str, float]:
+    def _adjust_weights_by_collaborative_filtering(
+        self, base_weights: Dict[str, float], user: UserProfile, user_behavior: UserBehaviorData
+    ) -> Dict[str, float]:
         """
         Adjust weights based on similar users' behavior
         """
@@ -231,10 +247,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         total = sum(weights.values())
         return {k: v / total for k, v in weights.items()}
 
-    def _adjust_weights_adaptively(self,
-                                  base_weights: Dict[str, float],
-                                  user: UserProfile,
-                                  user_behavior: UserBehaviorData) -> Dict[str, float]:
+    def _adjust_weights_adaptively(
+        self, base_weights: Dict[str, float], user: UserProfile, user_behavior: UserBehaviorData
+    ) -> Dict[str, float]:
         """
         Adaptively adjust weights using reinforcement learning principles
         """
@@ -242,14 +257,14 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
 
         # Combine multiple adjustment strategies
         hist_weights = self._adjust_weights_by_user_history(base_weights, user_behavior)
-        collab_weights = self._adjust_weights_by_collaborative_filtering(base_weights, user, user_behavior)
+        collab_weights = self._adjust_weights_by_collaborative_filtering(
+            base_weights, user, user_behavior
+        )
 
         # Weighted average of different strategies
         for key in weights:
             weights[key] = (
-                0.4 * base_weights[key] +
-                0.4 * hist_weights[key] +
-                0.2 * collab_weights[key]
+                0.4 * base_weights[key] + 0.4 * hist_weights[key] + 0.2 * collab_weights[key]
             )
 
         # Apply learning rate
@@ -261,10 +276,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         total = sum(weights.values())
         return {k: v / total for k, v in weights.items()}
 
-    def _calculate_enhanced_skills_score(self,
-                                       user: UserProfile,
-                                       job: JobData,
-                                       user_behavior: Optional[UserBehaviorData] = None) -> int:
+    def _calculate_enhanced_skills_score(
+        self, user: UserProfile, job: JobData, user_behavior: Optional[UserBehaviorData] = None
+    ) -> int:
         """
         Enhanced skills scoring with behavior-based adjustments
         """
@@ -283,10 +297,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
 
         return min(100, base_score + skill_familiarity_boost)
 
-    def _calculate_enhanced_salary_score(self,
-                                       user: UserProfile,
-                                       job: JobData,
-                                       user_behavior: Optional[UserBehaviorData] = None) -> int:
+    def _calculate_enhanced_salary_score(
+        self, user: UserProfile, job: JobData, user_behavior: Optional[UserBehaviorData] = None
+    ) -> int:
         """
         Enhanced salary scoring considering user's application history
         """
@@ -307,10 +320,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
 
         return base_score
 
-    def _calculate_enhanced_category_score(self,
-                                         user: UserProfile,
-                                         job: JobData,
-                                         user_behavior: Optional[UserBehaviorData] = None) -> int:
+    def _calculate_enhanced_category_score(
+        self, user: UserProfile, job: JobData, user_behavior: Optional[UserBehaviorData] = None
+    ) -> int:
         """
         Enhanced category scoring with user preference learning
         """
@@ -330,9 +342,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
 
         return base_score
 
-    def _calculate_popularity_boost(self,
-                                  job: JobData,
-                                  job_interactions: Optional[JobInteractionData] = None) -> int:
+    def _calculate_popularity_boost(
+        self, job: JobData, job_interactions: Optional[JobInteractionData] = None
+    ) -> int:
         """
         Calculate popularity-based score boost
         """
@@ -347,8 +359,9 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         popularity_score = (conversion_rate * 3 + positive_feedback * 2) * 1.0
         return min(5, int(popularity_score))
 
-    def _calculate_temporal_adjustment(self,
-                                     user_behavior: Optional[UserBehaviorData] = None) -> int:
+    def _calculate_temporal_adjustment(
+        self, user_behavior: Optional[UserBehaviorData] = None
+    ) -> int:
         """
         Calculate temporal adjustments based on recency and trends
         """
@@ -388,12 +401,14 @@ class WeightedMatchingAlgorithm(BasicMatchingAlgorithm):
         # In production, this would query the database for job categories
         return ["IT", "Software", "Engineering"]  # Placeholder
 
-    def update_user_weights(self,
-                           user_id: int,
-                           job_id: int,
-                           feedback: str,
-                           predicted_score: int,
-                           actual_engagement: float):
+    def update_user_weights(
+        self,
+        user_id: int,
+        job_id: int,
+        feedback: str,
+        predicted_score: int,
+        actual_engagement: float,
+    ):
         """
         Update user weights based on feedback (online learning)
 

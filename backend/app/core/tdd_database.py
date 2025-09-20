@@ -7,15 +7,17 @@ All tests must remain passing during refactoring.
 """
 
 import asyncio
-import asyncpg
 import logging
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+import asyncpg
 
 logger = logging.getLogger(__name__)
 
 # Safely import settings with fallback
 try:
     from app.core.config import settings
+
     HAS_SETTINGS = True
 except Exception as e:
     HAS_SETTINGS = False
@@ -24,6 +26,7 @@ except Exception as e:
 
 class TDDConnectionError(Exception):
     """Custom exception for TDD database connection errors"""
+
     pass
 
 
@@ -35,18 +38,22 @@ class TDDConnection:
     expected by our TDD tests, while using real database connections.
     """
 
-    def __init__(self, connection: Optional[asyncpg.Connection] = None, config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        connection: Optional[asyncpg.Connection] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ):
         self.config = config or {
             "host": "localhost",
             "port": 5432,
             "database": "test_db",
-            "user": "test_user"
+            "user": "test_user",
         }
         self._connection = connection
         self._connected = connection is not None
 
     @classmethod
-    async def create(cls, config: Optional[Dict[str, Any]] = None) -> 'TDDConnection':
+    async def create(cls, config: Optional[Dict[str, Any]] = None) -> "TDDConnection":
         """
         Create a new TDD connection with real asyncpg connection
 
@@ -64,13 +71,17 @@ class TDDConnection:
             if HAS_SETTINGS:
                 try:
                     # For tests, use a test database URL if available
-                    db_url = getattr(settings, 'TEST_DATABASE_URL', None) or settings.database_url
+                    db_url = getattr(settings, "TEST_DATABASE_URL", None) or settings.database_url
                     connection = await asyncpg.connect(db_url)
 
-                    return cls(connection, {
-                        "url": db_url,
-                        "host": connection.get_server_pid() and "connected",  # Basic connection check
-                    })
+                    return cls(
+                        connection,
+                        {
+                            "url": db_url,
+                            "host": connection.get_server_pid()
+                            and "connected",  # Basic connection check
+                        },
+                    )
                 except Exception as e:
                     logger.warning(f"Database connection failed, using mock: {e}")
                     # Fall back to mock for test environments
@@ -81,8 +92,7 @@ class TDDConnection:
                 return cls._create_mock_connection()
 
         # Handle test configurations
-        if (config.get("host") == "invalid_host" or
-            config.get("port") == 9999):
+        if config.get("host") == "invalid_host" or config.get("port") == 9999:
             raise TDDConnectionError("Connection failed: Invalid host or port")
 
         if config.get("timeout", 1) < 0.5:
@@ -92,13 +102,13 @@ class TDDConnection:
         return cls._create_mock_connection(config)
 
     @classmethod
-    def _create_mock_connection(cls, config: Optional[Dict[str, Any]] = None) -> 'TDDConnection':
+    def _create_mock_connection(cls, config: Optional[Dict[str, Any]] = None) -> "TDDConnection":
         """Create a mock connection for testing environments"""
         default_config = {
             "host": "localhost",
             "port": 5432,
             "database": "test_db",
-            "user": "test_user"
+            "user": "test_user",
         }
         final_config = config or default_config
 
@@ -208,36 +218,36 @@ class TDDConnectionPool:
         self._active_connections = []
         self._is_active = False
         self._stats = {
-            'total_connections': 0,
-            'active_connections': 0,
-            'idle_connections': 0,
-            'connection_attempts': 0
+            "total_connections": 0,
+            "active_connections": 0,
+            "idle_connections": 0,
+            "connection_attempts": 0,
         }
 
     @classmethod
-    async def create(cls, config: Dict[str, Any]) -> 'TDDConnectionPool':
+    async def create(cls, config: Dict[str, Any]) -> "TDDConnectionPool":
         """Create a new connection pool"""
         pool = cls(config)
         await pool._initialize()
         return pool
 
     @classmethod
-    async def create_factory(cls, config: Dict[str, Any]) -> 'TDDConnectionPool':
+    async def create_factory(cls, config: Dict[str, Any]) -> "TDDConnectionPool":
         """Create a connection pool factory"""
         return await cls.create(config)
 
     async def _initialize(self):
         """Initialize the pool with minimum connections"""
         self._is_active = True
-        min_connections = self.config.get('min_connections', 1)
+        min_connections = self.config.get("min_connections", 1)
 
         # Create minimum connections
         for _ in range(min_connections):
             conn = await get_tdd_db_connection()
             self._connections.append(conn)
 
-        self._stats['total_connections'] = len(self._connections)
-        self._stats['idle_connections'] = len(self._connections)
+        self._stats["total_connections"] = len(self._connections)
+        self._stats["idle_connections"] = len(self._connections)
 
     def is_active(self) -> bool:
         """Check if pool is active"""
@@ -252,7 +262,7 @@ class TDDConnectionPool:
         if not self._is_active:
             raise TDDConnectionError("Pool is not active")
 
-        self._stats['connection_attempts'] += 1
+        self._stats["connection_attempts"] += 1
 
         # If we have idle connections, use one
         if self._connections:
@@ -262,7 +272,7 @@ class TDDConnectionPool:
             return conn
 
         # If we can create more connections, create one
-        max_connections = self.config.get('max_connections', 10)
+        max_connections = self.config.get("max_connections", 10)
         if self.get_pool_size() < max_connections:
             conn = await get_tdd_db_connection()
             self._active_connections.append(conn)
@@ -270,7 +280,7 @@ class TDDConnectionPool:
             return conn
 
         # Pool is exhausted
-        timeout = self.config.get('acquire_timeout', 30.0)
+        timeout = self.config.get("acquire_timeout", 30.0)
         raise asyncio.TimeoutError(f"Pool exhausted, max connections: {max_connections}")
 
     async def release(self, conn: TDDConnection):
@@ -283,9 +293,9 @@ class TDDConnectionPool:
     async def check_health(self) -> Dict[str, Any]:
         """Check pool health"""
         return {
-            'status': 'healthy',
-            'active_connections': len(self._active_connections),
-            'idle_connections': len(self._connections)
+            "status": "healthy",
+            "active_connections": len(self._active_connections),
+            "idle_connections": len(self._connections),
         }
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -294,9 +304,9 @@ class TDDConnectionPool:
 
     def _update_stats(self):
         """Update internal statistics"""
-        self._stats['total_connections'] = len(self._connections) + len(self._active_connections)
-        self._stats['active_connections'] = len(self._active_connections)
-        self._stats['idle_connections'] = len(self._connections)
+        self._stats["total_connections"] = len(self._connections) + len(self._active_connections)
+        self._stats["active_connections"] = len(self._active_connections)
+        self._stats["idle_connections"] = len(self._connections)
 
     async def acquire_connection(self):
         """Acquire connection as async context manager"""
@@ -359,7 +369,11 @@ class PooledConnectionContext:
             await self.pool.release(self.connection)
 
 
-async def get_tdd_db_connection(config: Optional[Dict[str, Any]] = None, use_pool: bool = False, pool_factory: Optional[TDDConnectionPool] = None) -> TDDConnection:
+async def get_tdd_db_connection(
+    config: Optional[Dict[str, Any]] = None,
+    use_pool: bool = False,
+    pool_factory: Optional[TDDConnectionPool] = None,
+) -> TDDConnection:
     """
     Get a TDD database connection with production-quality implementation
 
@@ -402,19 +416,18 @@ def integrate_with_existing_db():
     as the main application database.
     """
     try:
-        from app.core.database import engine, AsyncSessionLocal
+        from app.core.database import AsyncSessionLocal, engine
 
         logger.info("TDD database integration enabled")
-        logger.info(f"Using database URL pattern: {str(engine.url).replace(engine.url.password or '', '***')}")
+        logger.info(
+            f"Using database URL pattern: {str(engine.url).replace(engine.url.password or '', '***')}"
+        )
 
         return {
             "engine": engine,
             "session_factory": AsyncSessionLocal,
-            "tdd_connection_factory": get_tdd_db_connection
+            "tdd_connection_factory": get_tdd_db_connection,
         }
     except ImportError as e:
         logger.warning(f"Could not integrate with existing database module: {e}")
-        return {
-            "tdd_connection_factory": get_tdd_db_connection,
-            "mock_mode": True
-        }
+        return {"tdd_connection_factory": get_tdd_db_connection, "mock_mode": True}

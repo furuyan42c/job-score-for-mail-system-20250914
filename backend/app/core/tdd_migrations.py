@@ -7,21 +7,22 @@ all test compatibility from the GREEN phase. It adds real Alembic functionality,
 error handling, logging, and integration with the existing database infrastructure.
 """
 
+import logging
 import os
 import tempfile
-import logging
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Production imports for Alembic integration
 try:
     from alembic import command
     from alembic.config import Config as AlembicConfig
-    from alembic.script import ScriptDirectory
     from alembic.runtime.environment import EnvironmentContext
     from alembic.runtime.migration import MigrationContext
-    from sqlalchemy import create_engine, MetaData
+    from alembic.script import ScriptDirectory
+    from sqlalchemy import MetaData, create_engine
     from sqlalchemy.exc import SQLAlchemyError
+
     HAS_ALEMBIC = True
 except ImportError as e:
     HAS_ALEMBIC = False
@@ -31,6 +32,7 @@ except ImportError as e:
 try:
     from app.core.config import settings
     from app.core.tdd_database import get_tdd_db_connection
+
     HAS_DATABASE_INTEGRATION = True
 except ImportError:
     HAS_DATABASE_INTEGRATION = False
@@ -40,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 class TDDMigrationError(Exception):
     """Custom exception for migration-related errors"""
+
     pass
 
 
@@ -60,13 +63,13 @@ class TDDMigrationManager:
         self._script_directory = None
 
         # Get database URL from config or settings
-        if HAS_DATABASE_INTEGRATION and hasattr(settings, 'database_url'):
-            self.database_url = self.config.get('database_url', settings.database_url)
+        if HAS_DATABASE_INTEGRATION and hasattr(settings, "database_url"):
+            self.database_url = self.config.get("database_url", settings.database_url)
         else:
-            self.database_url = self.config.get('database_url', 'postgresql://localhost/test_db')
+            self.database_url = self.config.get("database_url", "postgresql://localhost/test_db")
 
     @classmethod
-    async def create(cls, config: Dict[str, Any]) -> 'TDDMigrationManager':
+    async def create(cls, config: Dict[str, Any]) -> "TDDMigrationManager":
         """Create a migration manager instance with full initialization"""
         manager = cls(config)
         await manager._initialize()
@@ -95,10 +98,10 @@ class TDDMigrationManager:
             return
 
         # Create Alembic configuration
-        script_location = self.config.get('script_location', 'migrations')
+        script_location = self.config.get("script_location", "migrations")
         self._alembic_config = AlembicConfig()
-        self._alembic_config.set_main_option('script_location', script_location)
-        self._alembic_config.set_main_option('sqlalchemy.url', self.database_url)
+        self._alembic_config.set_main_option("script_location", script_location)
+        self._alembic_config.set_main_option("sqlalchemy.url", self.database_url)
 
         # Setup script directory if it exists
         if os.path.exists(script_location):
@@ -169,21 +172,14 @@ class TDDMigrationManager:
                 return {
                     "success": True,
                     "target_revision": revision,
-                    "message": f"Upgraded to {revision}"
+                    "message": f"Upgraded to {revision}",
                 }
             except Exception as e:
                 logger.error(f"Migration upgrade failed: {e}")
-                return {
-                    "success": False,
-                    "target_revision": revision,
-                    "error": str(e)
-                }
+                return {"success": False, "target_revision": revision, "error": str(e)}
         else:
             # Mock implementation for test compatibility
-            return {
-                "success": True,
-                "target_revision": revision
-            }
+            return {"success": True, "target_revision": revision}
 
     async def downgrade(self, revision: str) -> Dict[str, Any]:
         """Execute migration downgrade using Alembic"""
@@ -194,21 +190,14 @@ class TDDMigrationManager:
                 return {
                     "success": True,
                     "target_revision": revision,
-                    "message": f"Downgraded to {revision}"
+                    "message": f"Downgraded to {revision}",
                 }
             except Exception as e:
                 logger.error(f"Migration downgrade failed: {e}")
-                return {
-                    "success": False,
-                    "target_revision": revision,
-                    "error": str(e)
-                }
+                return {"success": False, "target_revision": revision, "error": str(e)}
         else:
             # Mock implementation for test compatibility
-            return {
-                "success": True,
-                "target_revision": revision
-            }
+            return {"success": True, "target_revision": revision}
 
     async def get_current_revision(self) -> Optional[str]:
         """Get current database revision using Alembic"""
@@ -234,11 +223,17 @@ class TDDMigrationManager:
             try:
                 history = []
                 for revision in self._script_directory.walk_revisions():
-                    history.append({
-                        "revision": revision.revision,
-                        "message": revision.doc or "No message",
-                        "created_at": revision.create_date.isoformat() if revision.create_date else "Unknown"
-                    })
+                    history.append(
+                        {
+                            "revision": revision.revision,
+                            "message": revision.doc or "No message",
+                            "created_at": (
+                                revision.create_date.isoformat()
+                                if revision.create_date
+                                else "Unknown"
+                            ),
+                        }
+                    )
                 return history
             except Exception as e:
                 logger.error(f"Failed to get migration history: {e}")
@@ -249,7 +244,7 @@ class TDDMigrationManager:
                 {
                     "revision": "abc123def456",
                     "message": "Initial migration",
-                    "created_at": "2025-09-19T10:00:00"
+                    "created_at": "2025-09-19T10:00:00",
                 }
             ]
 
@@ -262,10 +257,9 @@ class TDDMigrationManager:
 
                 for revision in self._script_directory.walk_revisions():
                     if current_rev is None or revision.revision != current_rev:
-                        pending.append({
-                            "revision": revision.revision,
-                            "message": revision.doc or "No message"
-                        })
+                        pending.append(
+                            {"revision": revision.revision, "message": revision.doc or "No message"}
+                        )
 
                 return pending
             except Exception as e:
@@ -273,12 +267,7 @@ class TDDMigrationManager:
                 return []
         else:
             # Mock implementation for test compatibility
-            return [
-                {
-                    "revision": "def456ghi789",
-                    "message": "Add users table"
-                }
-            ]
+            return [{"revision": "def456ghi789", "message": "Add users table"}]
 
     async def validate_migrations(self) -> Dict[str, Any]:
         """Validate migrations using Alembic"""
@@ -304,18 +293,10 @@ class TDDMigrationManager:
                 except Exception as e:
                     errors.append(f"Database connectivity issue: {e}")
 
-            return {
-                "is_valid": len(errors) == 0,
-                "errors": errors,
-                "warnings": warnings
-            }
+            return {"is_valid": len(errors) == 0, "errors": errors, "warnings": warnings}
 
         except Exception as e:
-            return {
-                "is_valid": False,
-                "errors": [f"Validation failed: {e}"],
-                "warnings": warnings
-            }
+            return {"is_valid": False, "errors": [f"Validation failed: {e}"], "warnings": warnings}
 
     async def __aenter__(self):
         """Async context manager entry"""
@@ -327,6 +308,7 @@ class TDDMigrationManager:
 
 
 # Alembic integration functions - Production Ready
+
 
 async def setup_alembic_environment(config: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -372,16 +354,12 @@ async def setup_alembic_environment(config: Dict[str, Any]) -> Dict[str, Any]:
             "success": True,
             "files_created": files_created,
             "script_location": script_location,
-            "database_url": database_url
+            "database_url": database_url,
         }
 
     except Exception as e:
         logger.error(f"Failed to setup Alembic environment: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "script_location": script_location
-        }
+        return {"success": False, "error": str(e), "script_location": script_location}
 
 
 async def generate_alembic_ini(config: Dict[str, Any], output_dir: str) -> str:
@@ -397,8 +375,8 @@ async def generate_alembic_ini(config: Dict[str, Any], output_dir: str) -> str:
     ini_path = os.path.join(output_dir, "alembic.ini")
 
     # Get configuration values with production defaults
-    script_location = config.get('script_location', 'migrations')
-    database_url = config.get('database_url', 'postgresql://localhost/test_db')
+    script_location = config.get("script_location", "migrations")
+    database_url = config.get("database_url", "postgresql://localhost/test_db")
 
     # Create production-ready alembic.ini content
     ini_content = f"""# Alembic Configuration File
@@ -492,7 +470,7 @@ format = %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
 """
 
-    with open(ini_path, 'w') as f:
+    with open(ini_path, "w") as f:
         f.write(ini_content)
 
     logger.info(f"Generated alembic.ini at {ini_path}")
@@ -513,14 +491,15 @@ async def generate_env_py(config: Dict[str, Any], output_dir: str) -> str:
     env_path = os.path.join(output_dir, "env.py")
 
     # Determine target metadata import path
-    target_metadata = config.get('target_metadata', 'None')
-    if target_metadata == 'None':
+    target_metadata = config.get("target_metadata", "None")
+    if target_metadata == "None":
         # Try to use existing models if available
         try:
             from app.models import Base
-            target_metadata = 'Base.metadata'
+
+            target_metadata = "Base.metadata"
         except ImportError:
-            target_metadata = 'None'
+            target_metadata = "None"
 
     # Create production-ready env.py content
     env_content = f'''"""
@@ -659,7 +638,7 @@ else:
     run_migrations_online()
 '''
 
-    with open(env_path, 'w') as f:
+    with open(env_path, "w") as f:
         f.write(env_content)
 
     logger.info(f"Generated env.py at {env_path}")
@@ -703,7 +682,7 @@ def downgrade() -> None:
     ${downgrades if downgrades else "pass"}
 '''
 
-    with open(template_path, 'w') as f:
+    with open(template_path, "w") as f:
         f.write(template_content)
 
     logger.info(f"Generated script.py.mako template at {template_path}")
@@ -711,6 +690,7 @@ def downgrade() -> None:
 
 
 # Utility functions for Alembic operations
+
 
 async def init_alembic_project(project_root: str, database_url: str) -> Dict[str, Any]:
     """
@@ -728,7 +708,7 @@ async def init_alembic_project(project_root: str, database_url: str) -> Dict[str
         config = {
             "script_location": migrations_dir,
             "database_url": database_url,
-            "target_metadata": "app.models.Base.metadata"
+            "target_metadata": "app.models.Base.metadata",
         }
 
         result = await setup_alembic_environment(config)
@@ -739,14 +719,11 @@ async def init_alembic_project(project_root: str, database_url: str) -> Dict[str
                 "success": True,
                 "migrations_directory": migrations_dir,
                 "config": config,
-                "files_created": result["files_created"]
+                "files_created": result["files_created"],
             }
         else:
             return result
 
     except Exception as e:
         logger.error(f"Failed to initialize Alembic project: {e}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}

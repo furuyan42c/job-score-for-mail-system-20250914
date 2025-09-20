@@ -4,41 +4,39 @@ Handles user authentication, token validation, and authorization
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.core.security import verify_token, is_token_expired
 from app.core.database import get_db
+from app.core.security import is_token_expired, verify_token
 from app.models.database import User
-
 
 security = HTTPBearer()
 
 
 class AuthenticationError(HTTPException):
     """Custom authentication error"""
+
     def __init__(self, detail: str = "Authentication failed"):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=detail,
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
 class AuthorizationError(HTTPException):
     """Custom authorization error"""
+
     def __init__(self, detail: str = "Access denied"):
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail
-        )
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
 ) -> User:
     """
     Get current authenticated user from JWT token
@@ -109,10 +107,12 @@ def require_role(required_role: str):
     Returns:
         Dependency function for FastAPI endpoints
     """
+
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        if not hasattr(current_user, 'role') or current_user.role != required_role:
+        if not hasattr(current_user, "role") or current_user.role != required_role:
             raise AuthorizationError(f"Role '{required_role}' required")
         return current_user
+
     return role_checker
 
 
@@ -129,7 +129,7 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     Raises:
         AuthorizationError: If user is not admin
     """
-    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+    if not hasattr(current_user, "role") or current_user.role != "admin":
         raise AuthorizationError("Admin role required")
     return current_user
 
@@ -144,14 +144,16 @@ def require_self_or_admin(user_id: int):
     Returns:
         Dependency function for FastAPI endpoints
     """
+
     def access_checker(current_user: User = Depends(get_current_user)) -> User:
         is_self = current_user.user_id == user_id
-        is_admin = hasattr(current_user, 'role') and current_user.role == 'admin'
+        is_admin = hasattr(current_user, "role") and current_user.role == "admin"
 
         if not (is_self or is_admin):
             raise AuthorizationError("Access denied: can only access own data")
 
         return current_user
+
     return access_checker
 
 
@@ -181,8 +183,7 @@ token_blacklist = TokenBlacklist()
 
 
 async def get_current_user_with_blacklist_check(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)
 ) -> User:
     """
     Get current user with blacklist token check

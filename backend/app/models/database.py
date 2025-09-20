@@ -3,17 +3,34 @@ Enhanced database models for authentication and user management
 Includes password hashing, roles, and extended user functionality
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Date, Text, ForeignKey, UniqueConstraint, Enum as SQLEnum, Float, Numeric
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from enum import Enum
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
+    Float,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from app.core.database import Base
 
 
 class UserRole(str, Enum):
     """User role enumeration"""
+
     USER = "user"
     ADMIN = "admin"
     MODERATOR = "moderator"
@@ -63,13 +80,26 @@ class User(Base):
 
     # System timestamps
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
 
     # Relationships
-    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    matching_scores = relationship("MatchingScore", back_populates="user", cascade="all, delete-orphan")
-    match_history = relationship("MatchHistory", back_populates="user", cascade="all, delete-orphan")
+    profile = relationship(
+        "UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    preferences = relationship(
+        "UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    matching_scores = relationship(
+        "MatchingScore", back_populates="user", cascade="all, delete-orphan"
+    )
+    match_history = relationship(
+        "MatchHistory", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(user_id={self.user_id}, email='{self.email}', role='{self.role}', active={self.is_active})>"
@@ -114,7 +144,12 @@ class UserProfile(Base):
     last_application_date = Column(Date, nullable=True)
 
     # System timestamps
-    profile_updated_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+    profile_updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
 
     # Relationships
@@ -148,11 +183,11 @@ class UserPreferences(Base):
     location_preference_radius = Column(Integer, default=10)
 
     # Notification preferences
-    email_notifications = Column(JSONB, nullable=True, default={
-        "job_alerts": True,
-        "newsletter": False,
-        "system_updates": True
-    })
+    email_notifications = Column(
+        JSONB,
+        nullable=True,
+        default={"job_alerts": True, "newsletter": False, "system_updates": True},
+    )
     job_alert_frequency = Column(String(20), default="weekly")  # daily, weekly, monthly
 
     # Job type preferences
@@ -161,7 +196,12 @@ class UserPreferences(Base):
 
     # System timestamps
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
 
     # Relationships
     user = relationship("User", back_populates="preferences")
@@ -203,7 +243,9 @@ class MatchingScore(Base):
     weights = Column(JSONB, nullable=True, default={})
 
     # System timestamps
-    calculated_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
+    calculated_at = Column(
+        DateTime(timezone=True), nullable=False, default=func.current_timestamp()
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
 
     # Relationships
@@ -211,7 +253,9 @@ class MatchingScore(Base):
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint('user_id', 'job_id', 'algorithm_version', name='unique_user_job_algorithm_score'),
+        UniqueConstraint(
+            "user_id", "job_id", "algorithm_version", name="unique_user_job_algorithm_score"
+        ),
     )
 
     def __repr__(self):
@@ -255,17 +299,18 @@ class MatchHistory(Base):
 
     # System timestamps
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp())
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
 
     # Relationships
     user = relationship("User", back_populates="match_history")
 
     # Indexes for performance
-    __table_args__ = (
-        UniqueConstraint('user_id', 'job_id', name='unique_user_job_match'),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "job_id", name="unique_user_job_match"),)
 
     def __repr__(self):
         return f"<MatchHistory(user_id={self.user_id}, job_id={self.job_id}, score={self.match_score})>"
-
-

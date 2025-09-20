@@ -5,11 +5,13 @@ Minimal implementation to make tests pass.
 This follows TDD methodology - minimal code that passes tests.
 """
 
-import os
-import jwt
 import asyncio
 import logging
-from typing import Dict, Any, Optional
+import os
+from typing import Any, Dict, Optional
+
+import jwt
+
 from app.core.supabase import get_supabase_client
 
 # Configure logger
@@ -19,21 +21,25 @@ logger = logging.getLogger(__name__)
 # Custom exceptions
 class SupabaseAuthError(Exception):
     """Base exception for Supabase authentication errors"""
+
     pass
 
 
 class InvalidTokenError(SupabaseAuthError):
     """Raised when JWT token is invalid"""
+
     pass
 
 
 class UserNotFoundError(SupabaseAuthError):
     """Raised when user is not found"""
+
     pass
 
 
 class SessionExpiredError(SupabaseAuthError):
     """Raised when session is expired"""
+
     pass
 
 
@@ -63,20 +69,18 @@ class SupabaseAuthAdapter:
                 return {
                     "user_id": "test-user-123",
                     "email": "test@example.com",
-                    "sub": "test-user-123"
+                    "sub": "test-user-123",
                 }
 
             # For non-test tokens, decode JWT
             decoded = jwt.decode(
-                token,
-                self.jwt_validator["secret"],
-                algorithms=[self.jwt_validator["algorithm"]]
+                token, self.jwt_validator["secret"], algorithms=[self.jwt_validator["algorithm"]]
             )
 
             return {
                 "user_id": decoded.get("sub"),
                 "email": decoded.get("email"),
-                "sub": decoded.get("sub")
+                "sub": decoded.get("sub"),
             }
 
         except jwt.InvalidTokenError:
@@ -100,8 +104,8 @@ class SupabaseAuthAdapter:
                 "user": {
                     "id": "user-123",
                     "email": user_data["email"],
-                    "metadata": user_data.get("metadata", {})
-                }
+                    "metadata": user_data.get("metadata", {}),
+                },
             }
 
         except Exception as e:
@@ -115,10 +119,7 @@ class SupabaseAuthAdapter:
                 return None
 
             # Minimal implementation
-            return {
-                "access_token": "new.access.token",
-                "refresh_token": "new.refresh.token"
-            }
+            return {"access_token": "new.access.token", "refresh_token": "new.refresh.token"}
 
         except Exception as e:
             logger.error(f"Failed to refresh session: {e}")
@@ -136,6 +137,7 @@ class SupabaseAuthAdapter:
 
     def get_auth_middleware(self):
         """Get authentication middleware for FastAPI"""
+
         # Minimal implementation - return a mock middleware
         def auth_middleware():
             return {"type": "supabase_auth", "adapter": self}
@@ -152,14 +154,16 @@ class SupabaseAuthAdapter:
             return {
                 "id": "new-user-123",
                 "email": user_data["email"],
-                "metadata": user_data.get("metadata", {})
+                "metadata": user_data.get("metadata", {}),
             }
 
         except Exception as e:
             logger.error(f"Failed to create user: {e}")
             return None
 
-    async def update_user(self, user_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def update_user(
+        self, user_id: str, update_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Update user data"""
         try:
             if not user_id:
@@ -169,7 +173,7 @@ class SupabaseAuthAdapter:
             return {
                 "id": user_id,
                 "email": "updated@example.com",
-                "metadata": update_data.get("metadata", {})
+                "metadata": update_data.get("metadata", {}),
             }
 
         except Exception as e:

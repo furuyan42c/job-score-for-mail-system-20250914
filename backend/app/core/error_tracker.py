@@ -3,24 +3,25 @@ Core Error Tracking System
 T062-GREEN: Basic implementation for error tracking with capture, reporting, and alerting
 """
 
-import json
-import time
 import hashlib
-import uuid
+import json
 import sys
+import threading
+import time
 import traceback
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional, List, Union, Callable
-from dataclasses import dataclass, asdict
+import uuid
 from collections import defaultdict, deque
 from contextlib import contextmanager
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta, timezone
 from functools import wraps
-import threading
+from typing import Any, Callable, Dict, List, Optional, Union
+
 # Email imports for notifications (optional)
 try:
     import smtplib
-    from email.mime.text import MimeText
     from email.mime.multipart import MimeMultipart
+    from email.mime.text import MimeText
 except ImportError:
     # Email functionality will be limited if not available
     pass
@@ -31,6 +32,7 @@ from app.core.logging import CoreStructuredLogger
 @dataclass
 class ErrorData:
     """Error data structure"""
+
     id: str
     exception_type: str
     message: str
@@ -50,10 +52,7 @@ class ErrorTracker:
             "enable_capture": True,
             "enable_reporting": True,
             "aggregation_window": 300,
-            "alert_thresholds": {
-                "error_rate": 10,
-                "critical_errors": 5
-            }
+            "alert_thresholds": {"error_rate": 10, "critical_errors": 5},
         }
         self.logger = CoreStructuredLogger("error_tracker")
         self._errors: Dict[str, ErrorData] = {}
@@ -68,7 +67,7 @@ class ErrorTracker:
         self,
         exception: Exception,
         context: Optional[Dict[str, Any]] = None,
-        severity: str = "error"
+        severity: str = "error",
     ) -> str:
         """Capture exception with context"""
         if not self.is_enabled():
@@ -97,7 +96,7 @@ class ErrorTracker:
                     type(exception), exception, exception.__traceback__
                 ),
                 context=context or {},
-                severity=severity
+                severity=severity,
             )
 
             self._errors[error_id] = error_data
@@ -111,8 +110,8 @@ class ErrorTracker:
                     "exception_type": error_data.exception_type,
                     "message": error_data.message,
                     "severity": severity,
-                    "context": context
-                }
+                    "context": context,
+                },
             )
 
             return error_id
@@ -123,7 +122,7 @@ class ErrorTracker:
         fingerprint_data = {
             "type": type(exception).__name__,
             "message": str(exception),
-            "stack": traceback.format_tb(exception.__traceback__)[:3]  # First 3 frames
+            "stack": traceback.format_tb(exception.__traceback__)[:3],  # First 3 frames
         }
 
         fingerprint_str = json.dumps(fingerprint_data, sort_keys=True)
@@ -191,11 +190,11 @@ class ErrorReporter:
                 "total_errors": total_errors,
                 "unique_errors": unique_errors,
                 "time_range": time_range,
-                "generated_at": datetime.now(timezone.utc).isoformat()
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             },
             "by_type": dict(by_type),
             "by_severity": dict(by_severity),
-            "errors": errors
+            "errors": errors,
         }
 
     def format_error(self, error: Dict[str, Any], format: str = "json") -> str:
@@ -219,7 +218,7 @@ class ErrorReporter:
             """
 
         elif format == "text":
-            stack_trace = ''.join(error.get('stack_trace', []))
+            stack_trace = "".join(error.get("stack_trace", []))
             return f"""
 Error Report
 ============
@@ -235,7 +234,7 @@ Stack Trace:
         else:
             raise ValueError(f"Unsupported format: {format}")
 
-    def get_scheduler(self) -> 'ReportScheduler':
+    def get_scheduler(self) -> "ReportScheduler":
         """Get report scheduler"""
         return ReportScheduler(self)
 
@@ -247,12 +246,7 @@ class ReportScheduler:
         self.reporter = reporter
         self._jobs: Dict[str, Dict] = {}
 
-    def schedule_report(
-        self,
-        interval: str,
-        recipients: List[str],
-        format: str = "html"
-    ) -> str:
+    def schedule_report(self, interval: str, recipients: List[str], format: str = "html") -> str:
         """Schedule periodic report"""
         job_id = str(uuid.uuid4())
         self._jobs[job_id] = {
@@ -260,7 +254,7 @@ class ReportScheduler:
             "recipients": recipients,
             "format": format,
             "created_at": datetime.now(timezone.utc),
-            "active": True
+            "active": True,
         }
         return job_id
 
@@ -283,11 +277,7 @@ class ErrorAggregation:
 
     def record_error(self, timestamp: float, error_type: str, **kwargs):
         """Record error for aggregation"""
-        self._error_records.append({
-            "timestamp": timestamp,
-            "error_type": error_type,
-            **kwargs
-        })
+        self._error_records.append({"timestamp": timestamp, "error_type": error_type, **kwargs})
 
     def calculate_error_rate(self, time_window: int, error_type: Optional[str] = None) -> float:
         """Calculate error rate over time window"""
@@ -295,9 +285,10 @@ class ErrorAggregation:
         cutoff_time = current_time - time_window
 
         relevant_errors = [
-            record for record in self._error_records
-            if record["timestamp"] > cutoff_time and
-            (error_type is None or record["error_type"] == error_type)
+            record
+            for record in self._error_records
+            if record["timestamp"] > cutoff_time
+            and (error_type is None or record["error_type"] == error_type)
         ]
 
         return len(relevant_errors)
@@ -308,7 +299,8 @@ class ErrorAggregation:
         cutoff_time = current_time - time_window
 
         relevant_errors = [
-            record for record in self._error_records
+            record
+            for record in self._error_records
             if record["timestamp"] > cutoff_time and record["error_type"] == error_type
         ]
 
@@ -340,8 +332,7 @@ class ErrorAggregation:
         cutoff_time = current_time - time_window
 
         relevant_errors = [
-            record for record in self._error_records
-            if record["timestamp"] > cutoff_time
+            record for record in self._error_records if record["timestamp"] > cutoff_time
         ]
 
         # Group by type
@@ -354,17 +345,17 @@ class ErrorAggregation:
 
         # Simple correlation detection: errors occurring close in time
         for i, type1 in enumerate(types):
-            for type2 in types[i+1:]:
-                correlation_score = self._calculate_correlation(
-                    by_type[type1], by_type[type2]
-                )
+            for type2 in types[i + 1 :]:
+                correlation_score = self._calculate_correlation(by_type[type1], by_type[type2])
 
                 if correlation_score > 0.5:  # Threshold for correlation
-                    correlations.append({
-                        "error_type_1": type1,
-                        "error_type_2": type2,
-                        "correlation_score": correlation_score
-                    })
+                    correlations.append(
+                        {
+                            "error_type_1": type1,
+                            "error_type_2": type2,
+                            "correlation_score": correlation_score,
+                        }
+                    )
 
         return correlations
 
@@ -400,10 +391,7 @@ class AlertThresholds:
         return self._thresholds.copy()
 
     def evaluate_threshold(
-        self,
-        metric: str,
-        value: float,
-        suppress_duration: Optional[int] = None
+        self, metric: str, value: float, suppress_duration: Optional[int] = None
     ) -> Dict[str, Any]:
         """Evaluate threshold and trigger alerts"""
         if metric not in self._thresholds:
@@ -419,14 +407,14 @@ class AlertThresholds:
                 return {
                     "triggered": False,
                     "suppressed": True,
-                    "suppression_remaining": suppress_duration - (current_time - last_alert)
+                    "suppression_remaining": suppress_duration - (current_time - last_alert),
                 }
 
         # Evaluate thresholds
         alert_level = None
-        if value >= thresholds.get("critical", float('inf')):
+        if value >= thresholds.get("critical", float("inf")):
             alert_level = "critical"
-        elif value >= thresholds.get("warning", float('inf')):
+        elif value >= thresholds.get("warning", float("inf")):
             alert_level = "warning"
 
         if alert_level:
@@ -440,7 +428,7 @@ class AlertThresholds:
                 "metric": metric,
                 "value": value,
                 "threshold": thresholds[alert_level],
-                "timestamp": current_time
+                "timestamp": current_time,
             }
 
         return {"triggered": False}
@@ -484,19 +472,23 @@ class ExceptionHandler:
 
     def capture(self, func: Callable) -> Callable:
         """Decorator for exception capture"""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
                 error_id = self.error_tracker.capture_exception(e)
-                self._captured_exceptions.append({
-                    "exception_type": type(e).__name__,
-                    "message": str(e),
-                    "error_id": error_id,
-                    "timestamp": datetime.now(timezone.utc)
-                })
+                self._captured_exceptions.append(
+                    {
+                        "exception_type": type(e).__name__,
+                        "message": str(e),
+                        "error_id": error_id,
+                        "timestamp": datetime.now(timezone.utc),
+                    }
+                )
                 return None
+
         return wrapper
 
     def get_last_captured(self) -> Optional[Dict[str, Any]]:
@@ -536,33 +528,23 @@ class ErrorNotifier:
         """Configure rate limiting"""
         self._rate_limit_config = {
             "max_notifications": max_notifications,
-            "time_window": time_window
+            "time_window": time_window,
         }
 
     def send_notification(
-        self,
-        channel: str,
-        error_data: Dict[str, Any],
-        template: str = "default"
+        self, channel: str, error_data: Dict[str, Any], template: str = "default"
     ) -> Dict[str, Any]:
         """Send notification through specified channel"""
         # Check rate limiting
         if self._is_rate_limited(channel):
-            return {
-                "success": False,
-                "rate_limited": True,
-                "message": "Rate limit exceeded"
-            }
+            return {"success": False, "rate_limited": True, "message": "Rate limit exceeded"}
 
         # Record notification for rate limiting
         self._record_notification(channel)
 
         channel_config = self._channels.get(channel, {})
         if not channel_config.get("enabled", False):
-            return {
-                "success": False,
-                "message": f"Channel {channel} not enabled"
-            }
+            return {"success": False, "message": f"Channel {channel} not enabled"}
 
         try:
             if channel == "email":
@@ -572,16 +554,10 @@ class ErrorNotifier:
             elif channel == "webhook":
                 return self._send_webhook(error_data, channel_config, template)
             else:
-                return {
-                    "success": False,
-                    "message": f"Unknown channel: {channel}"
-                }
+                return {"success": False, "message": f"Unknown channel: {channel}"}
         except Exception as e:
             self.logger.error(f"Failed to send notification via {channel}", error=e)
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _is_rate_limited(self, channel: str) -> bool:
         """Check if channel is rate limited"""
@@ -589,8 +565,7 @@ class ErrorNotifier:
         cutoff_time = current_time - self._rate_limit_config["time_window"]
 
         # Clean old entries
-        while (self._rate_limits[channel] and
-               self._rate_limits[channel][0] < cutoff_time):
+        while self._rate_limits[channel] and self._rate_limits[channel][0] < cutoff_time:
             self._rate_limits[channel].popleft()
 
         return len(self._rate_limits[channel]) >= self._rate_limit_config["max_notifications"]
@@ -599,19 +574,25 @@ class ErrorNotifier:
         """Record notification for rate limiting"""
         self._rate_limits[channel].append(time.time())
 
-    def _send_email(self, error_data: Dict[str, Any], config: Dict[str, Any], template: str) -> Dict[str, Any]:
+    def _send_email(
+        self, error_data: Dict[str, Any], config: Dict[str, Any], template: str
+    ) -> Dict[str, Any]:
         """Send email notification (mock implementation)"""
         # Mock implementation - would integrate with actual SMTP
         self.logger.info(f"Sending email notification to {config.get('recipients', [])}")
         return {"success": True, "channel": "email"}
 
-    def _send_slack(self, error_data: Dict[str, Any], config: Dict[str, Any], template: str) -> Dict[str, Any]:
+    def _send_slack(
+        self, error_data: Dict[str, Any], config: Dict[str, Any], template: str
+    ) -> Dict[str, Any]:
         """Send Slack notification (mock implementation)"""
         # Mock implementation - would integrate with Slack API
         self.logger.info(f"Sending Slack notification to {config.get('channel', '#alerts')}")
         return {"success": True, "channel": "slack"}
 
-    def _send_webhook(self, error_data: Dict[str, Any], config: Dict[str, Any], template: str) -> Dict[str, Any]:
+    def _send_webhook(
+        self, error_data: Dict[str, Any], config: Dict[str, Any], template: str
+    ) -> Dict[str, Any]:
         """Send webhook notification (mock implementation)"""
         # Mock implementation - would make HTTP request
         self.logger.info(f"Sending webhook notification to {config.get('url', '')}")

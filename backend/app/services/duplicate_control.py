@@ -6,11 +6,13 @@ Prevents duplicate job recommendations by filtering jobs from companies
 where the user has recently applied within a configurable time window.
 """
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from app.models.job import Job
 
 logger = logging.getLogger(__name__)
+
 
 class DuplicateControlService:
     """Service for filtering duplicate job recommendations."""
@@ -29,18 +31,26 @@ class DuplicateControlService:
         """
         # Validate window_days parameter
         if window_days < self.MIN_WINDOW_DAYS:
-            logger.warning("Window days %d is below minimum (%d), using minimum",
-                         window_days, self.MIN_WINDOW_DAYS)
+            logger.warning(
+                "Window days %d is below minimum (%d), using minimum",
+                window_days,
+                self.MIN_WINDOW_DAYS,
+            )
             window_days = self.MIN_WINDOW_DAYS
         elif window_days > self.MAX_WINDOW_DAYS:
-            logger.warning("Window days %d exceeds maximum (%d), using maximum",
-                         window_days, self.MAX_WINDOW_DAYS)
+            logger.warning(
+                "Window days %d exceeds maximum (%d), using maximum",
+                window_days,
+                self.MAX_WINDOW_DAYS,
+            )
             window_days = self.MAX_WINDOW_DAYS
 
         self.window_days = window_days
         logger.info("DuplicateControlService initialized with %d day window", self.window_days)
 
-    async def filter_duplicates(self, jobs: List[Job], applications: List[Dict[str, Any]]) -> List[Job]:
+    async def filter_duplicates(
+        self, jobs: List[Job], applications: List[Dict[str, Any]]
+    ) -> List[Job]:
         """
         Filter out jobs from companies where user has recently applied.
 
@@ -53,7 +63,9 @@ class DuplicateControlService:
         """
         # Return all jobs if no application history
         if not applications:
-            logger.debug("No application history provided, returning all %d jobs", len(jobs) if jobs else 0)
+            logger.debug(
+                "No application history provided, returning all %d jobs", len(jobs) if jobs else 0
+            )
             return jobs if jobs else []
 
         # Return empty list if no jobs
@@ -85,7 +97,7 @@ class DuplicateControlService:
                 # Convert string timestamp if needed
                 if isinstance(applied_at, str):
                     try:
-                        applied_at = datetime.fromisoformat(applied_at.replace('Z', '+00:00'))
+                        applied_at = datetime.fromisoformat(applied_at.replace("Z", "+00:00"))
                     except (ValueError, AttributeError) as e:
                         logger.warning("Invalid timestamp format: %s", applied_at)
                         continue
@@ -94,11 +106,15 @@ class DuplicateControlService:
                 if applied_at >= cutoff_date:
                     recent_company_ids.add(company_id)
                     days_ago = (now - applied_at).days
-                    logger.debug("Found recent application to company %s (%d days ago)",
-                               company_id, days_ago)
+                    logger.debug(
+                        "Found recent application to company %s (%d days ago)", company_id, days_ago
+                    )
 
-            logger.info("Identified %d companies with applications in last %d days",
-                       len(recent_company_ids), self.window_days)
+            logger.info(
+                "Identified %d companies with applications in last %d days",
+                len(recent_company_ids),
+                self.window_days,
+            )
 
             # Filter jobs
             filtered_jobs = []
@@ -112,11 +128,17 @@ class DuplicateControlService:
                     filtered_jobs.append(job)
                 else:
                     filtered_count += 1
-                    logger.debug("Filtering job %s from recently applied company %s",
-                               getattr(job, "job_id", "unknown"), job_company_id)
+                    logger.debug(
+                        "Filtering job %s from recently applied company %s",
+                        getattr(job, "job_id", "unknown"),
+                        job_company_id,
+                    )
 
-            logger.info("Filtered %d duplicate jobs, returning %d unique jobs",
-                       filtered_count, len(filtered_jobs))
+            logger.info(
+                "Filtered %d duplicate jobs, returning %d unique jobs",
+                filtered_count,
+                len(filtered_jobs),
+            )
             return filtered_jobs
 
         except Exception as e:
@@ -156,7 +178,7 @@ class DuplicateControlService:
 
                 if isinstance(applied_at, str):
                     try:
-                        applied_at = datetime.fromisoformat(applied_at.replace('Z', '+00:00'))
+                        applied_at = datetime.fromisoformat(applied_at.replace("Z", "+00:00"))
                     except (ValueError, AttributeError):
                         continue
 

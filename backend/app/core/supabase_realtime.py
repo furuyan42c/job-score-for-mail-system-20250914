@@ -13,20 +13,23 @@ Provides comprehensive channel management, event routing, and monitoring.
 import asyncio
 import json
 import logging
+import threading
 import time
 import uuid
-from typing import Dict, List, Any, Optional, Callable, Set, Union, Tuple
-from dataclasses import dataclass, asdict
-from enum import Enum
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from supabase import Client
-from app.core.supabase import get_supabase_client, SupabaseClient
+from app.core.supabase import SupabaseClient, get_supabase_client
 from app.services.realtime_service import (
-    RealtimeService, SubscriptionType, RealtimeMessage, get_realtime_service
+    RealtimeMessage,
+    RealtimeService,
+    SubscriptionType,
+    get_realtime_service,
 )
+from supabase import Client
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -34,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 class ChannelType(Enum):
     """Types of real-time channels"""
+
     JOB_UPDATES = "job_updates"
     USER_NOTIFICATIONS = "user_notifications"
     MATCHING_RESULTS = "matching_results"
@@ -45,6 +49,7 @@ class ChannelType(Enum):
 
 class EventType(Enum):
     """Types of real-time events"""
+
     INSERT = "INSERT"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
@@ -54,6 +59,7 @@ class EventType(Enum):
 @dataclass
 class ChannelConfig:
     """Configuration for a real-time channel"""
+
     channel_id: str
     channel_type: ChannelType
     table_name: str
@@ -76,6 +82,7 @@ class ChannelConfig:
 @dataclass
 class ChannelMetrics:
     """Metrics for a real-time channel"""
+
     events_received: int = 0
     events_processed: int = 0
     events_failed: int = 0
@@ -112,22 +119,19 @@ class ChannelManager:
 
         # Service statistics
         self.service_stats = {
-            'service_started': time.time(),
-            'total_channels': 0,
-            'active_channels': 0,
-            'total_events': 0,
-            'events_per_second': 0.0,
-            'errors': 0,
-            'last_error': None
+            "service_started": time.time(),
+            "total_channels": 0,
+            "active_channels": 0,
+            "total_events": 0,
+            "events_per_second": 0.0,
+            "errors": 0,
+            "last_error": None,
         }
 
         logger.info("ChannelManager initialized")
 
     async def create_channel(
-        self,
-        channel_type: ChannelType,
-        table_name: str,
-        config: Optional[ChannelConfig] = None
+        self, channel_type: ChannelType, table_name: str, config: Optional[ChannelConfig] = None
     ) -> str:
         """Create a new real-time channel"""
 
@@ -135,9 +139,7 @@ class ChannelManager:
 
         if config is None:
             config = ChannelConfig(
-                channel_id=channel_id,
-                channel_type=channel_type,
-                table_name=table_name
+                channel_id=channel_id, channel_type=channel_type, table_name=table_name
             )
         else:
             config.channel_id = channel_id
@@ -152,25 +154,23 @@ class ChannelManager:
 
             # Set up event handler for this channel
             def channel_event_handler(payload):
-                asyncio.create_task(
-                    self._handle_channel_event(channel_id, payload)
-                )
+                asyncio.create_task(self._handle_channel_event(channel_id, payload))
 
             # Subscribe to specified event types
             for event_type in config.event_types:
                 subscription_config = {
-                    'event': event_type.value,
-                    'schema': config.schema,
-                    'table': table_name,
-                    'callback': channel_event_handler
+                    "event": event_type.value,
+                    "schema": config.schema,
+                    "table": table_name,
+                    "callback": channel_event_handler,
                 }
 
                 # Add filters if specified
                 if config.filters:
                     for key, value in config.filters.items():
-                        subscription_config['filter'] = f"{key}=eq.{value}"
+                        subscription_config["filter"] = f"{key}=eq.{value}"
 
-                channel.on('postgres_changes', **subscription_config)
+                channel.on("postgres_changes", **subscription_config)
 
             # Subscribe to the channel
             channel.subscribe()
@@ -181,22 +181,21 @@ class ChannelManager:
 
             # Initialize rate limiter if needed
             if config.rate_limit:
-                self.rate_limiters[channel_id] = {
-                    'events': [],
-                    'limit': config.rate_limit
-                }
+                self.rate_limiters[channel_id] = {"events": [], "limit": config.rate_limit}
 
             # Update statistics
-            self.service_stats['total_channels'] += 1
-            self.service_stats['active_channels'] += 1
+            self.service_stats["total_channels"] += 1
+            self.service_stats["active_channels"] += 1
 
-            logger.info(f"Created channel {channel_id} for {channel_type.value} on table {table_name}")
+            logger.info(
+                f"Created channel {channel_id} for {channel_type.value} on table {table_name}"
+            )
             return channel_id
 
         except Exception as e:
             logger.error(f"Failed to create channel: {e}")
-            self.service_stats['errors'] += 1
-            self.service_stats['last_error'] = str(e)
+            self.service_stats["errors"] += 1
+            self.service_stats["last_error"] = str(e)
             raise
 
     async def remove_channel(self, channel_id: str):
@@ -223,13 +222,13 @@ class ChannelManager:
                 del self.rate_limiters[channel_id]
 
             # Update statistics
-            self.service_stats['active_channels'] -= 1
+            self.service_stats["active_channels"] -= 1
 
             logger.info(f"Removed channel {channel_id}")
 
         except Exception as e:
             logger.error(f"Failed to remove channel {channel_id}: {e}")
-            self.service_stats['errors'] += 1
+            self.service_stats["errors"] += 1
 
     async def _handle_channel_event(self, channel_id: str, payload: Dict[str, Any]):
         """Handle events from a Supabase channel"""
@@ -269,19 +268,16 @@ class ChannelManager:
                 )
 
             # Update service statistics
-            self.service_stats['total_events'] += 1
+            self.service_stats["total_events"] += 1
 
         except Exception as e:
             logger.error(f"Failed to handle channel event for {channel_id}: {e}")
             if channel_id in self.channel_metrics:
                 self.channel_metrics[channel_id].events_failed += 1
-            self.service_stats['errors'] += 1
+            self.service_stats["errors"] += 1
 
     async def _process_channel_event(
-        self,
-        channel_id: str,
-        config: ChannelConfig,
-        payload: Dict[str, Any]
+        self, channel_id: str, config: ChannelConfig, payload: Dict[str, Any]
     ):
         """Process a channel event based on its type"""
 
@@ -312,13 +308,13 @@ class ChannelManager:
     async def _handle_job_update(self, channel_id: str, payload: Dict[str, Any]):
         """Handle job update events"""
 
-        event_type = payload.get('eventType', 'unknown')
-        new_record = payload.get('new', {})
-        old_record = payload.get('old', {})
+        event_type = payload.get("eventType", "unknown")
+        new_record = payload.get("new", {})
+        old_record = payload.get("old", {})
 
-        job_id = new_record.get('id') or old_record.get('id')
-        job_status = new_record.get('status')
-        user_id = new_record.get('user_id')
+        job_id = new_record.get("id") or old_record.get("id")
+        job_status = new_record.get("status")
+        user_id = new_record.get("user_id")
 
         if not job_id:
             logger.warning("Job update event missing job ID")
@@ -326,22 +322,22 @@ class ChannelManager:
 
         # Create notification message
         notification = {
-            'type': 'job_update',
-            'job_id': job_id,
-            'status': job_status,
-            'event_type': event_type,
-            'timestamp': time.time(),
-            'data': new_record
+            "type": "job_update",
+            "job_id": job_id,
+            "status": job_status,
+            "event_type": event_type,
+            "timestamp": time.time(),
+            "data": new_record,
         }
 
         # Send to user if available
         if user_id:
             await self.realtime_service.send_notification(
                 user_id=user_id,
-                notification_type='job_update',
-                title=f'Job {job_status}',
-                message=f'Job {job_id} status changed to {job_status}',
-                data=notification
+                notification_type="job_update",
+                title=f"Job {job_status}",
+                message=f"Job {job_id} status changed to {job_status}",
+                data=notification,
             )
 
         logger.debug(f"Processed job update for job {job_id}: {job_status}")
@@ -349,11 +345,11 @@ class ChannelManager:
     async def _handle_user_notification(self, channel_id: str, payload: Dict[str, Any]):
         """Handle user notification events"""
 
-        new_record = payload.get('new', {})
-        user_id = new_record.get('user_id')
-        notification_type = new_record.get('type', 'general')
-        title = new_record.get('title', 'Notification')
-        message = new_record.get('message', '')
+        new_record = payload.get("new", {})
+        user_id = new_record.get("user_id")
+        notification_type = new_record.get("type", "general")
+        title = new_record.get("title", "Notification")
+        message = new_record.get("message", "")
 
         if user_id:
             await self.realtime_service.send_notification(
@@ -361,7 +357,7 @@ class ChannelManager:
                 notification_type=notification_type,
                 title=title,
                 message=message,
-                data=new_record
+                data=new_record,
             )
 
         logger.debug(f"Processed user notification for user {user_id}")
@@ -369,18 +365,18 @@ class ChannelManager:
     async def _handle_matching_result(self, channel_id: str, payload: Dict[str, Any]):
         """Handle matching result events"""
 
-        new_record = payload.get('new', {})
-        job_id = new_record.get('job_id')
-        user_id = new_record.get('user_id')
-        score = new_record.get('score')
+        new_record = payload.get("new", {})
+        job_id = new_record.get("job_id")
+        user_id = new_record.get("user_id")
+        score = new_record.get("score")
 
         if user_id and job_id:
             await self.realtime_service.send_notification(
                 user_id=user_id,
-                notification_type='matching_result',
-                title='Matching Complete',
-                message=f'Job {job_id} matching completed with score {score}',
-                data=new_record
+                notification_type="matching_result",
+                title="Matching Complete",
+                message=f"Job {job_id} matching completed with score {score}",
+                data=new_record,
             )
 
         logger.debug(f"Processed matching result for job {job_id}")
@@ -388,14 +384,12 @@ class ChannelManager:
     async def _handle_system_status(self, channel_id: str, payload: Dict[str, Any]):
         """Handle system status events"""
 
-        new_record = payload.get('new', {})
-        status = new_record.get('status', 'unknown')
-        message = new_record.get('message', '')
+        new_record = payload.get("new", {})
+        status = new_record.get("status", "unknown")
+        message = new_record.get("message", "")
 
         await self.realtime_service.broadcast_system_status(
-            status=status,
-            message=message,
-            data=new_record
+            status=status, message=message, data=new_record
         )
 
         logger.debug(f"Processed system status: {status}")
@@ -403,18 +397,18 @@ class ChannelManager:
     async def _handle_email_processing(self, channel_id: str, payload: Dict[str, Any]):
         """Handle email processing events"""
 
-        new_record = payload.get('new', {})
-        email_id = new_record.get('id')
-        status = new_record.get('status')
-        user_id = new_record.get('user_id')
+        new_record = payload.get("new", {})
+        email_id = new_record.get("id")
+        status = new_record.get("status")
+        user_id = new_record.get("user_id")
 
         if user_id:
             await self.realtime_service.send_notification(
                 user_id=user_id,
-                notification_type='email_processing',
-                title='Email Processing Update',
-                message=f'Email {email_id} is now {status}',
-                data=new_record
+                notification_type="email_processing",
+                title="Email Processing Update",
+                message=f"Email {email_id} is now {status}",
+                data=new_record,
             )
 
         logger.debug(f"Processed email processing event for email {email_id}")
@@ -422,18 +416,18 @@ class ChannelManager:
     async def _handle_score_calculation(self, channel_id: str, payload: Dict[str, Any]):
         """Handle score calculation events"""
 
-        new_record = payload.get('new', {})
-        calculation_id = new_record.get('id')
-        score = new_record.get('score')
-        user_id = new_record.get('user_id')
+        new_record = payload.get("new", {})
+        calculation_id = new_record.get("id")
+        score = new_record.get("score")
+        user_id = new_record.get("user_id")
 
         if user_id:
             await self.realtime_service.send_notification(
                 user_id=user_id,
-                notification_type='score_calculation',
-                title='Score Calculated',
-                message=f'New score calculated: {score}',
-                data=new_record
+                notification_type="score_calculation",
+                title="Score Calculated",
+                message=f"New score calculated: {score}",
+                data=new_record,
             )
 
         logger.debug(f"Processed score calculation {calculation_id}: {score}")
@@ -441,9 +435,9 @@ class ChannelManager:
     async def _handle_audit_log(self, channel_id: str, payload: Dict[str, Any]):
         """Handle audit log events"""
 
-        new_record = payload.get('new', {})
-        action = new_record.get('action')
-        user_id = new_record.get('user_id')
+        new_record = payload.get("new", {})
+        action = new_record.get("action")
+        user_id = new_record.get("user_id")
 
         # Audit logs are typically for monitoring, not user notifications
         logger.info(f"Audit log: {action} by user {user_id}")
@@ -458,17 +452,16 @@ class ChannelManager:
         current_time = time.time()
 
         # Remove events older than 1 second
-        limiter['events'] = [
-            event_time for event_time in limiter['events']
-            if current_time - event_time < 1.0
+        limiter["events"] = [
+            event_time for event_time in limiter["events"] if current_time - event_time < 1.0
         ]
 
         # Check if we're under the limit
-        if len(limiter['events']) >= limiter['limit']:
+        if len(limiter["events"]) >= limiter["limit"]:
             return False
 
         # Add current event
-        limiter['events'].append(current_time)
+        limiter["events"].append(current_time)
         return True
 
     def register_event_handler(self, channel_type: ChannelType, handler: Callable):
@@ -489,53 +482,40 @@ class ChannelManager:
 
         try:
             # Job updates channel
-            job_channel_id = await self.create_channel(
-                ChannelType.JOB_UPDATES,
-                'jobs'
-            )
-            default_channels['jobs'] = job_channel_id
+            job_channel_id = await self.create_channel(ChannelType.JOB_UPDATES, "jobs")
+            default_channels["jobs"] = job_channel_id
 
             # User notifications channel
             notifications_channel_id = await self.create_channel(
-                ChannelType.USER_NOTIFICATIONS,
-                'notifications'
+                ChannelType.USER_NOTIFICATIONS, "notifications"
             )
-            default_channels['notifications'] = notifications_channel_id
+            default_channels["notifications"] = notifications_channel_id
 
             # Matching results channel
             matching_channel_id = await self.create_channel(
-                ChannelType.MATCHING_RESULTS,
-                'matching_results'
+                ChannelType.MATCHING_RESULTS, "matching_results"
             )
-            default_channels['matching'] = matching_channel_id
+            default_channels["matching"] = matching_channel_id
 
             # System status channel
             system_channel_id = await self.create_channel(
-                ChannelType.SYSTEM_STATUS,
-                'system_status'
+                ChannelType.SYSTEM_STATUS, "system_status"
             )
-            default_channels['system'] = system_channel_id
+            default_channels["system"] = system_channel_id
 
             # Email processing channel
-            email_channel_id = await self.create_channel(
-                ChannelType.EMAIL_PROCESSING,
-                'emails'
-            )
-            default_channels['emails'] = email_channel_id
+            email_channel_id = await self.create_channel(ChannelType.EMAIL_PROCESSING, "emails")
+            default_channels["emails"] = email_channel_id
 
             # Score calculation channel
             score_channel_id = await self.create_channel(
-                ChannelType.SCORE_CALCULATION,
-                'score_calculations'
+                ChannelType.SCORE_CALCULATION, "score_calculations"
             )
-            default_channels['scores'] = score_channel_id
+            default_channels["scores"] = score_channel_id
 
             # Audit logs channel
-            audit_channel_id = await self.create_channel(
-                ChannelType.AUDIT_LOGS,
-                'audit_logs'
-            )
-            default_channels['audit'] = audit_channel_id
+            audit_channel_id = await self.create_channel(ChannelType.AUDIT_LOGS, "audit_logs")
+            default_channels["audit"] = audit_channel_id
 
             logger.info(f"Set up {len(default_channels)} default channels")
             return default_channels
@@ -553,22 +533,22 @@ class ChannelManager:
                 metrics = self.channel_metrics[channel_id]
 
                 return {
-                    'channel_id': channel_id,
-                    'channel_type': config.channel_type.value if config else 'unknown',
-                    'table_name': config.table_name if config else 'unknown',
-                    'metrics': asdict(metrics)
+                    "channel_id": channel_id,
+                    "channel_type": config.channel_type.value if config else "unknown",
+                    "table_name": config.table_name if config else "unknown",
+                    "metrics": asdict(metrics),
                 }
             else:
-                return {'error': f'Channel {channel_id} not found'}
+                return {"error": f"Channel {channel_id} not found"}
 
         # Return all metrics
         all_metrics = {}
         for cid, metrics in self.channel_metrics.items():
             config = self.active_channels.get(cid)
             all_metrics[cid] = {
-                'channel_type': config.channel_type.value if config else 'unknown',
-                'table_name': config.table_name if config else 'unknown',
-                'metrics': asdict(metrics)
+                "channel_type": config.channel_type.value if config else "unknown",
+                "table_name": config.table_name if config else "unknown",
+                "metrics": asdict(metrics),
             }
 
         return all_metrics
@@ -576,20 +556,20 @@ class ChannelManager:
     def get_service_stats(self) -> Dict[str, Any]:
         """Get comprehensive service statistics"""
 
-        uptime = time.time() - self.service_stats['service_started']
+        uptime = time.time() - self.service_stats["service_started"]
 
         # Calculate events per second
         if uptime > 0:
-            self.service_stats['events_per_second'] = self.service_stats['total_events'] / uptime
+            self.service_stats["events_per_second"] = self.service_stats["total_events"] / uptime
 
         return {
-            'service': self.service_stats,
-            'uptime_seconds': uptime,
-            'channels': {
-                'active': len(self.active_channels),
-                'by_type': self._get_channels_by_type()
+            "service": self.service_stats,
+            "uptime_seconds": uptime,
+            "channels": {
+                "active": len(self.active_channels),
+                "by_type": self._get_channels_by_type(),
             },
-            'metrics_summary': self._get_metrics_summary()
+            "metrics_summary": self._get_metrics_summary(),
         }
 
     def _get_channels_by_type(self) -> Dict[str, int]:
@@ -613,14 +593,15 @@ class ChannelManager:
             ) / len(self.channel_metrics)
 
         return {
-            'total_events_received': total_events_received,
-            'total_events_processed': total_events_processed,
-            'total_events_failed': total_events_failed,
-            'success_rate': (
+            "total_events_received": total_events_received,
+            "total_events_processed": total_events_processed,
+            "total_events_failed": total_events_failed,
+            "success_rate": (
                 total_events_processed / total_events_received * 100
-                if total_events_received > 0 else 0
+                if total_events_received > 0
+                else 0
             ),
-            'average_processing_time': avg_processing_time
+            "average_processing_time": avg_processing_time,
         }
 
     async def shutdown(self):
@@ -659,15 +640,15 @@ async def setup_realtime_channels() -> Dict[str, str]:
 async def subscribe_to_job_updates(user_id: str, job_id: Optional[str] = None) -> str:
     """Subscribe to job updates for a user"""
     manager = get_channel_manager()
-    filters = {'user_id': user_id}
+    filters = {"user_id": user_id}
     if job_id:
-        filters['id'] = job_id
+        filters["id"] = job_id
 
     config = ChannelConfig(
         channel_id="",  # Will be set by create_channel
         channel_type=ChannelType.JOB_UPDATES,
         table_name="jobs",
-        filters=filters
+        filters=filters,
     )
 
     return await manager.create_channel(ChannelType.JOB_UPDATES, "jobs", config)
@@ -680,7 +661,7 @@ async def subscribe_to_user_notifications(user_id: str) -> str:
         channel_id="",
         channel_type=ChannelType.USER_NOTIFICATIONS,
         table_name="notifications",
-        filters={'user_id': user_id}
+        filters={"user_id": user_id},
     )
 
     return await manager.create_channel(ChannelType.USER_NOTIFICATIONS, "notifications", config)
@@ -694,14 +675,14 @@ async def subscribe_to_system_status() -> str:
 
 # Export all public functions and classes
 __all__ = [
-    'ChannelManager',
-    'ChannelType',
-    'EventType',
-    'ChannelConfig',
-    'ChannelMetrics',
-    'get_channel_manager',
-    'setup_realtime_channels',
-    'subscribe_to_job_updates',
-    'subscribe_to_user_notifications',
-    'subscribe_to_system_status'
+    "ChannelManager",
+    "ChannelType",
+    "EventType",
+    "ChannelConfig",
+    "ChannelMetrics",
+    "get_channel_manager",
+    "setup_realtime_channels",
+    "subscribe_to_job_updates",
+    "subscribe_to_user_notifications",
+    "subscribe_to_system_status",
 ]

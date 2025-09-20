@@ -7,14 +7,15 @@ Supabase PostgreSQLへの接続とSQLAlchemy設定
 - セッション管理
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import text, event
 import asyncio
 import logging
 import time
-from typing import AsyncGenerator, Optional
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Optional
+
+from sqlalchemy import event, text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import settings
 
@@ -33,7 +34,7 @@ if "sqlite" in settings.database_url_async:
         future=True,
         connect_args={
             "check_same_thread": False,  # SQLiteのマルチスレッド対応
-        }
+        },
     )
 else:
     # PostgreSQL/Supabase用設定
@@ -55,15 +56,12 @@ else:
                 "tcp_keepalives_interval": "30",
                 "tcp_keepalives_count": "3",
             }
-        }
+        },
     )
 
 # 非同期セッションファクトリ
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
 
 # パフォーマンス監視のためのイベントリスナー
 @event.listens_for(engine.sync_engine, "before_cursor_execute")
@@ -71,12 +69,14 @@ def receive_before_cursor_execute(conn, cursor, statement, parameters, context, 
     """クエリ実行前の処理"""
     context._query_start_time = time.time()
 
+
 @event.listens_for(engine.sync_engine, "after_cursor_execute")
 def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
     """クエリ実行後の処理"""
     total = time.time() - context._query_start_time
     if total > settings.SLOW_QUERY_THRESHOLD:
         logger.warning(f"Slow query detected: {total:.2f}s - {statement[:100]}...")
+
 
 # 接続プール統計
 class ConnectionPoolStats:
@@ -93,7 +93,7 @@ class ConnectionPoolStats:
                 "checked_out": "N/A",
                 "overflow": "N/A",
                 "invalidated": "N/A",
-                "utilization": 0
+                "utilization": 0,
             }
         pool = engine.pool
         return {
@@ -102,7 +102,11 @@ class ConnectionPoolStats:
             "checked_out": pool.checkedout(),
             "overflow": pool.overflow(),
             "invalidated": pool.invalidated(),
-            "utilization": (pool.checkedout() / (pool.size() + pool.overflow())) * 100 if (pool.size() + pool.overflow()) > 0 else 0
+            "utilization": (
+                (pool.checkedout() / (pool.size() + pool.overflow())) * 100
+                if (pool.size() + pool.overflow()) > 0
+                else 0
+            ),
         }
 
 
@@ -153,6 +157,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     finally:
         await session.close()
 
+
 @asynccontextmanager
 async def get_db_transaction() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -169,6 +174,7 @@ async def get_db_transaction() -> AsyncGenerator[AsyncSession, None]:
         raise
     finally:
         await session.close()
+
 
 async def get_db_read_only() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -228,40 +234,44 @@ class DatabaseMetrics:
         if "sqlite" in settings.database_url_async:
             # SQLiteの場合は簡易的な情報のみ
             return {
-                "connections": {
-                    "total": 1,
-                    "active": 1,
-                    "idle": 0
-                },
-                "database_size": "N/A (SQLite)"
+                "connections": {"total": 1, "active": 1, "idle": 0},
+                "database_size": "N/A (SQLite)",
             }
 
         async with AsyncSessionLocal() as session:
             try:
                 # 接続数
-                result = await session.execute(text("""
+                result = await session.execute(
+                    text(
+                        """
                     SELECT
                         count(*) as total_connections,
                         count(*) FILTER (WHERE state = 'active') as active_connections,
                         count(*) FILTER (WHERE state = 'idle') as idle_connections
                     FROM pg_stat_activity
                     WHERE datname = current_database()
-                """))
+                """
+                    )
+                )
                 conn_stats = result.fetchone()
 
                 # データベースサイズ
-                result = await session.execute(text("""
+                result = await session.execute(
+                    text(
+                        """
                     SELECT pg_size_pretty(pg_database_size(current_database())) as db_size
-                """))
+                """
+                    )
+                )
                 size_stats = result.fetchone()
 
                 return {
                     "connections": {
                         "total": conn_stats.total_connections,
                         "active": conn_stats.active_connections,
-                        "idle": conn_stats.idle_connections
+                        "idle": conn_stats.idle_connections,
                     },
-                    "database_size": size_stats.db_size
+                    "database_size": size_stats.db_size,
                 }
             except Exception as e:
                 logger.error(f"Failed to get database metrics: {e}")
@@ -276,7 +286,9 @@ class DatabaseMetrics:
 
         async with AsyncSessionLocal() as session:
             try:
-                result = await session.execute(text("""
+                result = await session.execute(
+                    text(
+                        """
                     SELECT
                         query,
                         mean_time,
@@ -287,7 +299,10 @@ class DatabaseMetrics:
                     FROM pg_stat_statements
                     ORDER BY mean_time DESC
                     LIMIT :limit
-                """), {"limit": limit})
+                """
+                    ),
+                    {"limit": limit},
+                )
 
                 return [dict(row) for row in result.fetchall()]
             except Exception as e:
@@ -305,7 +320,7 @@ async def monitor_connection_pool():
             "checked_in": "N/A",
             "checked_out": "N/A",
             "overflow": "N/A",
-            "invalidated": "N/A"
+            "invalidated": "N/A",
         }
     pool = engine.pool
     return {
@@ -313,7 +328,7 @@ async def monitor_connection_pool():
         "checked_in": pool.checkedin(),
         "checked_out": pool.checkedout(),
         "overflow": pool.overflow(),
-        "invalidated": pool.invalidated()
+        "invalidated": pool.invalidated(),
     }
 
 
@@ -326,14 +341,7 @@ async def check_database_health():
             metrics = await DatabaseMetrics.get_connection_info()
             pool_info = await monitor_connection_pool()
 
-            return {
-                "status": "healthy",
-                "metrics": metrics,
-                "pool": pool_info
-            }
+            return {"status": "healthy", "metrics": metrics, "pool": pool_info}
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+        return {"status": "unhealthy", "error": str(e)}

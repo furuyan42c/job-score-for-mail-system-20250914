@@ -5,17 +5,19 @@ Production-ready Supabase client with proper error handling,
 connection pooling, and retry logic. Improved from minimal implementation.
 """
 
-import os
 import asyncio
 import logging
-from typing import Dict, Any, Optional, Tuple
-from functools import lru_cache
-from contextlib import asynccontextmanager
-from supabase import create_client, Client
-from supabase.lib.client_options import ClientOptions
-import asyncpg
+import os
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Any, Dict, Optional, Tuple
+
+import asyncpg
+from supabase.lib.client_options import ClientOptions
+
+from supabase import Client, create_client
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -24,6 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SupabaseConfig:
     """Supabase configuration data class"""
+
     url: str
     anon_key: str
     service_role_key: str
@@ -36,11 +39,13 @@ class SupabaseConfig:
 
 class SupabaseConnectionError(Exception):
     """Raised when Supabase connection fails"""
+
     pass
 
 
 class SupabaseConfigurationError(Exception):
     """Raised when Supabase configuration is invalid"""
+
     pass
 
 
@@ -50,10 +55,10 @@ class SupabaseClient:
     Singleton pattern implementation.
     """
 
-    _instance: Optional['SupabaseClient'] = None
+    _instance: Optional["SupabaseClient"] = None
     _initialized: bool = False
 
-    def __new__(cls) -> 'SupabaseClient':
+    def __new__(cls) -> "SupabaseClient":
         """Singleton pattern implementation"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -79,10 +84,10 @@ class SupabaseClient:
 
         # Initialize connection statistics
         self._connection_stats = {
-            'total_connections': 0,
-            'active_connections': 0,
-            'failed_connections': 0,
-            'last_connection_time': None
+            "total_connections": 0,
+            "active_connections": 0,
+            "failed_connections": 0,
+            "last_connection_time": None,
         }
 
         # Initialize Supabase clients with retry logic
@@ -96,9 +101,9 @@ class SupabaseClient:
 
     def _load_config_from_env(self) -> SupabaseConfig:
         """Load configuration from environment variables"""
-        url = os.getenv('SUPABASE_URL')
-        anon_key = os.getenv('SUPABASE_ANON_KEY')
-        service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+        url = os.getenv("SUPABASE_URL")
+        anon_key = os.getenv("SUPABASE_ANON_KEY")
+        service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
         if not url:
             raise ValueError("SUPABASE_URL environment variable is required")
@@ -111,11 +116,11 @@ class SupabaseClient:
             url=url,
             anon_key=anon_key,
             service_role_key=service_role_key,
-            pool_size=int(os.getenv('DB_POOL_SIZE', '100')),
-            max_overflow=int(os.getenv('DB_MAX_OVERFLOW', '200')),
-            max_retries=int(os.getenv('SUPABASE_MAX_RETRIES', '3')),
-            retry_delay=float(os.getenv('SUPABASE_RETRY_DELAY', '1.0')),
-            timeout=int(os.getenv('SUPABASE_TIMEOUT', '30'))
+            pool_size=int(os.getenv("DB_POOL_SIZE", "100")),
+            max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "200")),
+            max_retries=int(os.getenv("SUPABASE_MAX_RETRIES", "3")),
+            retry_delay=float(os.getenv("SUPABASE_RETRY_DELAY", "1.0")),
+            timeout=int(os.getenv("SUPABASE_TIMEOUT", "30")),
         )
 
     def _initialize_clients(self):
@@ -126,22 +131,22 @@ class SupabaseClient:
                 options = ClientOptions(
                     postgrest_client_timeout=self.config.timeout,
                     storage_client_timeout=self.config.timeout,
-                    flow_type="pkce"
+                    flow_type="pkce",
                 )
 
                 # Initialize clients
                 self.client: Client = create_client(self.url, self.anon_key, options)
                 self.admin_client: Client = create_client(self.url, self.service_role_key, options)
 
-                self._connection_stats['total_connections'] += 1
-                self._connection_stats['active_connections'] += 1
-                self._connection_stats['last_connection_time'] = time.time()
+                self._connection_stats["total_connections"] += 1
+                self._connection_stats["active_connections"] += 1
+                self._connection_stats["last_connection_time"] = time.time()
 
                 logger.info(f"Supabase clients initialized successfully (attempt {attempt + 1})")
                 return
 
             except Exception as e:
-                self._connection_stats['failed_connections'] += 1
+                self._connection_stats["failed_connections"] += 1
 
                 # For testing with mock values, create placeholder clients
                 if "test" in self.url.lower() or "test" in self.anon_key.lower():
@@ -151,11 +156,15 @@ class SupabaseClient:
                     return
 
                 if attempt < self.max_retries - 1:
-                    logger.warning(f"Supabase client initialization failed (attempt {attempt + 1}): {e}")
+                    logger.warning(
+                        f"Supabase client initialization failed (attempt {attempt + 1}): {e}"
+                    )
                     logger.info(f"Retrying in {self.retry_delay} seconds...")
                     time.sleep(self.retry_delay)
                 else:
-                    logger.error(f"Failed to initialize Supabase clients after {self.max_retries} attempts")
+                    logger.error(
+                        f"Failed to initialize Supabase clients after {self.max_retries} attempts"
+                    )
                     raise SupabaseConnectionError(f"Failed to initialize Supabase clients: {e}")
 
     def get_connection_stats(self) -> Dict[str, Any]:
@@ -173,14 +182,14 @@ class SupabaseClient:
             start_time = time.time()
             # Try occupation_master table first, fall back to simple query
             try:
-                result = self.client.table('occupation_master').select('id').limit(1).execute()
+                result = self.client.table("occupation_master").select("id").limit(1).execute()
             except:
                 # If no tables exist, try a basic RPC call or simple query
                 try:
-                    result = self.client.rpc('version').execute()
+                    result = self.client.rpc("version").execute()
                 except:
                     # Last resort - just test the connection endpoint
-                    result = self.client.table('nonexistent').select('*').limit(0).execute()
+                    result = self.client.table("nonexistent").select("*").limit(0).execute()
 
             response_time = time.time() - start_time
             logger.debug(f"Connection test successful in {response_time:.3f}s")
@@ -189,7 +198,9 @@ class SupabaseClient:
         except Exception as e:
             # If all tests fail, but we can still initialize client, consider it working
             if "Could not find" in str(e) or "PGRST" in str(e):
-                logger.info(f"Database is responding (schema-related error, but connection works): {e}")
+                logger.info(
+                    f"Database is responding (schema-related error, but connection works): {e}"
+                )
                 return True
             logger.warning(f"Connection test failed: {e}")
             return False
@@ -203,28 +214,26 @@ class SupabaseClient:
             connection_test = await self.test_connection()
             health_check_time = time.time() - start_time
 
-            status = 'healthy' if connection_test else 'unhealthy'
+            status = "healthy" if connection_test else "unhealthy"
 
             health_data = {
-                'status': status,
-                'timestamp': time.time(),
-                'response_time_ms': round(health_check_time * 1000, 2),
-                'connection_pool': {
-                    'size': self.pool_size,
-                    'max_overflow': self.max_overflow,
-                    'active_connections': self._connection_stats['active_connections'],
-                    'total_connections': self._connection_stats['total_connections'],
-                    'failed_connections': self._connection_stats['failed_connections']
+                "status": status,
+                "timestamp": time.time(),
+                "response_time_ms": round(health_check_time * 1000, 2),
+                "connection_pool": {
+                    "size": self.pool_size,
+                    "max_overflow": self.max_overflow,
+                    "active_connections": self._connection_stats["active_connections"],
+                    "total_connections": self._connection_stats["total_connections"],
+                    "failed_connections": self._connection_stats["failed_connections"],
                 },
-                'database': {
-                    'connected': connection_test
+                "database": {"connected": connection_test},
+                "configuration": {
+                    "url": self.url[:50] + "..." if len(self.url) > 50 else self.url,
+                    "timeout": self.config.timeout,
+                    "max_retries": self.max_retries,
+                    "retry_delay": self.retry_delay,
                 },
-                'configuration': {
-                    'url': self.url[:50] + '...' if len(self.url) > 50 else self.url,
-                    'timeout': self.config.timeout,
-                    'max_retries': self.max_retries,
-                    'retry_delay': self.retry_delay
-                }
             }
 
             logger.info(f"Health check completed: {status}")
@@ -233,14 +242,14 @@ class SupabaseClient:
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return {
-                'status': 'error',
-                'timestamp': time.time(),
-                'error': str(e),
-                'connection_pool': {
-                    'size': self.pool_size,
-                    'failed_connections': self._connection_stats['failed_connections']
+                "status": "error",
+                "timestamp": time.time(),
+                "error": str(e),
+                "connection_pool": {
+                    "size": self.pool_size,
+                    "failed_connections": self._connection_stats["failed_connections"],
                 },
-                'database': {'connected': False}
+                "database": {"connected": False},
             }
 
     async def reconnect(self) -> bool:
@@ -297,25 +306,21 @@ def get_supabase_client_legacy(force_new: bool = False) -> Client:
         try:
             # Create client options for better control
             options = ClientOptions(
-                postgrest_client_timeout=30,
-                storage_client_timeout=30,
-                flow_type="pkce"
+                postgrest_client_timeout=30, storage_client_timeout=30, flow_type="pkce"
             )
 
             # Create Supabase client
             _supabase_client = create_client(
                 supabase_url=settings.SUPABASE_URL,
                 supabase_key=settings.SUPABASE_ANON_KEY,
-                options=options
+                options=options,
             )
 
             # Update connection pool stats
-            _connection_pool_stats['active_connections'] += 1
+            _connection_pool_stats["active_connections"] += 1
 
         except Exception as e:
-            raise SupabaseConnectionError(
-                f"Failed to create Supabase client: {str(e)}"
-            )
+            raise SupabaseConnectionError(f"Failed to create Supabase client: {str(e)}")
 
     return _supabase_client
 
@@ -331,26 +336,20 @@ def get_admin_supabase_client() -> Client:
         SupabaseConfigurationError: If service role key is missing
     """
     if not settings.SUPABASE_SERVICE_ROLE_KEY:
-        raise SupabaseConfigurationError(
-            "Missing SUPABASE_SERVICE_ROLE_KEY for admin operations"
-        )
+        raise SupabaseConfigurationError("Missing SUPABASE_SERVICE_ROLE_KEY for admin operations")
 
     try:
         options = ClientOptions(
-            postgrest_client_timeout=30,
-            storage_client_timeout=30,
-            flow_type="pkce"
+            postgrest_client_timeout=30, storage_client_timeout=30, flow_type="pkce"
         )
 
         return create_client(
             supabase_url=settings.SUPABASE_URL,
             supabase_key=settings.SUPABASE_SERVICE_ROLE_KEY,
-            options=options
+            options=options,
         )
     except Exception as e:
-        raise SupabaseConnectionError(
-            f"Failed to create admin Supabase client: {str(e)}"
-        )
+        raise SupabaseConnectionError(f"Failed to create admin Supabase client: {str(e)}")
 
 
 async def check_supabase_health() -> Tuple[bool, str]:
@@ -364,7 +363,7 @@ async def check_supabase_health() -> Tuple[bool, str]:
         client = get_supabase_client()
 
         # Try to execute a simple query
-        response = client.from_('_test_connection').select('test_value').execute()
+        response = client.from_("_test_connection").select("test_value").execute()
 
         if response.data is not None:
             return True, "Supabase is connected and healthy"
@@ -453,7 +452,7 @@ def execute_query(query: str, params: Optional[Dict[str, Any]] = None) -> Any:
     """
     try:
         client = get_supabase_client()
-        response = client.rpc('execute_sql', {'query': query, 'params': params or {}}).execute()
+        response = client.rpc("execute_sql", {"query": query, "params": params or {}}).execute()
         return response.data
     except Exception as e:
         raise SupabaseQueryError(f"Query execution failed: {str(e)}")
@@ -486,8 +485,8 @@ def subscribe_to_table(table_name: str, callback):
         Subscription channel
     """
     client = get_supabase_client()
-    channel = client.channel(f'public:{table_name}')
-    channel.on('postgres_changes', event='*', schema='public', table=table_name, callback=callback)
+    channel = client.channel(f"public:{table_name}")
+    channel.on("postgres_changes", event="*", schema="public", table=table_name, callback=callback)
     channel.subscribe()
     return channel
 
@@ -518,7 +517,12 @@ def get_storage_bucket(bucket_name: str):
     return client.storage.from_(bucket_name)
 
 
-def upload_file(bucket_name: str, file_path: str, file_data: bytes, content_type: str = 'application/octet-stream'):
+def upload_file(
+    bucket_name: str,
+    file_path: str,
+    file_data: bytes,
+    content_type: str = "application/octet-stream",
+):
     """
     Upload a file to Supabase storage
 
@@ -532,7 +536,7 @@ def upload_file(bucket_name: str, file_path: str, file_data: bytes, content_type
         Upload response
     """
     bucket = get_storage_bucket(bucket_name)
-    return bucket.upload(file_path, file_data, {'content-type': content_type})
+    return bucket.upload(file_path, file_data, {"content-type": content_type})
 
 
 def download_file(bucket_name: str, file_path: str) -> bytes:
@@ -579,21 +583,21 @@ def get_auth_client():
 
 # Export all public functions and classes
 __all__ = [
-    'get_supabase_client',
-    'get_admin_supabase_client',
-    'check_supabase_health',
-    'get_connection_pool_stats',
-    'begin_transaction',
-    'SupabaseConnectionError',
-    'SupabaseConfigurationError',
-    'SupabaseQueryError',
-    'execute_query',
-    'get_table',
-    'subscribe_to_table',
-    'unsubscribe_from_table',
-    'get_storage_bucket',
-    'upload_file',
-    'download_file',
-    'delete_file',
-    'get_auth_client'
+    "get_supabase_client",
+    "get_admin_supabase_client",
+    "check_supabase_health",
+    "get_connection_pool_stats",
+    "begin_transaction",
+    "SupabaseConnectionError",
+    "SupabaseConfigurationError",
+    "SupabaseQueryError",
+    "execute_query",
+    "get_table",
+    "subscribe_to_table",
+    "unsubscribe_from_table",
+    "get_storage_bucket",
+    "upload_file",
+    "download_file",
+    "delete_file",
+    "get_auth_client",
 ]

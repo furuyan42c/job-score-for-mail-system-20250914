@@ -8,19 +8,34 @@ functionality, proper relationships, indexes, and integration with the existing 
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Type
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional, Type
 
 # Production imports for SQLAlchemy
 try:
-    from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Float, Numeric, Text
-    from sqlalchemy import ForeignKey, Index, UniqueConstraint, CheckConstraint
+    from sqlalchemy import (
+        Boolean,
+        CheckConstraint,
+        Column,
+        Date,
+        DateTime,
+        Float,
+        ForeignKey,
+        Index,
+        Integer,
+        MetaData,
+        Numeric,
+        String,
+        Text,
+        UniqueConstraint,
+        create_engine,
+    )
+    from sqlalchemy.dialects.postgresql import JSON, UUID
+    from sqlalchemy.exc import SQLAlchemyError
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.orm import relationship, sessionmaker
-    from sqlalchemy.dialects.postgresql import UUID, JSON
-    from sqlalchemy import create_engine, MetaData
-    from sqlalchemy.exc import SQLAlchemyError
+
     HAS_SQLALCHEMY = True
 except ImportError as e:
     HAS_SQLALCHEMY = False
@@ -30,6 +45,7 @@ except ImportError as e:
 try:
     from app.core.config import settings
     from app.core.tdd_database import get_tdd_db_connection
+
     HAS_DATABASE_INTEGRATION = True
 except ImportError:
     HAS_DATABASE_INTEGRATION = False
@@ -39,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 class TDDSchemaError(Exception):
     """Custom exception for schema-related errors"""
+
     pass
 
 
@@ -60,13 +77,13 @@ class TDDSchemaManager:
         self._metadata = None
 
         # Get database URL from config or settings
-        if HAS_DATABASE_INTEGRATION and hasattr(settings, 'database_url'):
-            self.database_url = self.config.get('database_url', settings.database_url)
+        if HAS_DATABASE_INTEGRATION and hasattr(settings, "database_url"):
+            self.database_url = self.config.get("database_url", settings.database_url)
         else:
-            self.database_url = self.config.get('database_url', 'postgresql://localhost/test_db')
+            self.database_url = self.config.get("database_url", "postgresql://localhost/test_db")
 
     @classmethod
-    async def create(cls, config: Dict[str, Any]) -> 'TDDSchemaManager':
+    async def create(cls, config: Dict[str, Any]) -> "TDDSchemaManager":
         """Create a schema manager instance with full initialization"""
         manager = cls(config)
         await manager._initialize()
@@ -102,7 +119,7 @@ class TDDSchemaManager:
 
         # Define User model
         class User(self._base_model):
-            __tablename__ = 'users'
+            __tablename__ = "users"
 
             id = Column(Integer, primary_key=True, index=True)
             email = Column(String(255), unique=True, index=True, nullable=False)
@@ -111,7 +128,9 @@ class TDDSchemaManager:
             is_active = Column(Boolean, default=True, nullable=False)
             is_superuser = Column(Boolean, default=False, nullable=False)
             created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-            updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+            updated_at = Column(
+                DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+            )
 
             # Relationships
             job_scores = relationship("JobScore", back_populates="user")
@@ -120,7 +139,7 @@ class TDDSchemaManager:
 
         # Define Job model
         class Job(self._base_model):
-            __tablename__ = 'jobs'
+            __tablename__ = "jobs"
 
             id = Column(Integer, primary_key=True, index=True)
             title = Column(String(255), nullable=False, index=True)
@@ -136,7 +155,9 @@ class TDDSchemaManager:
             is_active = Column(Boolean, default=True, nullable=False)
             posted_date = Column(Date, default=date.today, nullable=False)
             created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-            updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+            updated_at = Column(
+                DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+            )
 
             # Relationships
             job_scores = relationship("JobScore", back_populates="job")
@@ -144,19 +165,21 @@ class TDDSchemaManager:
 
             # Constraints
             __table_args__ = (
-                CheckConstraint('salary_min >= 0', name='check_salary_min_positive'),
-                CheckConstraint('salary_max >= salary_min', name='check_salary_max_greater_than_min'),
-                Index('idx_jobs_location_industry', 'location', 'industry'),
-                Index('idx_jobs_company_active', 'company_name', 'is_active'),
+                CheckConstraint("salary_min >= 0", name="check_salary_min_positive"),
+                CheckConstraint(
+                    "salary_max >= salary_min", name="check_salary_max_greater_than_min"
+                ),
+                Index("idx_jobs_location_industry", "location", "industry"),
+                Index("idx_jobs_company_active", "company_name", "is_active"),
             )
 
         # Define JobScore model
         class JobScore(self._base_model):
-            __tablename__ = 'job_scores'
+            __tablename__ = "job_scores"
 
             id = Column(Integer, primary_key=True, index=True)
-            user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-            job_id = Column(Integer, ForeignKey('jobs.id'), nullable=False)
+            user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+            job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
             total_score = Column(Float, nullable=False)
             skill_match_score = Column(Float, nullable=True)
             experience_score = Column(Float, nullable=True)
@@ -174,29 +197,40 @@ class TDDSchemaManager:
 
             # Constraints
             __table_args__ = (
-                CheckConstraint('total_score >= 0 AND total_score <= 100', name='check_total_score_range'),
-                CheckConstraint('skill_match_score >= 0 AND skill_match_score <= 100', name='check_skill_score_range'),
-                UniqueConstraint('user_id', 'job_id', 'scoring_algorithm_version', name='unique_user_job_score'),
-                Index('idx_job_scores_user_job', 'user_id', 'job_id'),
-                Index('idx_job_scores_total_score', 'total_score'),
+                CheckConstraint(
+                    "total_score >= 0 AND total_score <= 100", name="check_total_score_range"
+                ),
+                CheckConstraint(
+                    "skill_match_score >= 0 AND skill_match_score <= 100",
+                    name="check_skill_score_range",
+                ),
+                UniqueConstraint(
+                    "user_id", "job_id", "scoring_algorithm_version", name="unique_user_job_score"
+                ),
+                Index("idx_job_scores_user_job", "user_id", "job_id"),
+                Index("idx_job_scores_total_score", "total_score"),
             )
 
         # Define MatchingResult model
         class MatchingResult(self._base_model):
-            __tablename__ = 'matching_results'
+            __tablename__ = "matching_results"
 
             id = Column(Integer, primary_key=True, index=True)
-            user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-            job_id = Column(Integer, ForeignKey('jobs.id'), nullable=False)
-            job_score_id = Column(Integer, ForeignKey('job_scores.id'), nullable=False)
-            match_status = Column(String(20), nullable=False, default="pending")  # pending, matched, rejected
+            user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+            job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+            job_score_id = Column(Integer, ForeignKey("job_scores.id"), nullable=False)
+            match_status = Column(
+                String(20), nullable=False, default="pending"
+            )  # pending, matched, rejected
             recommendation_reason = Column(Text, nullable=True)
             confidence_level = Column(Float, nullable=True)  # 0.0 to 1.0
             is_viewed = Column(Boolean, default=False, nullable=False)
             is_applied = Column(Boolean, default=False, nullable=False)
             matched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
             created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-            updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+            updated_at = Column(
+                DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+            )
 
             # Relationships
             user = relationship("User", back_populates="matching_results")
@@ -205,18 +239,20 @@ class TDDSchemaManager:
 
             # Constraints
             __table_args__ = (
-                CheckConstraint('confidence_level >= 0 AND confidence_level <= 1', name='check_confidence_range'),
-                Index('idx_matching_results_user', 'user_id'),
-                Index('idx_matching_results_status', 'match_status'),
-                Index('idx_matching_results_viewed', 'is_viewed'),
+                CheckConstraint(
+                    "confidence_level >= 0 AND confidence_level <= 1", name="check_confidence_range"
+                ),
+                Index("idx_matching_results_user", "user_id"),
+                Index("idx_matching_results_status", "match_status"),
+                Index("idx_matching_results_viewed", "is_viewed"),
             )
 
         # Define EmailLog model
         class EmailLog(self._base_model):
-            __tablename__ = 'email_logs'
+            __tablename__ = "email_logs"
 
             id = Column(Integer, primary_key=True, index=True)
-            user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+            user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
             email_type = Column(String(50), nullable=False)  # welcome, job_match, notification
             recipient_email = Column(String(255), nullable=False, index=True)
             subject = Column(String(255), nullable=False)
@@ -231,21 +267,23 @@ class TDDSchemaManager:
 
             # Constraints
             __table_args__ = (
-                Index('idx_email_logs_user', 'user_id'),
-                Index('idx_email_logs_status', 'status'),
-                Index('idx_email_logs_type', 'email_type'),
+                Index("idx_email_logs_user", "user_id"),
+                Index("idx_email_logs_status", "status"),
+                Index("idx_email_logs_type", "email_type"),
             )
 
         # Define CSVImport model
         class CSVImport(self._base_model):
-            __tablename__ = 'csv_imports'
+            __tablename__ = "csv_imports"
 
             id = Column(Integer, primary_key=True, index=True)
             filename = Column(String(255), nullable=False)
             file_size = Column(Integer, nullable=False)
             file_hash = Column(String(64), nullable=False, unique=True)  # SHA-256 hash
             import_type = Column(String(50), nullable=False)  # jobs, users, scores
-            status = Column(String(20), nullable=False, default="pending")  # pending, processing, completed, failed
+            status = Column(
+                String(20), nullable=False, default="pending"
+            )  # pending, processing, completed, failed
             total_rows = Column(Integer, nullable=True)
             processed_rows = Column(Integer, default=0, nullable=False)
             success_rows = Column(Integer, default=0, nullable=False)
@@ -257,22 +295,22 @@ class TDDSchemaManager:
 
             # Constraints
             __table_args__ = (
-                CheckConstraint('file_size > 0', name='check_file_size_positive'),
-                CheckConstraint('processed_rows >= 0', name='check_processed_rows_positive'),
-                CheckConstraint('success_rows >= 0', name='check_success_rows_positive'),
-                CheckConstraint('error_rows >= 0', name='check_error_rows_positive'),
-                Index('idx_csv_imports_status', 'status'),
-                Index('idx_csv_imports_type', 'import_type'),
+                CheckConstraint("file_size > 0", name="check_file_size_positive"),
+                CheckConstraint("processed_rows >= 0", name="check_processed_rows_positive"),
+                CheckConstraint("success_rows >= 0", name="check_success_rows_positive"),
+                CheckConstraint("error_rows >= 0", name="check_error_rows_positive"),
+                Index("idx_csv_imports_status", "status"),
+                Index("idx_csv_imports_type", "import_type"),
             )
 
         # Store models for access
         self._models = {
-            'User': User,
-            'Job': Job,
-            'JobScore': JobScore,
-            'MatchingResult': MatchingResult,
-            'EmailLog': EmailLog,
-            'CSVImport': CSVImport
+            "User": User,
+            "Job": Job,
+            "JobScore": JobScore,
+            "MatchingResult": MatchingResult,
+            "EmailLog": EmailLog,
+            "CSVImport": CSVImport,
         }
 
     async def _setup_mock_models(self):
@@ -282,12 +320,12 @@ class TDDSchemaManager:
 
         # Create mock models
         self._models = {
-            'User': MockUserModel(),
-            'Job': MockJobModel(),
-            'JobScore': MockJobScoreModel(),
-            'MatchingResult': MockMatchingResultModel(),
-            'EmailLog': MockEmailLogModel(),
-            'CSVImport': MockCSVImportModel()
+            "User": MockUserModel(),
+            "Job": MockJobModel(),
+            "JobScore": MockJobScoreModel(),
+            "MatchingResult": MockMatchingResultModel(),
+            "EmailLog": MockEmailLogModel(),
+            "CSVImport": MockCSVImportModel(),
         }
 
     def is_initialized(self) -> bool:
@@ -327,16 +365,14 @@ class TDDSchemaManager:
                 return {
                     "success": True,
                     "tables_created": table_names,
-                    "engine_url": str(self._engine.url).replace(self._engine.url.password or '', '***')
+                    "engine_url": str(self._engine.url).replace(
+                        self._engine.url.password or "", "***"
+                    ),
                 }
 
             except Exception as e:
                 logger.error(f"Failed to create tables: {e}")
-                return {
-                    "success": False,
-                    "error": str(e),
-                    "tables_created": []
-                }
+                return {"success": False, "error": str(e), "tables_created": []}
         else:
             # Mock implementation for test compatibility
             return {
@@ -347,8 +383,8 @@ class TDDSchemaManager:
                     "job_scores",
                     "matching_results",
                     "email_logs",
-                    "csv_imports"
-                ]
+                    "csv_imports",
+                ],
             }
 
     async def create_indexes(self) -> Dict[str, Any]:
@@ -363,18 +399,11 @@ class TDDSchemaManager:
                         indexes_created.append(f"{table.name}_{index.name}")
 
                 logger.info(f"Created {len(indexes_created)} indexes successfully")
-                return {
-                    "success": True,
-                    "indexes_created": indexes_created
-                }
+                return {"success": True, "indexes_created": indexes_created}
 
             except Exception as e:
                 logger.error(f"Failed to create indexes: {e}")
-                return {
-                    "success": False,
-                    "error": str(e),
-                    "indexes_created": []
-                }
+                return {"success": False, "error": str(e), "indexes_created": []}
         else:
             # Mock implementation for test compatibility
             return {
@@ -384,8 +413,8 @@ class TDDSchemaManager:
                     "jobs_company_idx",
                     "job_scores_user_job_idx",
                     "matching_results_user_idx",
-                    "email_logs_user_idx"
-                ]
+                    "email_logs_user_idx",
+                ],
             }
 
     async def validate_schema(self) -> Dict[str, Any]:
@@ -406,10 +435,12 @@ class TDDSchemaManager:
 
                 # Validate relationships
                 for model_name, model_class in self._models.items():
-                    if hasattr(model_class, '__tablename__'):
+                    if hasattr(model_class, "__tablename__"):
                         # Check if table exists in metadata
                         if model_class.__tablename__ not in self._metadata.tables:
-                            errors.append(f"Table {model_class.__tablename__} not found in metadata")
+                            errors.append(
+                                f"Table {model_class.__tablename__} not found in metadata"
+                            )
 
                 # Validate constraints
                 if table_count < 6:
@@ -420,7 +451,7 @@ class TDDSchemaManager:
                 "errors": errors,
                 "warnings": warnings,
                 "table_count": table_count,
-                "index_count": index_count
+                "index_count": index_count,
             }
 
         except Exception as e:
@@ -429,51 +460,51 @@ class TDDSchemaManager:
                 "errors": [f"Schema validation failed: {e}"],
                 "warnings": warnings,
                 "table_count": table_count,
-                "index_count": index_count
+                "index_count": index_count,
             }
 
     async def get_model_field_info(self, model_name: str) -> Dict[str, Any]:
         """Get detailed field information for a model"""
         if HAS_SQLALCHEMY and model_name in self._models:
             model_class = self._models[model_name]
-            if hasattr(model_class, '__table__'):
+            if hasattr(model_class, "__table__"):
                 field_info = {}
                 for column in model_class.__table__.columns:
                     field_info[column.name] = {
-                        'type': str(column.type),
-                        'unique': column.unique,
-                        'nullable': column.nullable,
-                        'foreign_key': len(column.foreign_keys) > 0,
-                        'primary_key': column.primary_key,
-                        'default': str(column.default) if column.default else None
+                        "type": str(column.type),
+                        "unique": column.unique,
+                        "nullable": column.nullable,
+                        "foreign_key": len(column.foreign_keys) > 0,
+                        "primary_key": column.primary_key,
+                        "default": str(column.default) if column.default else None,
                     }
                 return field_info
 
         # Fallback mock implementation for test compatibility
-        if model_name == 'User':
+        if model_name == "User":
             return {
-                'id': {'type': 'Integer', 'unique': False},
-                'email': {'type': 'String', 'unique': True},
-                'hashed_password': {'type': 'String', 'unique': False},
-                'is_active': {'type': 'Boolean', 'unique': False},
-                'created_at': {'type': 'DateTime', 'unique': False}
+                "id": {"type": "Integer", "unique": False},
+                "email": {"type": "String", "unique": True},
+                "hashed_password": {"type": "String", "unique": False},
+                "is_active": {"type": "Boolean", "unique": False},
+                "created_at": {"type": "DateTime", "unique": False},
             }
-        elif model_name == 'Job':
+        elif model_name == "Job":
             return {
-                'id': {'type': 'Integer', 'unique': False},
-                'title': {'type': 'String', 'unique': False},
-                'salary_min': {'type': 'Numeric', 'unique': False},
-                'salary_max': {'type': 'Numeric', 'unique': False},
-                'posted_date': {'type': 'Date', 'unique': False},
-                'is_active': {'type': 'Boolean', 'unique': False}
+                "id": {"type": "Integer", "unique": False},
+                "title": {"type": "String", "unique": False},
+                "salary_min": {"type": "Numeric", "unique": False},
+                "salary_max": {"type": "Numeric", "unique": False},
+                "posted_date": {"type": "Date", "unique": False},
+                "is_active": {"type": "Boolean", "unique": False},
             }
-        elif model_name == 'JobScore':
+        elif model_name == "JobScore":
             return {
-                'id': {'type': 'Integer', 'unique': False},
-                'total_score': {'type': 'Float', 'unique': False},
-                'skill_match_score': {'type': 'Float', 'unique': False},
-                'user_id': {'type': 'Integer', 'foreign_key': True},
-                'job_id': {'type': 'Integer', 'foreign_key': True}
+                "id": {"type": "Integer", "unique": False},
+                "total_score": {"type": "Float", "unique": False},
+                "skill_match_score": {"type": "Float", "unique": False},
+                "user_id": {"type": "Integer", "foreign_key": True},
+                "job_id": {"type": "Integer", "foreign_key": True},
             }
         else:
             return {}
@@ -498,11 +529,13 @@ class MockBase:
 
 class MockMetadata:
     """Mock SQLAlchemy metadata"""
+
     pass
 
 
 class MockRegistry:
     """Mock SQLAlchemy registry"""
+
     pass
 
 

@@ -4,17 +4,25 @@
 バッチジョブ管理、メール生成、データインポートに関するビジネスロジック
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, date
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import UploadFile
 import logging
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.batch import (
-    BatchJob, BatchJobRequest, BatchJobProgress, EmailTemplate,
-    EmailGenerationRequest, EmailQueue, EmailDeliveryStats,
-    DataImportResult, ScheduledTask, BatchPerformanceMetrics,
-    SystemMaintenanceRequest
+    BatchJob,
+    BatchJobProgress,
+    BatchJobRequest,
+    BatchPerformanceMetrics,
+    DataImportResult,
+    EmailDeliveryStats,
+    EmailGenerationRequest,
+    EmailQueue,
+    EmailTemplate,
+    ScheduledTask,
+    SystemMaintenanceRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +40,7 @@ class BatchService:
         sort_by: str = "started_at",
         sort_order: str = "desc",
         page: int = 1,
-        size: int = 20
+        size: int = 20,
     ) -> Dict[str, Any]:
         """バッチジョブ検索"""
         # 実装簡略化
@@ -58,7 +66,9 @@ class BatchService:
         # 実装簡略化
         pass
 
-    async def get_email_templates(self, category: Optional[str] = None, is_active: bool = True) -> List[EmailTemplate]:
+    async def get_email_templates(
+        self, category: Optional[str] = None, is_active: bool = True
+    ) -> List[EmailTemplate]:
         """メールテンプレート一覧取得"""
         # 実装簡略化
         pass
@@ -74,10 +84,7 @@ class BatchService:
         pass
 
     async def get_email_delivery_stats(
-        self,
-        period_start: str,
-        period_end: str,
-        template_id: Optional[str] = None
+        self, period_start: str, period_end: str, template_id: Optional[str] = None
     ) -> EmailDeliveryStats:
         """メール配信統計取得"""
         # 実装簡略化
@@ -89,13 +96,15 @@ class BatchService:
         import_type: str,
         mapping_config: str,
         duplicate_handling: str = "skip",
-        dry_run: bool = False
+        dry_run: bool = False,
     ) -> DataImportResult:
         """データインポート"""
         # 実装簡略化
         pass
 
-    async def get_scheduled_tasks(self, is_active: bool = True, task_type: Optional[str] = None) -> List[ScheduledTask]:
+    async def get_scheduled_tasks(
+        self, is_active: bool = True, task_type: Optional[str] = None
+    ) -> List[ScheduledTask]:
         """スケジュールタスク一覧取得"""
         # 実装簡略化
         pass
@@ -105,7 +114,9 @@ class BatchService:
         # 実装簡略化
         pass
 
-    async def get_performance_metrics(self, period_days: int = 7, job_type: Optional[str] = None) -> BatchPerformanceMetrics:
+    async def get_performance_metrics(
+        self, period_days: int = 7, job_type: Optional[str] = None
+    ) -> BatchPerformanceMetrics:
         """バッチパフォーマンス指標取得"""
         # 実装簡略化
         pass
@@ -115,7 +126,9 @@ class BatchService:
         # 実装簡略化
         pass
 
-    async def run_data_cleanup(self, cleanup_type: str, days_to_keep: int, dry_run: bool = True) -> Dict[str, Any]:
+    async def run_data_cleanup(
+        self, cleanup_type: str, days_to_keep: int, dry_run: bool = True
+    ) -> Dict[str, Any]:
         """データクリーンアップ実行"""
         # 実装簡略化
         pass

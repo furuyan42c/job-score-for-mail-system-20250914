@@ -3,14 +3,14 @@ Security utilities for user authentication
 Implements secure password hashing using bcrypt and JWT token management
 """
 
-import bcrypt
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import bcrypt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
-
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -157,8 +157,9 @@ async def verify_api_key(token: str, db) -> Optional[Any]:
     Returns:
         User if valid, None otherwise
     """
-    from app.models.user import User
     from sqlalchemy import select
+
+    from app.models.user import User
 
     try:
         payload = decode_token(token)
@@ -166,9 +167,7 @@ async def verify_api_key(token: str, db) -> Optional[Any]:
         if not email:
             return None
 
-        result = await db.execute(
-            select(User).where(User.email == email)
-        )
+        result = await db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
     except Exception:
         return None
@@ -226,9 +225,4 @@ def validate_password_strength(password: str) -> Dict[str, Any]:
     else:
         strength = "strong"
 
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "score": score,
-        "strength": strength
-    }
+    return {"valid": len(errors) == 0, "errors": errors, "score": score, "strength": strength}

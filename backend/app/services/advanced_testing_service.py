@@ -16,22 +16,22 @@ Tasks: T051-T060 - Advanced Testing & Optimization
 """
 
 import asyncio
-import logging
-import time
-import statistics
-import tracemalloc
-import psutil
-import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-import uuid
 import concurrent.futures
+import json
+import logging
+import statistics
+import time
+import tracemalloc
+import uuid
 from contextlib import asynccontextmanager
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import aiohttp
 import aioredis
+import psutil
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,8 +41,10 @@ logger = logging.getLogger(__name__)
 # ENUMS AND CONSTANTS
 # ============================================================================
 
+
 class TestType(str, Enum):
     """Types of tests."""
+
     PERFORMANCE = "performance"
     LOAD = "load"
     STRESS = "stress"
@@ -52,8 +54,10 @@ class TestType(str, Enum):
     INTEGRATION = "integration"
     API_BENCHMARK = "api_benchmark"
 
+
 class OptimizationType(str, Enum):
     """Types of optimizations."""
+
     DATABASE_QUERY = "database_query"
     CACHE_STRATEGY = "cache_strategy"
     MEMORY_USAGE = "memory_usage"
@@ -61,21 +65,26 @@ class OptimizationType(str, Enum):
     NETWORK_IO = "network_io"
     DISK_IO = "disk_io"
 
+
 class TestStatus(str, Enum):
     """Test execution status."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+
 # ============================================================================
 # DATA MODELS
 # ============================================================================
 
+
 @dataclass
 class PerformanceMetrics:
     """Performance measurement results."""
+
     response_time_ms: float
     memory_usage_mb: float
     cpu_usage_percent: float
@@ -88,9 +97,11 @@ class PerformanceMetrics:
     concurrent_users: int
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
+
 @dataclass
 class TestConfiguration:
     """Test configuration parameters."""
+
     test_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     test_type: TestType = TestType.PERFORMANCE
     name: str = ""
@@ -106,9 +117,11 @@ class TestConfiguration:
     created_by: str = ""
     created_at: datetime = field(default_factory=datetime.utcnow)
 
+
 @dataclass
 class TestResult:
     """Complete test execution results."""
+
     test_id: str
     config: TestConfiguration
     status: TestStatus
@@ -129,9 +142,11 @@ class TestResult:
     errors: List[Dict[str, Any]] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
 
+
 @dataclass
 class ABTestVariant:
     """A/B test variant configuration."""
+
     variant_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     description: str = ""
@@ -140,9 +155,11 @@ class ABTestVariant:
     is_control: bool = False
     metrics: Dict[str, float] = field(default_factory=dict)
 
+
 @dataclass
 class ABTestExperiment:
     """A/B test experiment."""
+
     experiment_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     description: str = ""
@@ -155,9 +172,11 @@ class ABTestExperiment:
     confidence_level: float = 0.95
     results: Dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class OptimizationRecommendation:
     """Optimization recommendation."""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     type: OptimizationType
     title: str = ""
@@ -169,9 +188,11 @@ class OptimizationRecommendation:
     priority_score: float = 0.0
     created_at: datetime = field(default_factory=datetime.utcnow)
 
+
 # ============================================================================
 # ADVANCED TESTING SERVICE
 # ============================================================================
+
 
 class AdvancedTestingService:
     """Service for advanced testing and optimization."""
@@ -185,10 +206,7 @@ class AdvancedTestingService:
     # PERFORMANCE TESTING
     # ========================================================================
 
-    async def run_performance_test(
-        self,
-        config: TestConfiguration
-    ) -> TestResult:
+    async def run_performance_test(self, config: TestConfiguration) -> TestResult:
         """Execute a comprehensive performance test."""
         try:
             # Initialize test result
@@ -196,7 +214,7 @@ class AdvancedTestingService:
                 test_id=config.test_id,
                 config=config,
                 status=TestStatus.RUNNING,
-                start_time=datetime.utcnow()
+                start_time=datetime.utcnow(),
             )
 
             self.active_tests[config.test_id] = test_result
@@ -225,7 +243,9 @@ class AdvancedTestingService:
             # Complete test
             test_result.status = TestStatus.COMPLETED
             test_result.end_time = datetime.utcnow()
-            test_result.duration_seconds = (test_result.end_time - test_result.start_time).total_seconds()
+            test_result.duration_seconds = (
+                test_result.end_time - test_result.start_time
+            ).total_seconds()
 
             logger.info(f"Performance test {config.test_id} completed")
             return test_result
@@ -233,22 +253,20 @@ class AdvancedTestingService:
         except Exception as e:
             logger.error(f"Performance test failed: {e}")
             test_result.status = TestStatus.FAILED
-            test_result.errors.append({
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-                "traceback": tracemalloc.format_exc() if tracemalloc.is_tracing() else str(e)
-            })
+            test_result.errors.append(
+                {
+                    "error": str(e),
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "traceback": tracemalloc.format_exc() if tracemalloc.is_tracing() else str(e),
+                }
+            )
             return test_result
 
         finally:
             if tracemalloc.is_tracing():
                 tracemalloc.stop()
 
-    async def _run_basic_performance_test(
-        self,
-        config: TestConfiguration,
-        result: TestResult
-    ):
+    async def _run_basic_performance_test(self, config: TestConfiguration, result: TestResult):
         """Run basic performance test."""
         response_times = []
         errors = []
@@ -267,10 +285,7 @@ class AdvancedTestingService:
                 result.successful_requests += 1
 
             except Exception as e:
-                errors.append({
-                    "error": str(e),
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                errors.append({"error": str(e), "timestamp": datetime.utcnow().isoformat()})
                 result.failed_requests += 1
 
         # Execute test
@@ -287,18 +302,22 @@ class AdvancedTestingService:
             result.avg_response_time = statistics.mean(response_times)
             result.min_response_time = min(response_times)
             result.max_response_time = max(response_times)
-            result.p95_response_time = statistics.quantiles(response_times, n=20)[18]  # 95th percentile
-            result.p99_response_time = statistics.quantiles(response_times, n=100)[98]  # 99th percentile
+            result.p95_response_time = statistics.quantiles(response_times, n=20)[
+                18
+            ]  # 95th percentile
+            result.p99_response_time = statistics.quantiles(response_times, n=100)[
+                98
+            ]  # 99th percentile
 
         result.total_requests = result.successful_requests + result.failed_requests
-        result.error_rate = (result.failed_requests / result.total_requests * 100) if result.total_requests > 0 else 0
+        result.error_rate = (
+            (result.failed_requests / result.total_requests * 100)
+            if result.total_requests > 0
+            else 0
+        )
         result.errors.extend(errors)
 
-    async def _run_load_test(
-        self,
-        config: TestConfiguration,
-        result: TestResult
-    ):
+    async def _run_load_test(self, config: TestConfiguration, result: TestResult):
         """Run load test with gradual ramp-up."""
         start_time = time.time()
         end_time = start_time + config.duration_seconds
@@ -330,10 +349,9 @@ class AdvancedTestingService:
             for response in responses:
                 if isinstance(response, Exception):
                     result.failed_requests += 1
-                    result.errors.append({
-                        "error": str(response),
-                        "timestamp": datetime.utcnow().isoformat()
-                    })
+                    result.errors.append(
+                        {"error": str(response), "timestamp": datetime.utcnow().isoformat()}
+                    )
                 else:
                     result.successful_requests += 1
 
@@ -341,11 +359,7 @@ class AdvancedTestingService:
 
         result.total_requests = result.successful_requests + result.failed_requests
 
-    async def _run_stress_test(
-        self,
-        config: TestConfiguration,
-        result: TestResult
-    ):
+    async def _run_stress_test(self, config: TestConfiguration, result: TestResult):
         """Run stress test to find breaking point."""
         current_load = config.concurrent_users
         load_increment = config.concurrent_users // 4
@@ -358,22 +372,30 @@ class AdvancedTestingService:
             test_metrics = await self._run_load_burst(current_load, config)
 
             # Check if we've reached the breaking point
-            error_rate = (test_metrics['failed_requests'] / test_metrics['total_requests'] * 100) if test_metrics['total_requests'] > 0 else 0
+            error_rate = (
+                (test_metrics["failed_requests"] / test_metrics["total_requests"] * 100)
+                if test_metrics["total_requests"] > 0
+                else 0
+            )
 
-            result.metrics.append(PerformanceMetrics(
-                response_time_ms=test_metrics['avg_response_time'],
-                memory_usage_mb=test_metrics['memory_usage'],
-                cpu_usage_percent=test_metrics['cpu_usage'],
-                disk_io_mb=0,
-                network_io_mb=0,
-                queries_executed=test_metrics['total_requests'],
-                cache_hit_rate=0,
-                error_rate=error_rate,
-                throughput_rps=test_metrics['throughput'],
-                concurrent_users=current_load
-            ))
+            result.metrics.append(
+                PerformanceMetrics(
+                    response_time_ms=test_metrics["avg_response_time"],
+                    memory_usage_mb=test_metrics["memory_usage"],
+                    cpu_usage_percent=test_metrics["cpu_usage"],
+                    disk_io_mb=0,
+                    network_io_mb=0,
+                    queries_executed=test_metrics["total_requests"],
+                    cache_hit_rate=0,
+                    error_rate=error_rate,
+                    throughput_rps=test_metrics["throughput"],
+                    concurrent_users=current_load,
+                )
+            )
 
-            if error_rate > max_error_rate or test_metrics['avg_response_time'] > 5000:  # 5 second threshold
+            if (
+                error_rate > max_error_rate or test_metrics["avg_response_time"] > 5000
+            ):  # 5 second threshold
                 logger.info(f"Breaking point reached at {current_load} users")
                 break
 
@@ -383,30 +405,24 @@ class AdvancedTestingService:
             if current_load > config.concurrent_users * 10:
                 break
 
-    async def _run_api_benchmark(
-        self,
-        config: TestConfiguration,
-        result: TestResult
-    ):
+    async def _run_api_benchmark(self, config: TestConfiguration, result: TestResult):
         """Run API-specific benchmark tests."""
-        endpoints = config.test_data.get('endpoints', [config.target_endpoint])
+        endpoints = config.test_data.get("endpoints", [config.target_endpoint])
 
         for endpoint in endpoints:
             logger.info(f"Benchmarking endpoint: {endpoint}")
 
             # Test various scenarios
             scenarios = [
-                {'users': 1, 'duration': 10},      # Single user baseline
-                {'users': 10, 'duration': 30},     # Normal load
-                {'users': 50, 'duration': 60},     # High load
-                {'users': 100, 'duration': 30}     # Peak load
+                {"users": 1, "duration": 10},  # Single user baseline
+                {"users": 10, "duration": 30},  # Normal load
+                {"users": 50, "duration": 60},  # High load
+                {"users": 100, "duration": 30},  # Peak load
             ]
 
             for scenario in scenarios:
                 scenario_metrics = await self._benchmark_endpoint(
-                    endpoint,
-                    scenario['users'],
-                    scenario['duration']
+                    endpoint, scenario["users"], scenario["duration"]
                 )
 
                 result.metrics.append(scenario_metrics)
@@ -418,6 +434,7 @@ class AdvancedTestingService:
 
         # Simulate occasional errors
         import random
+
         if random.random() < 0.05:  # 5% error rate
             raise Exception("Simulated operation error")
 
@@ -429,27 +446,27 @@ class AdvancedTestingService:
 
         try:
             # Simulate multiple operations in a session
-            operations = config.test_data.get('operations', ['login', 'browse', 'search'])
+            operations = config.test_data.get("operations", ["login", "browse", "search"])
 
             for operation in operations:
-                await self._simulate_operation(f"{config.target_endpoint}/{operation}", config.test_data)
+                await self._simulate_operation(
+                    f"{config.target_endpoint}/{operation}", config.test_data
+                )
                 await asyncio.sleep(config.think_time_ms / 1000)
 
             session_time = time.time() - session_start
             return {
                 "status": "success",
                 "session_time": session_time,
-                "operations": len(operations)
+                "operations": len(operations),
             }
 
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "session_time": time.time() - session_start
-            }
+            return {"status": "error", "error": str(e), "session_time": time.time() - session_start}
 
-    async def _run_load_burst(self, concurrent_users: int, config: TestConfiguration) -> Dict[str, Any]:
+    async def _run_load_burst(
+        self, concurrent_users: int, config: TestConfiguration
+    ) -> Dict[str, Any]:
         """Run a burst of load testing."""
         start_time = time.time()
         successful_requests = 0
@@ -481,21 +498,18 @@ class AdvancedTestingService:
         cpu_usage = process.cpu_percent()
 
         return {
-            'total_requests': total_requests,
-            'successful_requests': successful_requests,
-            'failed_requests': failed_requests,
-            'avg_response_time': statistics.mean(response_times) if response_times else 0,
-            'throughput': total_requests / duration if duration > 0 else 0,
-            'memory_usage': memory_usage,
-            'cpu_usage': cpu_usage,
-            'duration': duration
+            "total_requests": total_requests,
+            "successful_requests": successful_requests,
+            "failed_requests": failed_requests,
+            "avg_response_time": statistics.mean(response_times) if response_times else 0,
+            "throughput": total_requests / duration if duration > 0 else 0,
+            "memory_usage": memory_usage,
+            "cpu_usage": cpu_usage,
+            "duration": duration,
         }
 
     async def _benchmark_endpoint(
-        self,
-        endpoint: str,
-        concurrent_users: int,
-        duration_seconds: int
+        self, endpoint: str, concurrent_users: int, duration_seconds: int
     ) -> PerformanceMetrics:
         """Benchmark a specific endpoint."""
         start_time = time.time()
@@ -543,7 +557,7 @@ class AdvancedTestingService:
             cache_hit_rate=0,
             error_rate=error_rate,
             throughput_rps=throughput,
-            concurrent_users=concurrent_users
+            concurrent_users=concurrent_users,
         )
 
     async def _time_request(self, endpoint: str) -> float:
@@ -585,7 +599,7 @@ class AdvancedTestingService:
             cache_hit_rate=0,
             error_rate=0,
             throughput_rps=0,
-            concurrent_users=0
+            concurrent_users=0,
         )
 
     def _calculate_final_metrics(self, result: TestResult):
@@ -615,7 +629,7 @@ class AdvancedTestingService:
         variants: List[ABTestVariant],
         success_metrics: List[str],
         sample_size: int = 1000,
-        confidence_level: float = 0.95
+        confidence_level: float = 0.95,
     ) -> ABTestExperiment:
         """Create a new A/B test experiment."""
         experiment = ABTestExperiment(
@@ -624,7 +638,7 @@ class AdvancedTestingService:
             variants=variants,
             success_metrics=success_metrics,
             sample_size=sample_size,
-            confidence_level=confidence_level
+            confidence_level=confidence_level,
         )
 
         # Validate variants
@@ -643,9 +657,7 @@ class AdvancedTestingService:
         return experiment
 
     async def assign_user_to_variant(
-        self,
-        experiment_id: str,
-        user_id: str
+        self, experiment_id: str, user_id: str
     ) -> Optional[ABTestVariant]:
         """Assign a user to an A/B test variant."""
         experiment = self.ab_experiments.get(experiment_id)
@@ -654,6 +666,7 @@ class AdvancedTestingService:
 
         # Simple hash-based assignment for consistent results
         import hashlib
+
         hash_input = f"{experiment_id}_{user_id}".encode()
         hash_value = int(hashlib.md5(hash_input).hexdigest(), 16)
         percentage = (hash_value % 100) + 1
@@ -669,11 +682,7 @@ class AdvancedTestingService:
         return next(v for v in experiment.variants if v.is_control)
 
     async def record_ab_test_metric(
-        self,
-        experiment_id: str,
-        variant_id: str,
-        metric_name: str,
-        value: float
+        self, experiment_id: str, variant_id: str, metric_name: str, value: float
     ):
         """Record a metric value for an A/B test variant."""
         experiment = self.ab_experiments.get(experiment_id)
@@ -691,10 +700,7 @@ class AdvancedTestingService:
 
         variant.metrics[metric_name] += value
 
-    async def analyze_ab_test_results(
-        self,
-        experiment_id: str
-    ) -> Dict[str, Any]:
+    async def analyze_ab_test_results(self, experiment_id: str) -> Dict[str, Any]:
         """Analyze A/B test results and determine statistical significance."""
         experiment = self.ab_experiments.get(experiment_id)
         if not experiment:
@@ -709,7 +715,7 @@ class AdvancedTestingService:
             "variants": [],
             "winner": None,
             "confidence": 0.0,
-            "statistical_significance": False
+            "statistical_significance": False,
         }
 
         for variant in experiment.variants:
@@ -718,7 +724,7 @@ class AdvancedTestingService:
                 "name": variant.name,
                 "is_control": variant.is_control,
                 "metrics": variant.metrics,
-                "performance_vs_control": {}
+                "performance_vs_control": {},
             }
 
             # Compare against control
@@ -732,7 +738,7 @@ class AdvancedTestingService:
                         variant_results["performance_vs_control"][metric_name] = {
                             "improvement_percent": improvement,
                             "control_value": control_value,
-                            "variant_value": variant_value
+                            "variant_value": variant_value,
                         }
 
             results["variants"].append(variant_results)
@@ -774,10 +780,7 @@ class AdvancedTestingService:
     # OPTIMIZATION RECOMMENDATIONS
     # ========================================================================
 
-    async def _generate_recommendations(
-        self,
-        test_result: TestResult
-    ) -> List[str]:
+    async def _generate_recommendations(self, test_result: TestResult) -> List[str]:
         """Generate optimization recommendations based on test results."""
         recommendations = []
 
@@ -812,14 +815,14 @@ class AdvancedTestingService:
                 )
 
         if not recommendations:
-            recommendations.append("パフォーマンスは良好です。現在の最適化レベルを維持してください。")
+            recommendations.append(
+                "パフォーマンスは良好です。現在の最適化レベルを維持してください。"
+            )
 
         return recommendations
 
     async def generate_optimization_recommendations(
-        self,
-        metrics_history: List[PerformanceMetrics],
-        current_config: Dict[str, Any]
+        self, metrics_history: List[PerformanceMetrics], current_config: Dict[str, Any]
     ) -> List[OptimizationRecommendation]:
         """Generate comprehensive optimization recommendations."""
         recommendations = []
@@ -834,58 +837,66 @@ class AdvancedTestingService:
         # Database optimization
         avg_queries = statistics.mean(m.queries_executed for m in recent_metrics)
         if avg_queries > 100:
-            recommendations.append(OptimizationRecommendation(
-                type=OptimizationType.DATABASE_QUERY,
-                title="データベースクエリの最適化",
-                description=f"平均 {avg_queries:.0f} クエリ/リクエスト - インデックスの追加や結合の最適化を検討",
-                impact="high",
-                effort="medium",
-                implementation="インデックス分析、クエリプラン確認、N+1問題の解決",
-                expected_improvement="応答時間 30-50% 改善",
-                priority_score=8.5
-            ))
+            recommendations.append(
+                OptimizationRecommendation(
+                    type=OptimizationType.DATABASE_QUERY,
+                    title="データベースクエリの最適化",
+                    description=f"平均 {avg_queries:.0f} クエリ/リクエスト - インデックスの追加や結合の最適化を検討",
+                    impact="high",
+                    effort="medium",
+                    implementation="インデックス分析、クエリプラン確認、N+1問題の解決",
+                    expected_improvement="応答時間 30-50% 改善",
+                    priority_score=8.5,
+                )
+            )
 
         # Cache optimization
         avg_cache_hit = statistics.mean(m.cache_hit_rate for m in recent_metrics)
         if avg_cache_hit < 70:
-            recommendations.append(OptimizationRecommendation(
-                type=OptimizationType.CACHE_STRATEGY,
-                title="キャッシュ戦略の改善",
-                description=f"キャッシュヒット率 {avg_cache_hit:.1f}% - キャッシュ戦略の見直しが必要",
-                impact="medium",
-                effort="low",
-                implementation="Redis実装、TTL最適化、キャッシュキー設計見直し",
-                expected_improvement="データベース負荷 40-60% 削減",
-                priority_score=7.0
-            ))
+            recommendations.append(
+                OptimizationRecommendation(
+                    type=OptimizationType.CACHE_STRATEGY,
+                    title="キャッシュ戦略の改善",
+                    description=f"キャッシュヒット率 {avg_cache_hit:.1f}% - キャッシュ戦略の見直しが必要",
+                    impact="medium",
+                    effort="low",
+                    implementation="Redis実装、TTL最適化、キャッシュキー設計見直し",
+                    expected_improvement="データベース負荷 40-60% 削減",
+                    priority_score=7.0,
+                )
+            )
 
         # Memory optimization
         avg_memory = statistics.mean(m.memory_usage_mb for m in recent_metrics)
         if avg_memory > 1000:
-            recommendations.append(OptimizationRecommendation(
-                type=OptimizationType.MEMORY_USAGE,
-                title="メモリ使用量の最適化",
-                description=f"平均メモリ使用量 {avg_memory:.0f}MB - メモリ効率の改善が必要",
-                impact="medium",
-                effort="high",
-                implementation="メモリプロファイリング、オブジェクトプール、遅延読み込み",
-                expected_improvement="メモリ使用量 20-30% 削減",
-                priority_score=6.5
-            ))
+            recommendations.append(
+                OptimizationRecommendation(
+                    type=OptimizationType.MEMORY_USAGE,
+                    title="メモリ使用量の最適化",
+                    description=f"平均メモリ使用量 {avg_memory:.0f}MB - メモリ効率の改善が必要",
+                    impact="medium",
+                    effort="high",
+                    implementation="メモリプロファイリング、オブジェクトプール、遅延読み込み",
+                    expected_improvement="メモリ使用量 20-30% 削減",
+                    priority_score=6.5,
+                )
+            )
 
         # CPU optimization
         avg_cpu = statistics.mean(m.cpu_usage_percent for m in recent_metrics)
         if avg_cpu > 80:
-            recommendations.append(OptimizationRecommendation(
-                type=OptimizationType.CPU_USAGE,
-                title="CPU使用率の最適化",
-                description=f"平均CPU使用率 {avg_cpu:.1f}% - CPU集約的処理の最適化が必要",
-                impact="high",
-                effort="high",
-                implementation="アルゴリズム最適化、並列処理、非同期処理導入",
-                expected_improvement="CPU使用率 15-25% 削減",
-                priority_score=8.0
-            ))
+            recommendations.append(
+                OptimizationRecommendation(
+                    type=OptimizationType.CPU_USAGE,
+                    title="CPU使用率の最適化",
+                    description=f"平均CPU使用率 {avg_cpu:.1f}% - CPU集約的処理の最適化が必要",
+                    impact="high",
+                    effort="high",
+                    implementation="アルゴリズム最適化、並列処理、非同期処理導入",
+                    expected_improvement="CPU使用率 15-25% 削減",
+                    priority_score=8.0,
+                )
+            )
 
         # Sort by priority
         recommendations.sort(key=lambda x: x.priority_score, reverse=True)
@@ -898,20 +909,18 @@ class AdvancedTestingService:
     # ========================================================================
 
     async def run_security_scan(
-        self,
-        target_url: str,
-        test_types: List[str] = None
+        self, target_url: str, test_types: List[str] = None
     ) -> Dict[str, Any]:
         """Run security vulnerability scan."""
         if test_types is None:
-            test_types = ['sql_injection', 'xss', 'auth_bypass', 'rate_limit']
+            test_types = ["sql_injection", "xss", "auth_bypass", "rate_limit"]
 
         results = {
             "target": target_url,
             "scan_time": datetime.utcnow().isoformat(),
             "vulnerabilities": [],
             "risk_score": 0,
-            "recommendations": []
+            "recommendations": [],
         }
 
         for test_type in test_types:
@@ -924,22 +933,20 @@ class AdvancedTestingService:
         results["risk_score"] = max(risk_scores) if risk_scores else 0
 
         # Generate security recommendations
-        results["recommendations"] = self._generate_security_recommendations(results["vulnerabilities"])
+        results["recommendations"] = self._generate_security_recommendations(
+            results["vulnerabilities"]
+        )
 
         return results
 
-    async def _run_security_test(
-        self,
-        target_url: str,
-        test_type: str
-    ) -> Optional[Dict[str, Any]]:
+    async def _run_security_test(self, target_url: str, test_type: str) -> Optional[Dict[str, Any]]:
         """Run a specific security test."""
         # Mock security testing - in real implementation, use proper security tools
         test_payloads = {
-            'sql_injection': ["' OR 1=1--", "'; DROP TABLE users;--"],
-            'xss': ["<script>alert('xss')</script>", "<img src=x onerror=alert(1)>"],
-            'auth_bypass': ["admin", "administrator"],
-            'rate_limit': ["rate_limit_test"]
+            "sql_injection": ["' OR 1=1--", "'; DROP TABLE users;--"],
+            "xss": ["<script>alert('xss')</script>", "<img src=x onerror=alert(1)>"],
+            "auth_bypass": ["admin", "administrator"],
+            "rate_limit": ["rate_limit_test"],
         }
 
         payloads = test_payloads.get(test_type, [])
@@ -950,20 +957,20 @@ class AdvancedTestingService:
 
             # Mock vulnerability detection (randomly for demo)
             import random
+
             if random.random() < 0.1:  # 10% chance of finding vulnerability
                 return {
                     "type": test_type,
                     "payload": payload,
                     "severity": random.randint(1, 10),
                     "description": f"Potential {test_type} vulnerability detected",
-                    "recommendation": f"Implement proper input validation and sanitization for {test_type}"
+                    "recommendation": f"Implement proper input validation and sanitization for {test_type}",
                 }
 
         return None
 
     def _generate_security_recommendations(
-        self,
-        vulnerabilities: List[Dict[str, Any]]
+        self, vulnerabilities: List[Dict[str, Any]]
     ) -> List[str]:
         """Generate security recommendations based on found vulnerabilities."""
         recommendations = []
@@ -1005,9 +1012,7 @@ class AdvancedTestingService:
         return False
 
     async def get_test_history(
-        self,
-        limit: int = 50,
-        test_type: Optional[TestType] = None
+        self, limit: int = 50, test_type: Optional[TestType] = None
     ) -> List[TestResult]:
         """Get test execution history."""
         tests = list(self.active_tests.values())
@@ -1019,6 +1024,7 @@ class AdvancedTestingService:
         tests.sort(key=lambda x: x.start_time, reverse=True)
 
         return tests[:limit]
+
 
 # ============================================================================
 # SERVICE INSTANCE

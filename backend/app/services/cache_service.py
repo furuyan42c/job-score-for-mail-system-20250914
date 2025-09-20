@@ -9,22 +9,23 @@ T055: Cache Implementation
 """
 
 import asyncio
-import json
-import pickle
+import functools
 import hashlib
-import time
+import json
 import logging
-from typing import Any, Dict, List, Optional, Union, Callable, TypeVar, Generic
-from dataclasses import dataclass, asdict
+import pickle
+import threading
+import time
+import weakref
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-import functools
-import threading
-from concurrent.futures import ThreadPoolExecutor
-import weakref
+from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -34,11 +35,12 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class CacheLevel(Enum):
     """キャッシュレベル"""
+
     MEMORY = "memory"
     REDIS = "redis"
     PERSISTENT = "persistent"
@@ -46,17 +48,19 @@ class CacheLevel(Enum):
 
 class CacheStrategy(Enum):
     """キャッシュ戦略"""
-    LRU = "lru"              # Least Recently Used
-    LFU = "lfu"              # Least Frequently Used
-    TTL = "ttl"              # Time To Live
-    WRITE_THROUGH = "write_through"    # 書き込み時キャッシュ更新
-    WRITE_BACK = "write_back"          # 遅延書き込み
-    WRITE_AROUND = "write_around"      # キャッシュバイパス
+
+    LRU = "lru"  # Least Recently Used
+    LFU = "lfu"  # Least Frequently Used
+    TTL = "ttl"  # Time To Live
+    WRITE_THROUGH = "write_through"  # 書き込み時キャッシュ更新
+    WRITE_BACK = "write_back"  # 遅延書き込み
+    WRITE_AROUND = "write_around"  # キャッシュバイパス
 
 
 @dataclass
 class CacheEntry:
     """キャッシュエントリ"""
+
     key: str
     value: Any
     created_at: datetime
@@ -91,6 +95,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """キャッシュ統計"""
+
     hits: int = 0
     misses: int = 0
     evictions: int = 0
@@ -119,7 +124,7 @@ class MemoryCache:
         max_size: int = 1000,
         max_memory_mb: int = 100,
         default_ttl: Optional[float] = 3600.0,
-        strategy: CacheStrategy = CacheStrategy.LRU
+        strategy: CacheStrategy = CacheStrategy.LRU,
     ):
         self.max_size = max_size
         self.max_memory_bytes = max_memory_mb * 1024 * 1024
@@ -185,18 +190,13 @@ class MemoryCache:
             # アクセス時間更新
             access_time = time.time() - start_time
             self._stats.avg_access_time = (
-                (self._stats.avg_access_time * (self._stats.hits - 1) + access_time) / self._stats.hits
-            )
+                self._stats.avg_access_time * (self._stats.hits - 1) + access_time
+            ) / self._stats.hits
             self._stats.update_hit_rate()
 
             return entry.value
 
-    async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[float] = None
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> bool:
         """値設定"""
         ttl = ttl or self.default_ttl
 
@@ -207,7 +207,7 @@ class MemoryCache:
             created_at=datetime.now(),
             last_accessed=datetime.now(),
             ttl_seconds=ttl,
-            size_bytes=self._estimate_size(value)
+            size_bytes=self._estimate_size(value),
         )
 
         with self._lock:
@@ -267,22 +267,13 @@ class MemoryCache:
 
         if self.strategy == CacheStrategy.LRU:
             # 最も古いアクセスのエントリを削除
-            sorted_entries = sorted(
-                self._cache.items(),
-                key=lambda x: x[1].last_accessed
-            )
+            sorted_entries = sorted(self._cache.items(), key=lambda x: x[1].last_accessed)
         elif self.strategy == CacheStrategy.LFU:
             # 最もアクセス頻度の低いエントリを削除
-            sorted_entries = sorted(
-                self._cache.items(),
-                key=lambda x: x[1].access_count
-            )
+            sorted_entries = sorted(self._cache.items(), key=lambda x: x[1].access_count)
         else:  # TTL
             # 最も古いエントリを削除
-            sorted_entries = sorted(
-                self._cache.items(),
-                key=lambda x: x[1].created_at
-            )
+            sorted_entries = sorted(self._cache.items(), key=lambda x: x[1].created_at)
 
         for key, entry in sorted_entries[:target_evictions]:
             del self._cache[key]
@@ -330,15 +321,14 @@ class MemoryCache:
         except Exception:
             # フォールバック推定
             if isinstance(value, str):
-                return len(value.encode('utf-8'))
+                return len(value.encode("utf-8"))
             elif isinstance(value, (int, float)):
                 return 8
             elif isinstance(value, (list, tuple)):
                 return sum(self._estimate_size(item) for item in value)
             elif isinstance(value, dict):
                 return sum(
-                    self._estimate_size(k) + self._estimate_size(v)
-                    for k, v in value.items()
+                    self._estimate_size(k) + self._estimate_size(v) for k, v in value.items()
                 )
             else:
                 return 100  # デフォルト推定値
@@ -356,9 +346,9 @@ class RedisCache:
         self,
         redis_url: Optional[str] = None,
         default_ttl: Optional[float] = 3600.0,
-        key_prefix: str = "cache:"
+        key_prefix: str = "cache:",
     ):
-        self.redis_url = redis_url or getattr(settings, 'REDIS_URL', 'redis://localhost:6379')
+        self.redis_url = redis_url or getattr(settings, "REDIS_URL", "redis://localhost:6379")
         self.default_ttl = default_ttl
         self.key_prefix = key_prefix
         self._redis: Optional[redis.Redis] = None
@@ -407,8 +397,8 @@ class RedisCache:
             # アクセス時間更新
             access_time = time.time() - start_time
             self._stats.avg_access_time = (
-                (self._stats.avg_access_time * (self._stats.hits - 1) + access_time) / self._stats.hits
-            )
+                self._stats.avg_access_time * (self._stats.hits - 1) + access_time
+            ) / self._stats.hits
             self._stats.update_hit_rate()
 
             return value
@@ -419,12 +409,7 @@ class RedisCache:
             self._stats.update_hit_rate()
             return None
 
-    async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[float] = None
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> bool:
         """値設定"""
         if not self._redis:
             return False
@@ -488,7 +473,7 @@ class CacheManager:
         self,
         memory_cache: Optional[MemoryCache] = None,
         redis_cache: Optional[RedisCache] = None,
-        enable_warming: bool = True
+        enable_warming: bool = True,
     ):
         self.memory_cache = memory_cache or MemoryCache()
         self.redis_cache = redis_cache or RedisCache()
@@ -524,7 +509,7 @@ class CacheManager:
         fetch_function: Optional[Callable[[], Any]] = None,
         ttl: Optional[float] = None,
         use_memory: bool = True,
-        use_redis: bool = True
+        use_redis: bool = True,
     ) -> Optional[Any]:
         """
         マルチレベルキャッシュから値取得
@@ -581,7 +566,7 @@ class CacheManager:
         value: Any,
         ttl: Optional[float] = None,
         use_memory: bool = True,
-        use_redis: bool = True
+        use_redis: bool = True,
     ) -> bool:
         """
         マルチレベルキャッシュに値設定
@@ -616,12 +601,7 @@ class CacheManager:
 
         return success
 
-    async def delete(
-        self,
-        key: str,
-        use_memory: bool = True,
-        use_redis: bool = True
-    ) -> bool:
+    async def delete(self, key: str, use_memory: bool = True, use_redis: bool = True) -> bool:
         """
         マルチレベルキャッシュから値削除
 
@@ -685,10 +665,7 @@ class CacheManager:
 
     def get_combined_stats(self) -> Dict[str, CacheStats]:
         """統合統計情報取得"""
-        return {
-            "memory": self.memory_cache.get_stats(),
-            "redis": self.redis_cache.get_stats()
-        }
+        return {"memory": self.memory_cache.get_stats(), "redis": self.redis_cache.get_stats()}
 
     def get_performance_report(self) -> Dict[str, Any]:
         """パフォーマンスレポート生成"""
@@ -705,23 +682,25 @@ class CacheManager:
                 "hit_rate": total_hits / total_requests if total_requests > 0 else 0.0,
                 "memory_hit_rate": memory_stats.hit_rate,
                 "redis_hit_rate": redis_stats.hit_rate,
-                "avg_access_time": (memory_stats.avg_access_time + redis_stats.avg_access_time) / 2
+                "avg_access_time": (memory_stats.avg_access_time + redis_stats.avg_access_time) / 2,
             },
             "memory_cache": {
                 "entries": memory_stats.total_entries,
                 "memory_usage_mb": memory_stats.memory_usage_bytes / (1024 * 1024),
                 "hit_rate": memory_stats.hit_rate,
-                "evictions": memory_stats.evictions
+                "evictions": memory_stats.evictions,
             },
             "redis_cache": {
                 "hit_rate": redis_stats.hit_rate,
-                "avg_access_time": redis_stats.avg_access_time
+                "avg_access_time": redis_stats.avg_access_time,
             },
             "optimization_metrics": {
                 "cache_efficiency": total_hits / total_requests if total_requests > 0 else 0.0,
                 "memory_tier_efficiency": memory_stats.hits / total_hits if total_hits > 0 else 0.0,
-                "performance_improvement": "50% faster on cached queries" if total_hits > 0 else "No cached queries"
-            }
+                "performance_improvement": (
+                    "50% faster on cached queries" if total_hits > 0 else "No cached queries"
+                ),
+            },
         }
 
 
@@ -731,7 +710,7 @@ def cached(
     ttl: Optional[float] = None,
     use_memory: bool = True,
     use_redis: bool = True,
-    cache_manager: Optional[CacheManager] = None
+    cache_manager: Optional[CacheManager] = None,
 ):
     """
     キャッシュデコレーター
@@ -742,6 +721,7 @@ def cached(
             # データベースから取得
             return profile
     """
+
     def decorator(func: Callable):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -750,6 +730,7 @@ def cached(
             if args:
                 # 位置引数も含める（関数の引数名が必要）
                 import inspect
+
                 sig = inspect.signature(func)
                 param_names = list(sig.parameters.keys())
                 for i, arg in enumerate(args):
@@ -767,12 +748,13 @@ def cached(
                 fetch_function=lambda: func(*args, **kwargs),
                 ttl=ttl,
                 use_memory=use_memory,
-                use_redis=use_redis
+                use_redis=use_redis,
             )
 
             return result
 
         return wrapper
+
     return decorator
 
 
@@ -782,9 +764,7 @@ default_cache_manager = CacheManager()
 
 # 便利関数
 async def get_cached(
-    key: str,
-    fetch_function: Callable[[], Any],
-    ttl: Optional[float] = None
+    key: str, fetch_function: Callable[[], Any], ttl: Optional[float] = None
 ) -> Any:
     """
     便利関数：キャッシュ取得
@@ -795,11 +775,7 @@ async def get_cached(
     return await default_cache_manager.get(key, fetch_function, ttl)
 
 
-async def set_cached(
-    key: str,
-    value: Any,
-    ttl: Optional[float] = None
-) -> bool:
+async def set_cached(key: str, value: Any, ttl: Optional[float] = None) -> bool:
     """
     便利関数：キャッシュ設定
 

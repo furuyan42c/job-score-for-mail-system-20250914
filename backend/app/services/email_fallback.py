@@ -10,17 +10,21 @@ Version: 1.0.0
 """
 
 import asyncio
+import json
 import logging
 import random
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union
-from dataclasses import dataclass, asdict
 from enum import Enum
-import json
+from typing import Dict, List, Optional, Tuple, Union
 
 from app.services.gpt5_integration import (
-    UserProfile, JobMatch, EmailContent, EmailSection,
-    GenerationStatus, GenerationResult
+    EmailContent,
+    EmailSection,
+    GenerationResult,
+    GenerationStatus,
+    JobMatch,
+    UserProfile,
 )
 
 # ============================================================================
@@ -33,8 +37,10 @@ logger = logging.getLogger(__name__)
 # ENUMS AND CONSTANTS
 # ============================================================================
 
+
 class FallbackReason(Enum):
     """Reasons for using fallback email generation."""
+
     GPT5_API_ERROR = "gpt5_api_error"
     GPT5_TIMEOUT = "gpt5_timeout"
     GPT5_QUOTA_EXCEEDED = "gpt5_quota_exceeded"
@@ -42,20 +48,25 @@ class FallbackReason(Enum):
     COST_OPTIMIZATION = "cost_optimization"
     TESTING_MODE = "testing_mode"
 
+
 class TemplateStyle(Enum):
     """Email template styles."""
+
     PROFESSIONAL = "professional"
     CASUAL = "casual"
     URGENT = "urgent"
     FRIENDLY = "friendly"
 
+
 # ============================================================================
 # DATA MODELS
 # ============================================================================
 
+
 @dataclass
 class FallbackConfig:
     """Configuration for fallback email generation."""
+
     language: str = "ja"
     style: TemplateStyle = TemplateStyle.PROFESSIONAL
     include_personalization: bool = True
@@ -64,9 +75,11 @@ class FallbackConfig:
     randomize_templates: bool = True
     add_performance_note: bool = False
 
+
 @dataclass
 class TemplateVariables:
     """Variables available for template substitution."""
+
     user_name: str
     user_location: str
     current_date: str
@@ -78,9 +91,11 @@ class TemplateVariables:
     salary_range: str
     custom_greeting: str
 
+
 # ============================================================================
 # TEMPLATE DEFINITIONS
 # ============================================================================
+
 
 class EmailTemplates:
     """Predefined email templates for fallback generation."""
@@ -92,40 +107,40 @@ class EmailTemplates:
             "あなたにピッタリの求人{total_job_count}件が見つかりました",
             "{user_name}様専用 - 今週のおすすめ求人情報",
             "新着求人情報 - マッチ度{top_match_score}%の案件をご確認ください",
-            "【求人マッチング】{user_location}エリアの最新案件をお届け"
+            "【求人マッチング】{user_location}エリアの最新案件をお届け",
         ],
         TemplateStyle.CASUAL: [
             "こんにちは！今日のオススメ求人{total_job_count}件です♪",
             "{user_name}さんにピッタリの仕事を見つけました！",
             "お疲れさまです！新しい求人情報をお届け✨",
             "良い案件が{total_job_count}件入ってきました！",
-            "今日も素敵な求人をご紹介します🌟"
+            "今日も素敵な求人をご紹介します🌟",
         ],
         TemplateStyle.URGENT: [
             "【急募】{user_name}様向け高給与案件{total_job_count}件",
             "お見逃しなく！今すぐ応募可能な求人情報",
             "【期間限定】{user_location}エリア限定求人のご案内",
             "締切間近！マッチ度{top_match_score}%の求人をチェック",
-            "【今日まで】特別紹介案件{total_job_count}件"
-        ]
+            "【今日まで】特別紹介案件{total_job_count}件",
+        ],
     }
 
     JAPANESE_GREETINGS = {
         TemplateStyle.PROFESSIONAL: [
             "{user_name}様、いつもお世話になっております。",
             "{user_name}様、毎日お疲れさまです。",
-            "拝啓　{user_name}様、いかがお過ごしでしょうか。"
+            "拝啓　{user_name}様、いかがお過ごしでしょうか。",
         ],
         TemplateStyle.CASUAL: [
             "{user_name}さん、こんにちは！",
             "お疲れさまです、{user_name}さん！",
-            "{user_name}さん、今日も一日お疲れさまでした♪"
+            "{user_name}さん、今日も一日お疲れさまでした♪",
         ],
         TemplateStyle.URGENT: [
             "{user_name}様、重要なご案内です。",
             "緊急のお知らせ - {user_name}様",
-            "{user_name}様、特別なご案内があります。"
-        ]
+            "{user_name}様、特別なご案内があります。",
+        ],
     }
 
     JAPANESE_SECTION_TEMPLATES = {
@@ -135,8 +150,8 @@ class EmailTemplates:
             "job_templates": [
                 "《注目》{company_name}での{job_title} - 時給{salary_range}円",
                 "★編集部イチオシ★ {job_title}《{company_name}》",
-                "【厳選】{company_name} | {job_title} | {location}"
-            ]
+                "【厳選】{company_name} | {job_title} | {location}",
+            ],
         },
         "top_recommendations": {
             "title": "🏆 あなたへのTOP5",
@@ -144,8 +159,8 @@ class EmailTemplates:
             "job_templates": [
                 "第{rank}位《マッチ度{match_score}%》{job_title} @ {company_name}",
                 "ランキング{rank}位 | {job_title} | {company_name} | {salary_range}円",
-                "TOP{rank} 🌟 {company_name}の{job_title}案件"
-            ]
+                "TOP{rank} 🌟 {company_name}の{job_title}案件",
+            ],
         },
         "trending_jobs": {
             "title": "📈 人気上昇中の求人",
@@ -153,8 +168,8 @@ class EmailTemplates:
             "job_templates": [
                 "🔥話題沸騰🔥 {company_name}での{job_title}",
                 "人気急上昇！{job_title}《{location}》",
-                "注目度UP ↗️ {company_name} | {job_title}"
-            ]
+                "注目度UP ↗️ {company_name} | {job_title}",
+            ],
         },
         "near_you": {
             "title": "📍 {user_location}周辺の求人",
@@ -162,8 +177,8 @@ class EmailTemplates:
             "job_templates": [
                 "🚶‍♂️徒歩圏内 {company_name}での{job_title}",
                 "近場で発見！{job_title} @ {location}",
-                "通勤楽々♪ {company_name} | {job_title}"
-            ]
+                "通勤楽々♪ {company_name} | {job_title}",
+            ],
         },
         "high_paying": {
             "title": "💰 高収入案件",
@@ -171,8 +186,8 @@ class EmailTemplates:
             "job_templates": [
                 "💎高時給💎 {job_title} - 時給{salary_range}円",
                 "収入UP！{company_name}での{job_title}",
-                "💰稼げる💰 {job_title}《{company_name}》"
-            ]
+                "💰稼げる💰 {job_title}《{company_name}》",
+            ],
         },
         "new_arrivals": {
             "title": "🆕 新着求人",
@@ -180,9 +195,9 @@ class EmailTemplates:
             "job_templates": [
                 "✨NEW✨ {company_name}での{job_title}",
                 "新着！{job_title} @ {location}",
-                "🆕本日公開🆕 {company_name} | {job_title}"
-            ]
-        }
+                "🆕本日公開🆕 {company_name} | {job_title}",
+            ],
+        },
     }
 
     # English Templates
@@ -192,33 +207,35 @@ class EmailTemplates:
             "Weekly Job Alert for {user_name} - {total_job_count} New Opportunities",
             "Top-Rated Job Matches in {user_location} Area",
             "Professional Opportunities Curated for You",
-            "Your Career Update - {total_job_count} Quality Matches"
+            "Your Career Update - {total_job_count} Quality Matches",
         ],
         TemplateStyle.CASUAL: [
             "Hey {user_name}! {total_job_count} awesome jobs just for you 🎯",
             "Great news! Found {total_job_count} perfect matches ✨",
             "Your daily dose of amazing opportunities!",
             "Jobs you'll love - handpicked for {user_name}",
-            "Fresh opportunities are here! 🌟"
-        ]
+            "Fresh opportunities are here! 🌟",
+        ],
     }
 
     ENGLISH_GREETINGS = {
         TemplateStyle.PROFESSIONAL: [
             "Dear {user_name},",
             "Hello {user_name},",
-            "Good day, {user_name},"
+            "Good day, {user_name},",
         ],
         TemplateStyle.CASUAL: [
             "Hi {user_name}!",
             "Hey there, {user_name}!",
-            "Hello {user_name}! 👋"
-        ]
+            "Hello {user_name}! 👋",
+        ],
     }
+
 
 # ============================================================================
 # EMAIL FALLBACK SERVICE
 # ============================================================================
+
 
 class EmailFallbackService:
     """
@@ -240,7 +257,7 @@ class EmailFallbackService:
         user_profile: UserProfile,
         job_matches: List[JobMatch],
         reason: FallbackReason = FallbackReason.GPT5_UNAVAILABLE,
-        style: Optional[TemplateStyle] = None
+        style: Optional[TemplateStyle] = None,
     ) -> GenerationResult:
         """
         Generate a fallback email using templates.
@@ -288,8 +305,8 @@ class EmailFallbackService:
                     "template_style": email_style.value,
                     "language": self.config.language,
                     "total_jobs": len(job_matches),
-                    "generation_method": "template_based"
-                }
+                    "generation_method": "template_based",
+                },
             )
 
         except Exception as e:
@@ -301,17 +318,14 @@ class EmailFallbackService:
                 error_message=f"Fallback generation failed: {str(e)}",
                 generation_time_ms=int((datetime.now() - start_time).total_seconds() * 1000),
                 fallback_used=True,
-                metadata={
-                    "fallback_reason": reason.value,
-                    "error_type": type(e).__name__
-                }
+                metadata={"fallback_reason": reason.value, "error_type": type(e).__name__},
             )
 
     async def generate_batch_emails(
         self,
         user_profiles: List[UserProfile],
         job_matches_list: List[List[JobMatch]],
-        reason: FallbackReason = FallbackReason.GPT5_UNAVAILABLE
+        reason: FallbackReason = FallbackReason.GPT5_UNAVAILABLE,
     ) -> List[GenerationResult]:
         """
         Generate multiple fallback emails in parallel.
@@ -342,24 +356,26 @@ class EmailFallbackService:
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.error(f"Batch generation failed for user {i}: {str(result)}")
-                processed_results.append(GenerationResult(
-                    status=GenerationStatus.FAILED,
-                    error_message=str(result),
-                    fallback_used=True,
-                    metadata={"batch_index": i, "fallback_reason": reason.value}
-                ))
+                processed_results.append(
+                    GenerationResult(
+                        status=GenerationStatus.FAILED,
+                        error_message=str(result),
+                        fallback_used=True,
+                        metadata={"batch_index": i, "fallback_reason": reason.value},
+                    )
+                )
             else:
                 processed_results.append(result)
 
         success_count = sum(1 for r in processed_results if r.status == GenerationStatus.COMPLETED)
-        logger.info(f"Batch fallback generation completed: {success_count}/{len(user_profiles)} successful")
+        logger.info(
+            f"Batch fallback generation completed: {success_count}/{len(user_profiles)} successful"
+        )
 
         return processed_results
 
     def _create_template_variables(
-        self,
-        user_profile: UserProfile,
-        job_matches: List[JobMatch]
+        self, user_profile: UserProfile, job_matches: List[JobMatch]
     ) -> TemplateVariables:
         """Create template variables for substitution."""
         now = datetime.now()
@@ -381,7 +397,7 @@ class EmailFallbackService:
             user_skills=user_profile.skills[:3],  # Top 3 skills
             preferred_locations=user_profile.preferred_locations[:2],  # Top 2 locations
             salary_range=salary_range,
-            custom_greeting=self._generate_custom_greeting(user_profile)
+            custom_greeting=self._generate_custom_greeting(user_profile),
         )
 
     def _generate_custom_greeting(self, user_profile: UserProfile) -> str:
@@ -399,7 +415,7 @@ class EmailFallbackService:
         user_profile: UserProfile,
         job_matches: List[JobMatch],
         template_vars: TemplateVariables,
-        style: TemplateStyle
+        style: TemplateStyle,
     ) -> EmailContent:
         """Generate complete email content using templates."""
 
@@ -422,7 +438,7 @@ class EmailFallbackService:
             language=self.config.language,
             generated_at=datetime.now(),
             template_version="fallback_v1.0",
-            total_jobs=len(job_matches)
+            total_jobs=len(job_matches),
         )
 
     def _generate_subject(self, template_vars: TemplateVariables, style: TemplateStyle) -> str:
@@ -459,7 +475,7 @@ class EmailFallbackService:
         user_profile: UserProfile,
         job_matches: List[JobMatch],
         template_vars: TemplateVariables,
-        style: TemplateStyle
+        style: TemplateStyle,
     ) -> List[EmailSection]:
         """Generate all email sections using templates."""
 
@@ -470,7 +486,7 @@ class EmailFallbackService:
             ("trending_jobs", 10),
             ("near_you", 10),
             ("high_paying", 5),
-            ("new_arrivals", 5)
+            ("new_arrivals", 5),
         ]
 
         sections = []
@@ -478,7 +494,7 @@ class EmailFallbackService:
 
         for section_key, job_count in section_configs:
             # Get jobs for this section
-            section_jobs = job_matches[job_index:job_index + job_count]
+            section_jobs = job_matches[job_index : job_index + job_count]
             job_index += job_count
 
             if not section_jobs:
@@ -498,7 +514,7 @@ class EmailFallbackService:
         jobs: List[JobMatch],
         template_vars: TemplateVariables,
         style: TemplateStyle,
-        user_profile: UserProfile
+        user_profile: UserProfile,
     ) -> EmailSection:
         """Generate a single email section."""
 
@@ -530,7 +546,7 @@ class EmailFallbackService:
                 "location": job.location,
                 "salary_range": job.salary_range or "応相談",
                 "match_score": round(job.match_score * 100, 1),
-                **asdict(template_vars)
+                **asdict(template_vars),
             }
 
             job_item = job_template.format(**job_vars)
@@ -545,8 +561,8 @@ class EmailFallbackService:
             metadata={
                 "template_used": True,
                 "randomized": self.config.randomize_templates,
-                "style": style.value
-            }
+                "style": style.value,
+            },
         )
 
     def _generate_footer(self, user_profile: UserProfile, template_vars: TemplateVariables) -> str:
@@ -561,7 +577,7 @@ class EmailFallbackService:
                 "",
                 "────────────────────────────",
                 "このメールは自動配信されています。",
-                "配信停止をご希望の場合は、こちらから設定を変更してください。"
+                "配信停止をご希望の場合は、こちらから設定を変更してください。",
             ]
         else:
             footer_lines = [
@@ -573,7 +589,7 @@ class EmailFallbackService:
                 "",
                 "────────────────────────────",
                 "This email was sent automatically.",
-                "To unsubscribe, please update your preferences here."
+                "To unsubscribe, please update your preferences here.",
             ]
 
         if self.config.add_performance_note:
@@ -582,9 +598,7 @@ class EmailFallbackService:
         return "\n".join(footer_lines)
 
     def _generate_personalization_note(
-        self,
-        user_profile: UserProfile,
-        template_vars: TemplateVariables
+        self, user_profile: UserProfile, template_vars: TemplateVariables
     ) -> str:
         """Generate personalization explanation."""
         if self.config.language == "ja":
@@ -598,14 +612,14 @@ class EmailFallbackService:
                 f"in {', '.join(template_vars.user_skills[:2])}."
             )
 
+
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
+
 async def create_fallback_service(
-    language: str = "ja",
-    style: TemplateStyle = TemplateStyle.PROFESSIONAL,
-    **kwargs
+    language: str = "ja", style: TemplateStyle = TemplateStyle.PROFESSIONAL, **kwargs
 ) -> EmailFallbackService:
     """
     Create and configure an email fallback service.
@@ -618,13 +632,10 @@ async def create_fallback_service(
     Returns:
         Configured EmailFallbackService instance
     """
-    config = FallbackConfig(
-        language=language,
-        style=style,
-        **kwargs
-    )
+    config = FallbackConfig(language=language, style=style, **kwargs)
 
     return EmailFallbackService(config)
+
 
 def get_fallback_reason_from_error(error: Exception) -> FallbackReason:
     """
@@ -647,13 +658,14 @@ def get_fallback_reason_from_error(error: Exception) -> FallbackReason:
     else:
         return FallbackReason.GPT5_UNAVAILABLE
 
+
 # ============================================================================
 # TESTING UTILITIES
 # ============================================================================
 
+
 async def test_fallback_generation(
-    user_count: int = 3,
-    jobs_per_user: int = 40
+    user_count: int = 3, jobs_per_user: int = 40
 ) -> List[GenerationResult]:
     """
     Test fallback email generation with sample data.
@@ -667,9 +679,7 @@ async def test_fallback_generation(
     """
     # Create test service
     service = await create_fallback_service(
-        language="ja",
-        style=TemplateStyle.PROFESSIONAL,
-        randomize_templates=True
+        language="ja", style=TemplateStyle.PROFESSIONAL, randomize_templates=True
     )
 
     # Generate test data
@@ -684,7 +694,7 @@ async def test_fallback_generation(
             location=f"東京都{['渋谷区', '新宿区', '港区'][i % 3]}",
             age=25 + i * 5,
             skills=[f"スキル{j}" for j in range(1, 4)],
-            preferred_locations=[f"エリア{j}" for j in range(1, 3)]
+            preferred_locations=[f"エリア{j}" for j in range(1, 3)],
         )
         test_users.append(user)
 
@@ -697,21 +707,20 @@ async def test_fallback_generation(
                 company_name=f"企業{j+1}",
                 location=f"勤務地{j+1}",
                 salary_range=f"{1000 + j*50}-{1200 + j*50}",
-                match_score=(90 - j*2) / 100.0,
-                description=f"求人説明{j+1}"
+                match_score=(90 - j * 2) / 100.0,
+                description=f"求人説明{j+1}",
             )
             jobs.append(job)
         test_jobs_list.append(jobs)
 
     # Generate emails
     results = await service.generate_batch_emails(
-        test_users,
-        test_jobs_list,
-        FallbackReason.TESTING_MODE
+        test_users, test_jobs_list, FallbackReason.TESTING_MODE
     )
 
     logger.info(f"Fallback test completed: {len(results)} emails generated")
     return results
+
 
 if __name__ == "__main__":
     # Run test when script is executed directly

@@ -5,20 +5,21 @@ T061-GREEN: Basic implementation for structured logging with JSON format and cor
 
 import json
 import logging
+import os
+import re
+import threading
 import time
 import uuid
-import os
-import threading
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List, Union
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from enum import Enum
-import re
+from typing import Any, Dict, List, Optional, Union
 
 
 class LogLevel(Enum):
     """Log levels"""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -29,6 +30,7 @@ class LogLevel(Enum):
 @dataclass
 class LogConfiguration:
     """Log configuration from environment"""
+
     level: str
     format: str
     environment: str
@@ -38,16 +40,16 @@ class LogConfiguration:
     flush_interval: float = 1.0
 
     @classmethod
-    def from_environment(cls) -> 'LogConfiguration':
+    def from_environment(cls) -> "LogConfiguration":
         """Create configuration from environment variables"""
         return cls(
-            level=os.getenv('LOG_LEVEL', 'INFO'),
-            format=os.getenv('LOG_FORMAT', 'json'),
-            environment=os.getenv('ENVIRONMENT', 'development'),
-            enable_correlation=os.getenv('LOG_ENABLE_CORRELATION', 'true').lower() == 'true',
-            enable_performance_mode=os.getenv('LOG_PERFORMANCE_MODE', 'false').lower() == 'true',
-            batch_size=int(os.getenv('LOG_BATCH_SIZE', '100')),
-            flush_interval=float(os.getenv('LOG_FLUSH_INTERVAL', '1.0'))
+            level=os.getenv("LOG_LEVEL", "INFO"),
+            format=os.getenv("LOG_FORMAT", "json"),
+            environment=os.getenv("ENVIRONMENT", "development"),
+            enable_correlation=os.getenv("LOG_ENABLE_CORRELATION", "true").lower() == "true",
+            enable_performance_mode=os.getenv("LOG_PERFORMANCE_MODE", "false").lower() == "true",
+            batch_size=int(os.getenv("LOG_BATCH_SIZE", "100")),
+            flush_interval=float(os.getenv("LOG_FLUSH_INTERVAL", "1.0")),
         )
 
 
@@ -63,7 +65,7 @@ class CorrelationManager:
 
     def get_current_correlation_id(self) -> Optional[str]:
         """Get current correlation ID from thread local"""
-        return getattr(self._local, 'correlation_id', None)
+        return getattr(self._local, "correlation_id", None)
 
     def set_correlation_id(self, correlation_id: str):
         """Set correlation ID in thread local"""
@@ -87,14 +89,27 @@ class SensitiveDataFilter:
     """Filter sensitive data from logs"""
 
     SENSITIVE_PATTERNS = {
-        'password', 'passwd', 'pwd', 'secret', 'token', 'key', 'api_key',
-        'access_token', 'refresh_token', 'jwt', 'auth', 'authorization',
-        'credit_card', 'card_number', 'ssn', 'social_security'
+        "password",
+        "passwd",
+        "pwd",
+        "secret",
+        "token",
+        "key",
+        "api_key",
+        "access_token",
+        "refresh_token",
+        "jwt",
+        "auth",
+        "authorization",
+        "credit_card",
+        "card_number",
+        "ssn",
+        "social_security",
     }
 
-    EMAIL_PATTERN = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
-    PHONE_PATTERN = re.compile(r'\b\d{3}-\d{3}-\d{4}\b|\b\d{10}\b')
-    CREDIT_CARD_PATTERN = re.compile(r'\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b')
+    EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+    PHONE_PATTERN = re.compile(r"\b\d{3}-\d{3}-\d{4}\b|\b\d{10}\b")
+    CREDIT_CARD_PATTERN = re.compile(r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b")
 
     @classmethod
     def filter_sensitive_data(cls, data: Any) -> Any:
@@ -111,7 +126,9 @@ class SensitiveDataFilter:
     @classmethod
     def _filter_value(cls, key: str, value: Any) -> Any:
         """Filter value based on key name"""
-        if isinstance(key, str) and any(pattern in key.lower() for pattern in cls.SENSITIVE_PATTERNS):
+        if isinstance(key, str) and any(
+            pattern in key.lower() for pattern in cls.SENSITIVE_PATTERNS
+        ):
             return "***MASKED***"
         return cls.filter_sensitive_data(value)
 
@@ -130,7 +147,11 @@ class SensitiveDataFilter:
 class LogFormatter(logging.Formatter):
     """Log formatter with environment-based formatting"""
 
-    def __init__(self, environment: str = "development", correlation_manager: Optional[CorrelationManager] = None):
+    def __init__(
+        self,
+        environment: str = "development",
+        correlation_manager: Optional[CorrelationManager] = None,
+    ):
         super().__init__()
         self.environment = environment
         self.correlation_manager = correlation_manager or CorrelationManager()
@@ -149,19 +170,35 @@ class LogFormatter(logging.Formatter):
             "level": record.levelname,
             "message": record.getMessage(),
             "logger": record.name,
-            "module": getattr(record, 'module', 'unknown'),
-            "function": getattr(record, 'funcName', 'unknown'),
-            "line": getattr(record, 'lineno', 0),
-            "correlation_id": self.correlation_manager.get_current_correlation_id()
+            "module": getattr(record, "module", "unknown"),
+            "function": getattr(record, "funcName", "unknown"),
+            "line": getattr(record, "lineno", 0),
+            "correlation_id": self.correlation_manager.get_current_correlation_id(),
         }
 
         # Add extra fields
-        if hasattr(record, '__dict__'):
+        if hasattr(record, "__dict__"):
             for key, value in record.__dict__.items():
-                if key not in ['name', 'levelname', 'levelno', 'pathname', 'filename',
-                              'module', 'lineno', 'funcName', 'created', 'msecs',
-                              'relativeCreated', 'thread', 'threadName', 'processName',
-                              'process', 'getMessage', 'msg', 'args']:
+                if key not in [
+                    "name",
+                    "levelname",
+                    "levelno",
+                    "pathname",
+                    "filename",
+                    "module",
+                    "lineno",
+                    "funcName",
+                    "created",
+                    "msecs",
+                    "relativeCreated",
+                    "thread",
+                    "threadName",
+                    "processName",
+                    "process",
+                    "getMessage",
+                    "msg",
+                    "args",
+                ]:
                     log_data[key] = SensitiveDataFilter.filter_sensitive_data(value)
 
         # Filter sensitive data
@@ -171,7 +208,7 @@ class LogFormatter(logging.Formatter):
 
     def _format_human_readable(self, record: logging.LogRecord) -> str:
         """Format as human-readable for development"""
-        timestamp = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S")
         correlation_id = self.correlation_manager.get_current_correlation_id()
         correlation_part = f" [{correlation_id[:8]}]" if correlation_id else ""
 
@@ -212,13 +249,15 @@ class BatchLogger:
             "level": level,
             "message": message,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "extra": extra or {}
+            "extra": extra or {},
         }
         self._batch.append(entry)
 
         # Auto-flush if batch is full or time interval exceeded
-        if (len(self._batch) >= self.batch_size or
-            time.time() - self._last_flush >= self.flush_interval):
+        if (
+            len(self._batch) >= self.batch_size
+            or time.time() - self._last_flush >= self.flush_interval
+        ):
             self.flush()
 
     def flush(self):
@@ -259,8 +298,7 @@ class CoreStructuredLogger:
 
         # Setup formatter
         self.formatter = LogFormatter(
-            environment=self.config.environment,
-            correlation_manager=self.correlation_manager
+            environment=self.config.environment, correlation_manager=self.correlation_manager
         )
 
         # Setup handler
@@ -277,12 +315,14 @@ class CoreStructuredLogger:
         """Enable/disable performance mode"""
         self._performance_mode = enabled
 
-    def create_batch_logger(self, batch_size: Optional[int] = None, flush_interval: Optional[float] = None) -> BatchLogger:
+    def create_batch_logger(
+        self, batch_size: Optional[int] = None, flush_interval: Optional[float] = None
+    ) -> BatchLogger:
         """Create batch logger for high-volume scenarios"""
         return BatchLogger(
             self.logger,
             batch_size or self.config.batch_size,
-            flush_interval or self.config.flush_interval
+            flush_interval or self.config.flush_interval,
         )
 
     def debug(self, message: str, **kwargs):
@@ -300,16 +340,21 @@ class CoreStructuredLogger:
     def error(self, message: str, exc_info: bool = False, **kwargs):
         """Log error message"""
         if exc_info:
-            kwargs['exc_info'] = True
+            kwargs["exc_info"] = True
             # Add exception details for JSON format
-            import traceback
             import sys
+            import traceback
+
             if sys.exc_info()[0] is not None:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                kwargs['exception'] = {
-                    'type': exc_type.__name__ if exc_type else None,
-                    'message': str(exc_value) if exc_value else None,
-                    'traceback': traceback.format_exception(exc_type, exc_value, exc_traceback) if exc_traceback else None
+                kwargs["exception"] = {
+                    "type": exc_type.__name__ if exc_type else None,
+                    "message": str(exc_value) if exc_value else None,
+                    "traceback": (
+                        traceback.format_exception(exc_type, exc_value, exc_traceback)
+                        if exc_traceback
+                        else None
+                    ),
                 }
         self._log(logging.ERROR, message, **kwargs)
 
@@ -324,7 +369,9 @@ class CoreStructuredLogger:
 
         # Performance mode: simplified logging
         if self._performance_mode:
-            extra = {k: v for k, v in extra.items() if k in ['correlation_id', 'user_id', 'request_id']}
+            extra = {
+                k: v for k, v in extra.items() if k in ["correlation_id", "user_id", "request_id"]
+            }
 
         self.logger.log(level, message, extra=extra)
 
@@ -346,12 +393,15 @@ class DatabaseQueryLogger:
             # Mask sensitive data in query
             masked_query = SensitiveDataFilter._filter_string_patterns(query)
 
-            self.logger.info("Database query executed", extra={
-                "category": "database",
-                "query": masked_query,
-                "duration_ms": duration_ms,
-                "params_count": len(params) if params else 0
-            })
+            self.logger.info(
+                "Database query executed",
+                extra={
+                    "category": "database",
+                    "query": masked_query,
+                    "duration_ms": duration_ms,
+                    "params_count": len(params) if params else 0,
+                },
+            )
 
 
 class ErrorAggregator:
@@ -375,8 +425,7 @@ class ErrorAggregator:
         # Clean old errors outside time window
         cutoff_time = current_time - self.time_window
         self._error_counts[error_type] = [
-            t for t in self._error_counts[error_type]
-            if t > cutoff_time
+            t for t in self._error_counts[error_type] if t > cutoff_time
         ]
 
     def get_triggered_alerts(self) -> List[Dict[str, Any]]:
@@ -390,13 +439,15 @@ class ErrorAggregator:
             recent_errors = [t for t in timestamps if t > cutoff_time]
 
             if len(recent_errors) >= self.threshold:
-                alerts.append({
-                    "error_type": error_type,
-                    "count": len(recent_errors),
-                    "threshold": self.threshold,
-                    "time_window": self.time_window,
-                    "last_occurrence": max(recent_errors)
-                })
+                alerts.append(
+                    {
+                        "error_type": error_type,
+                        "count": len(recent_errors),
+                        "threshold": self.threshold,
+                        "time_window": self.time_window,
+                        "last_occurrence": max(recent_errors),
+                    }
+                )
 
         return alerts
 
@@ -415,7 +466,7 @@ class MetricsLogger:
             "name": name,
             "value": value,
             "tags": tags or {},
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
         self._collected_metrics.append(metric)
         self.logger.info(f"Counter metric: {name}={value}", extra=metric)
@@ -427,7 +478,7 @@ class MetricsLogger:
             "name": name,
             "value": value,
             "tags": tags or {},
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
         self._collected_metrics.append(metric)
         self.logger.info(f"Histogram metric: {name}={value}", extra=metric)
@@ -439,7 +490,7 @@ class MetricsLogger:
             "name": name,
             "value": value,
             "tags": tags or {},
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
         self._collected_metrics.append(metric)
         self.logger.info(f"Gauge metric: {name}={value}", extra=metric)
@@ -467,23 +518,29 @@ def setup_fastapi_logging(app):
                 start_time = time.time()
 
                 # Log request
-                self.logger.info("Request started", extra={
-                    "method": request.method,
-                    "url": str(request.url),
-                    "correlation_id": correlation_id
-                })
+                self.logger.info(
+                    "Request started",
+                    extra={
+                        "method": request.method,
+                        "url": str(request.url),
+                        "correlation_id": correlation_id,
+                    },
+                )
 
                 response = await call_next(request)
 
                 # Log response
                 duration_ms = (time.time() - start_time) * 1000
-                self.logger.info("Request completed", extra={
-                    "method": request.method,
-                    "url": str(request.url),
-                    "status_code": response.status_code,
-                    "duration_ms": duration_ms,
-                    "correlation_id": correlation_id
-                })
+                self.logger.info(
+                    "Request completed",
+                    extra={
+                        "method": request.method,
+                        "url": str(request.url),
+                        "status_code": response.status_code,
+                        "duration_ms": duration_ms,
+                        "correlation_id": correlation_id,
+                    },
+                )
 
                 return response
 
@@ -506,7 +563,7 @@ class LogAggregator:
             "level": level,
             "message": message,
             "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-            **kwargs
+            **kwargs,
         }
 
         self.aggregated_logs.append(log_entry)
@@ -549,6 +606,7 @@ class LogAggregator:
             # Standard logs - batch to aggregation system
             pass
 
+
 class RequestTrackingMiddleware:
     """Enhanced request tracking with correlation IDs"""
 
@@ -571,7 +629,7 @@ class RequestTrackingMiddleware:
                 "client_host": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent"),
                 "content_length": request.headers.get("content-length"),
-                "correlation_id": correlation_id
+                "correlation_id": correlation_id,
             }
 
             # Filter sensitive headers
@@ -593,7 +651,7 @@ class RequestTrackingMiddleware:
                     "status_code": response.status_code,
                     "duration_ms": duration_ms,
                     "response_size": response.headers.get("content-length"),
-                    "cache_status": response.headers.get("x-cache-status")
+                    "cache_status": response.headers.get("x-cache-status"),
                 }
 
                 if response.status_code >= 400:
@@ -612,10 +670,11 @@ class RequestTrackingMiddleware:
                     **request_data,
                     "error": str(e),
                     "error_type": type(e).__name__,
-                    "duration_ms": duration_ms
+                    "duration_ms": duration_ms,
                 }
                 self.logger.error("Request error", extra=error_data, exc_info=True)
                 raise
+
 
 class PerformanceLogger:
     """Performance monitoring logger"""
@@ -645,7 +704,7 @@ class PerformanceLogger:
                 "memory_end_mb": end_memory,
                 "memory_delta_mb": memory_delta,
                 "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-                **context
+                **context,
             }
 
             # Store for aggregation
@@ -663,6 +722,7 @@ class PerformanceLogger:
         """Get current memory usage in MB"""
         try:
             import psutil
+
             process = psutil.Process()
             return process.memory_info().rss / 1024 / 1024
         except ImportError:
@@ -690,8 +750,9 @@ class PerformanceLogger:
             "max_duration_ms": max(durations),
             "avg_memory_delta_mb": sum(memory_deltas) / len(memory_deltas),
             "total_operations": len(data),
-            "operations_per_second": len(data) / (max(durations) / 1000) if durations else 0
+            "operations_per_second": len(data) / (max(durations) / 1000) if durations else 0,
         }
+
 
 class SecurityAuditLogger:
     """Security-focused audit logging"""
@@ -706,7 +767,7 @@ class SecurityAuditLogger:
         method: str,
         ip_address: str,
         user_agent: str = None,
-        **context
+        **context,
     ):
         """Log authentication attempts"""
         audit_data = {
@@ -717,7 +778,7 @@ class SecurityAuditLogger:
             "ip_address": ip_address,
             "user_agent": user_agent,
             "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-            **context
+            **context,
         }
 
         if success:
@@ -726,12 +787,7 @@ class SecurityAuditLogger:
             self.logger.warning("Authentication failed", extra=audit_data)
 
     async def log_authorization_check(
-        self,
-        user_id: str,
-        resource: str,
-        action: str,
-        granted: bool,
-        **context
+        self, user_id: str, resource: str, action: str, granted: bool, **context
     ):
         """Log authorization checks"""
         audit_data = {
@@ -741,7 +797,7 @@ class SecurityAuditLogger:
             "action": action,
             "granted": granted,
             "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-            **context
+            **context,
         }
 
         if granted:
@@ -750,12 +806,7 @@ class SecurityAuditLogger:
             self.logger.warning("Authorization denied", extra=audit_data)
 
     async def log_data_access(
-        self,
-        user_id: str,
-        data_type: str,
-        operation: str,
-        record_count: int = None,
-        **context
+        self, user_id: str, data_type: str, operation: str, record_count: int = None, **context
     ):
         """Log data access operations"""
         audit_data = {
@@ -765,7 +816,7 @@ class SecurityAuditLogger:
             "operation": operation,
             "record_count": record_count,
             "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-            **context
+            **context,
         }
 
         self.logger.info("Data access", extra=audit_data)
@@ -776,7 +827,7 @@ class SecurityAuditLogger:
         severity: str,
         description: str,
         affected_user: str = None,
-        **context
+        **context,
     ):
         """Log security incidents"""
         incident_data = {
@@ -786,13 +837,14 @@ class SecurityAuditLogger:
             "description": description,
             "affected_user": affected_user,
             "correlation_id": self.logger.correlation_manager.get_current_correlation_id(),
-            **context
+            **context,
         }
 
         if severity in ["high", "critical"]:
             self.logger.critical("Security incident", extra=incident_data)
         else:
             self.logger.error("Security incident", extra=incident_data)
+
 
 def setup_comprehensive_logging(app, config: Optional[LogConfiguration] = None):
     """Setup comprehensive logging for FastAPI application"""
@@ -818,7 +870,7 @@ def setup_comprehensive_logging(app, config: Optional[LogConfiguration] = None):
         "requests": request_logger,
         "performance": performance_logger,
         "security": security_logger,
-        "aggregator": log_aggregator
+        "aggregator": log_aggregator,
     }
 
     # Setup periodic log flushing
@@ -839,21 +891,26 @@ def setup_comprehensive_logging(app, config: Optional[LogConfiguration] = None):
     async def final_log_flush():
         await log_aggregator.flush_logs()
 
+
 # Global logger instance
 default_logger = CoreStructuredLogger("app")
+
 
 # Utility functions for easy access
 def get_correlation_id() -> Optional[str]:
     """Get current correlation ID"""
     return default_logger.correlation_manager.get_current_correlation_id()
 
+
 def set_correlation_id(correlation_id: str):
     """Set correlation ID for current context"""
     default_logger.correlation_manager.set_correlation_id(correlation_id)
 
+
 def get_performance_logger() -> PerformanceLogger:
     """Get global performance logger"""
     return PerformanceLogger()
+
 
 def get_security_logger() -> SecurityAuditLogger:
     """Get global security audit logger"""

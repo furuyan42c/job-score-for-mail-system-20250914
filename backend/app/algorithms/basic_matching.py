@@ -3,17 +3,18 @@ Basic Skills-Based Matching Algorithm (T017)
 Implements fundamental job matching based on skills overlap and basic criteria
 """
 
-from typing import List, Dict, Any, Optional, Tuple
+import logging
+import math
 from dataclasses import dataclass
 from enum import Enum
-import math
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class MatchCriteria(str, Enum):
     """Matching criteria types"""
+
     SKILLS = "skills"
     LOCATION = "location"
     SALARY = "salary"
@@ -24,6 +25,7 @@ class MatchCriteria(str, Enum):
 @dataclass
 class JobData:
     """Job data structure for matching"""
+
     job_id: int
     title: str
     required_skills: List[str]
@@ -41,6 +43,7 @@ class JobData:
 @dataclass
 class UserProfile:
     """User profile structure for matching"""
+
     user_id: int
     skills: List[str]
     preferred_categories: List[str]
@@ -55,6 +58,7 @@ class UserProfile:
 @dataclass
 class MatchScore:
     """Match score breakdown"""
+
     total_score: int
     skills_score: int
     location_score: int
@@ -84,11 +88,11 @@ class BasicMatchingAlgorithm:
             weights: Custom weights for different criteria
         """
         self.default_weights = {
-            "skills": 0.4,      # 40% - Most important
-            "location": 0.2,    # 20%
-            "salary": 0.2,      # 20%
-            "category": 0.1,    # 10%
-            "experience": 0.1   # 10%
+            "skills": 0.4,  # 40% - Most important
+            "location": 0.2,  # 20%
+            "salary": 0.2,  # 20%
+            "category": 0.1,  # 10%
+            "experience": 0.1,  # 10%
         }
         self.weights = weights or self.default_weights
 
@@ -117,11 +121,11 @@ class BasicMatchingAlgorithm:
 
             # Calculate weighted total
             total_score = (
-                skills_score * self.weights["skills"] +
-                location_score * self.weights["location"] +
-                salary_score * self.weights["salary"] +
-                category_score * self.weights["category"] +
-                experience_score * self.weights["experience"]
+                skills_score * self.weights["skills"]
+                + location_score * self.weights["location"]
+                + salary_score * self.weights["salary"]
+                + category_score * self.weights["category"]
+                + experience_score * self.weights["experience"]
             )
 
             # Ensure score is in range 0-100
@@ -139,12 +143,14 @@ class BasicMatchingAlgorithm:
                     "version": "1.0",
                     "weights": self.weights,
                     "user_id": user.user_id,
-                    "job_id": job.job_id
-                }
+                    "job_id": job.job_id,
+                },
             )
 
         except Exception as e:
-            logger.error(f"Error calculating match score for user {user.user_id}, job {job.job_id}: {e}")
+            logger.error(
+                f"Error calculating match score for user {user.user_id}, job {job.job_id}: {e}"
+            )
             return MatchScore(
                 total_score=0,
                 skills_score=0,
@@ -152,7 +158,7 @@ class BasicMatchingAlgorithm:
                 salary_score=0,
                 category_score=0,
                 experience_score=0,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
     def _calculate_skills_score(self, user: UserProfile, job: JobData) -> int:
@@ -254,13 +260,7 @@ class BasicMatchingAlgorithm:
         if not user.experience_level or not job.experience_required:
             return 70  # Neutral score if no data
 
-        experience_levels = {
-            "entry": 1,
-            "junior": 2,
-            "mid": 3,
-            "senior": 4,
-            "expert": 5
-        }
+        experience_levels = {"entry": 1, "junior": 2, "mid": 3, "senior": 4, "expert": 5}
 
         user_level = experience_levels.get(user.experience_level.lower(), 3)
         job_level = experience_levels.get(job.experience_required.lower(), 3)
@@ -288,7 +288,7 @@ class BasicMatchingAlgorithm:
         # Simplified mapping - in production would use geographic data
         adjacent_map = {
             "13": ["12", "14", "19", "22"],  # Tokyo
-            "14": ["13", "12", "15"],        # Kanagawa
+            "14": ["13", "12", "15"],  # Kanagawa
             "12": ["13", "14", "11", "20"],  # Chiba
             # Add more mappings as needed
         }
@@ -307,7 +307,9 @@ class BasicMatchingAlgorithm:
         }
         return related_map.get(category, [])
 
-    def batch_calculate_scores(self, user: UserProfile, jobs: List[JobData]) -> List[Tuple[int, MatchScore]]:
+    def batch_calculate_scores(
+        self, user: UserProfile, jobs: List[JobData]
+    ) -> List[Tuple[int, MatchScore]]:
         """
         Calculate scores for multiple jobs for a user
 
@@ -332,7 +334,9 @@ class BasicMatchingAlgorithm:
         results.sort(key=lambda x: x[1].total_score, reverse=True)
         return results
 
-    def get_top_matches(self, user: UserProfile, jobs: List[JobData], limit: int = 10) -> List[Tuple[int, MatchScore]]:
+    def get_top_matches(
+        self, user: UserProfile, jobs: List[JobData], limit: int = 10
+    ) -> List[Tuple[int, MatchScore]]:
         """
         Get top N matches for a user
 
@@ -347,7 +351,9 @@ class BasicMatchingAlgorithm:
         all_scores = self.batch_calculate_scores(user, jobs)
         return all_scores[:limit]
 
-    def filter_by_minimum_score(self, scores: List[Tuple[int, MatchScore]], min_score: int = 50) -> List[Tuple[int, MatchScore]]:
+    def filter_by_minimum_score(
+        self, scores: List[Tuple[int, MatchScore]], min_score: int = 50
+    ) -> List[Tuple[int, MatchScore]]:
         """
         Filter matches by minimum score threshold
 

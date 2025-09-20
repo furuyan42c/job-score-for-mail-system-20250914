@@ -5,11 +5,12 @@
 高並行性（10,000+同時接続）に最適化された設定
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, validator
-from typing import List, Optional, Literal
 import os
 from pathlib import Path
+from typing import List, Literal, Optional
+
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -28,24 +29,26 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
 
-    @validator('DATABASE_URL')
+    @validator("DATABASE_URL")
     def validate_database_url(cls, v, values):
         """環境別DATABASE_URL検証"""
-        environment = values.get('ENVIRONMENT', 'development')
+        environment = values.get("ENVIRONMENT", "development")
 
-        if environment == 'development':
+        if environment == "development":
             # 開発環境：SQLiteまたはローカルPostgreSQL許可
-            if v.startswith(('sqlite', 'postgresql://postgres:postgres@localhost')):
+            if v.startswith(("sqlite", "postgresql://postgres:postgres@localhost")):
                 return v
-            elif v.startswith('postgresql://') and 'localhost' in v:
+            elif v.startswith("postgresql://") and "localhost" in v:
                 return v
             else:
                 # 開発環境でもSupabase URLは許可
                 return v
-        elif environment in ['staging', 'production']:
+        elif environment in ["staging", "production"]:
             # 本番/ステージング：PostgreSQL必須
-            if not v.startswith('postgresql://'):
-                raise ValueError(f'Production environment requires PostgreSQL URL, got: {v[:50]}...')
+            if not v.startswith("postgresql://"):
+                raise ValueError(
+                    f"Production environment requires PostgreSQL URL, got: {v[:50]}..."
+                )
             return v
         else:
             # その他の環境：すべて許可
@@ -139,7 +142,6 @@ class Settings(BaseSettings):
             return v
         return ["*"]  # Default fallback
 
-
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v):
         """シークレットキーの検証"""
@@ -160,10 +162,7 @@ class Settings(BaseSettings):
         return self.DATABASE_URL
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
     )
 
 
@@ -174,12 +173,14 @@ settings = Settings()
 # 環境別設定
 class DevelopmentSettings(Settings):
     """開発環境設定"""
+
     DEBUG: bool = True
     LOG_LEVEL: str = "DEBUG"
 
 
 class ProductionSettings(Settings):
     """本番環境設定"""
+
     DEBUG: bool = False
     LOG_LEVEL: str = "WARNING"
     ALLOWED_HOSTS: List[str] = ["api.jobmatching.com"]
@@ -187,6 +188,7 @@ class ProductionSettings(Settings):
 
 class TestSettings(Settings):
     """テスト環境設定"""
+
     DEBUG: bool = True
     DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
     CACHE_TTL: int = 1

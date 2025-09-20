@@ -4,16 +4,27 @@
 KPI、メトリクス、レポート生成に関するビジネスロジック
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, date
-from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.analytics import (
-    DashboardKPIs, TimeSeriesMetric, CategoryPerformance, LocationPerformance,
-    CompanyPerformance, UserSegmentAnalysis, ConversionFunnel, ABTestResult,
-    PredictiveAnalytics, ReportRequest, AnalyticsReport, RealTimeMetrics,
-    AlertConfig, TimeGranularity
+    ABTestResult,
+    AlertConfig,
+    AnalyticsReport,
+    CategoryPerformance,
+    CompanyPerformance,
+    ConversionFunnel,
+    DashboardKPIs,
+    LocationPerformance,
+    PredictiveAnalytics,
+    RealTimeMetrics,
+    ReportRequest,
+    TimeGranularity,
+    TimeSeriesMetric,
+    UserSegmentAnalysis,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +41,7 @@ class AnalyticsService:
         period_start: str,
         period_end: str,
         granularity: TimeGranularity,
-        compare_previous: bool = True
+        compare_previous: bool = True,
     ) -> DashboardKPIs:
         """ダッシュボードKPI取得"""
         # 実装簡略化
@@ -42,7 +53,7 @@ class AnalyticsService:
         period_start: str,
         period_end: str,
         granularity: TimeGranularity,
-        filters: Optional[str] = None
+        filters: Optional[str] = None,
     ) -> Optional[TimeSeriesMetric]:
         """時系列メトリクス取得"""
         # 実装簡略化
@@ -53,18 +64,14 @@ class AnalyticsService:
         period_start: str,
         period_end: str,
         top_n: int = 50,
-        sort_by: str = "application_count"
+        sort_by: str = "application_count",
     ) -> List[CategoryPerformance]:
         """カテゴリ別パフォーマンス取得"""
         # 実装簡略化
         pass
 
     async def get_location_performance(
-        self,
-        period_start: str,
-        period_end: str,
-        level: str = "prefecture",
-        top_n: int = 50
+        self, period_start: str, period_end: str, level: str = "prefecture", top_n: int = 50
     ) -> List[LocationPerformance]:
         """地域別パフォーマンス取得"""
         # 実装簡略化
@@ -75,17 +82,14 @@ class AnalyticsService:
         period_start: str,
         period_end: str,
         top_n: int = 100,
-        sort_by: str = "total_applications"
+        sort_by: str = "total_applications",
     ) -> List[CompanyPerformance]:
         """企業別パフォーマンス取得"""
         # 実装簡略化
         pass
 
     async def get_user_segments(
-        self,
-        period_start: str,
-        period_end: str,
-        segment_type: Optional[str] = None
+        self, period_start: str, period_end: str, segment_type: Optional[str] = None
     ) -> List[UserSegmentAnalysis]:
         """ユーザーセグメント分析"""
         # 実装簡略化
@@ -96,26 +100,21 @@ class AnalyticsService:
         funnel_name: str,
         period_start: str,
         period_end: str,
-        segment_filters: Optional[str] = None
+        segment_filters: Optional[str] = None,
     ) -> Optional[ConversionFunnel]:
         """コンバージョンファネル分析"""
         # 実装簡略化
         pass
 
     async def get_ab_test_results(
-        self,
-        active_only: bool = False,
-        test_ids: Optional[List[str]] = None
+        self, active_only: bool = False, test_ids: Optional[List[str]] = None
     ) -> List[ABTestResult]:
         """A/Bテスト結果取得"""
         # 実装簡略化
         pass
 
     async def get_predictive_analytics(
-        self,
-        prediction_type: str,
-        horizon_days: int = 30,
-        confidence_level: float = 0.95
+        self, prediction_type: str, horizon_days: int = 30, confidence_level: float = 0.95
     ) -> Optional[PredictiveAnalytics]:
         """予測分析取得"""
         # 実装簡略化
