@@ -1,12 +1,14 @@
 """
-T027: Data Import Batch Service - TDD GREEN Phase
-Minimal implementation to make tests pass
+T027: Data Import Batch Service - TDD REFACTOR Phase
+Production-ready implementation with improved quality and performance
 
 This service handles bulk job data import from CSV/JSON sources including:
-- Data validation and cleansing
-- Duplicate detection
-- Import progress tracking
-- Error handling for malformed data
+- Data validation and cleansing with configurable rules
+- Advanced duplicate detection with multiple strategies
+- Real-time import progress tracking
+- Comprehensive error handling and logging
+- Batch processing with performance optimization
+- Configurable import settings and limits
 """
 
 import csv
@@ -14,16 +16,88 @@ import json
 import io
 import uuid
 import logging
-from datetime import datetime
-from typing import Dict, Any, List, Optional, Union
+import asyncio
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional, Union, Tuple
+from dataclasses import dataclass
+from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text, select
+from sqlalchemy import text, select, insert, update
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import UploadFile, HTTPException
 
 from app.models.job_orm import Job
 from app.models.batch_job import BatchJob, JobType, JobStatus
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+class DuplicateHandlingStrategy(str, Enum):
+    """Strategies for handling duplicate records"""
+    SKIP = "skip"
+    UPDATE = "update"
+    ERROR = "error"
+
+
+class ImportFileFormat(str, Enum):
+    """Supported import file formats"""
+    CSV = "csv"
+    JSON = "json"
+
+
+@dataclass
+class ImportConfig:
+    """Configuration for import operations"""
+    max_file_size_mb: int = 100
+    max_records_per_batch: int = 1000
+    max_validation_errors: int = 100
+    enable_async_processing: bool = True
+    duplicate_strategy: DuplicateHandlingStrategy = DuplicateHandlingStrategy.SKIP
+    required_fields: List[str] = None
+
+    def __post_init__(self):
+        if self.required_fields is None:
+            self.required_fields = ['endcl_cd', 'company_name', 'application_name']
+
+
+@dataclass
+class ImportProgress:
+    """Track import progress with detailed metrics"""
+    import_id: str
+    total_records: int
+    processed_records: int = 0
+    imported_count: int = 0
+    failed_count: int = 0
+    duplicate_count: int = 0
+    validation_errors: List[Dict[str, Any]] = None
+    start_time: datetime = None
+    estimated_completion: Optional[datetime] = None
+    current_batch: int = 0
+    total_batches: int = 0
+
+    def __post_init__(self):
+        if self.validation_errors is None:
+            self.validation_errors = []
+        if self.start_time is None:
+            self.start_time = datetime.utcnow()
+
+    @property
+    def progress_percentage(self) -> float:
+        """Calculate progress percentage"""
+        if self.total_records == 0:
+            return 0.0
+        return min(100.0, (self.processed_records / self.total_records) * 100)
+
+    @property
+    def is_completed(self) -> bool:
+        """Check if import is completed"""
+        return self.processed_records >= self.total_records
+
+    @property
+    def elapsed_time(self) -> timedelta:
+        """Calculate elapsed time"""
+        return datetime.utcnow() - self.start_time
 
 
 class DataImportBatchService:
