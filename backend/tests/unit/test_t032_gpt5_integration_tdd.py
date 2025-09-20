@@ -58,7 +58,7 @@ class TestT032GPT5NanoIntegration:
             email_type="weekly_digest"
         )
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def gpt5_service(self, gpt5_config):
         """GPT-5 nano service instance"""
         # This will fail - service class doesn't exist yet
