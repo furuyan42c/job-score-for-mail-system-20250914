@@ -457,63 +457,152 @@ class DuplicateControlService:
     async def check_job_creation_allowed(
         self,
         new_job: Dict[str, Any],
-        existing_jobs: List[Dict[str, Any]]
+        existing_jobs: List[Dict[str, Any]],
+        similarity_threshold: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Check if job creation is allowed (not a duplicate).
-        GREEN PHASE: Simple field comparison.
+
+        Args:
+            new_job: Job to check for duplicates
+            existing_jobs: List of existing jobs to compare against
+            similarity_threshold: Custom threshold (defaults to config)
+
+        Returns:
+            Dict containing allowed status and details
         """
+        threshold = similarity_threshold or self.config.HIGH_SIMILARITY_THRESHOLD
+
         for existing_job in existing_jobs:
             similarity_score = self._calculate_job_similarity(new_job, existing_job)
-            if similarity_score > 0.8:
+            if similarity_score > threshold:
                 return {
                     'allowed': False,
                     'duplicate_job_id': existing_job.get('job_id'),
-                    'similarity_score': similarity_score
+                    'similarity_score': similarity_score,
+                    'threshold_used': threshold
                 }
 
-        return {'allowed': True}
+        return {'allowed': True, 'max_similarity': max(
+            [self._calculate_job_similarity(new_job, job) for job in existing_jobs],
+            default=0.0
+        )}
 
     def _calculate_job_similarity(self, job1: Dict[str, Any], job2: Dict[str, Any]) -> float:
         """
-        Calculate similarity between two jobs.
-        GREEN PHASE: Simple field matching.
+        Calculate weighted similarity between two jobs.
+
+        Uses configurable weights for different job attributes:
+        - Company: 30%
+        - Title: 25%
+        - Location: 20%
+        - Salary: 15%
+        - Employment type: 10%
+
+        Args:
+            job1: First job to compare
+            job2: Second job to compare
+
+        Returns:
+            Similarity score between 0.0 and 1.0
         """
         if not job1 or not job2:
             return 0.0
 
-        matches = 0
-        total_fields = 0
+        weighted_score = 0.0
 
-        # Check key fields
-        fields_to_check = ['endcl_cd', 'application_name', 'location_pref_cd', 'salary_min', 'salary_max']
+        # Company similarity
+        company_match = self._compare_field(job1.get('endcl_cd'), job2.get('endcl_cd'))
+        weighted_score += company_match * self.config.COMPANY_WEIGHT
 
-        for field in fields_to_check:
-            total_fields += 1
-            if job1.get(field) == job2.get(field):
-                matches += 1
+        # Title similarity
+        title_match = self._compare_field(job1.get('application_name'), job2.get('application_name'))
+        weighted_score += title_match * self.config.TITLE_WEIGHT
 
-        return matches / total_fields if total_fields > 0 else 0.0
+        # Location similarity
+        location_match = self._compare_field(job1.get('location_pref_cd'), job2.get('location_pref_cd'))
+        weighted_score += location_match * self.config.LOCATION_WEIGHT
 
-    async def get_user_applications(self, user_id: int) -> List[Dict[str, Any]]:
+        # Salary similarity
+        salary_match = self._compare_salary_range(job1, job2)
+        weighted_score += salary_match * self.config.SALARY_WEIGHT
+
+        # Employment type similarity
+        employment_match = self._compare_field(job1.get('employment_type_cd'), job2.get('employment_type_cd'))
+        weighted_score += employment_match * self.config.EMPLOYMENT_TYPE_WEIGHT
+
+        return min(weighted_score, 1.0)  # Cap at 1.0
+
+    def _compare_field(self, value1: Any, value2: Any) -> float:
+        """Compare two field values."""
+        if value1 is None or value2 is None:
+            return 0.0
+        return 1.0 if value1 == value2 else 0.0
+
+    def _compare_salary_range(self, job1: Dict[str, Any], job2: Dict[str, Any]) -> float:
+        """Compare salary ranges with tolerance for minor differences."""
+        min1, max1 = job1.get('salary_min'), job1.get('salary_max')
+        min2, max2 = job2.get('salary_min'), job2.get('salary_max')
+
+        if any(val is None for val in [min1, max1, min2, max2]):
+            return 0.0
+
+        # Calculate overlap percentage
+        overlap_start = max(min1, min2)
+        overlap_end = min(max1, max2)
+
+        if overlap_start > overlap_end:
+            return 0.0  # No overlap
+
+        overlap_size = overlap_end - overlap_start
+        range1_size = max1 - min1
+        range2_size = max2 - min2
+
+        if range1_size == 0 or range2_size == 0:
+            return 1.0 if min1 == min2 and max1 == max2 else 0.0
+
+        # Return average overlap ratio
+        overlap_ratio = overlap_size / ((range1_size + range2_size) / 2)
+        return min(overlap_ratio, 1.0)
+
+    async def get_user_applications(
+        self,
+        user_id: int,
+        limit: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get user applications from database.
-        GREEN PHASE: Simple query.
+
+        Args:
+            user_id: User ID to fetch applications for
+            limit: Maximum number of applications to return
+
+        Returns:
+            List of user applications ordered by applied_at DESC
         """
         if not self.db:
             # For testing without database
             return []
+
+        query_limit = min(
+            limit or self.config.MAX_APPLICATIONS_QUERY,
+            self.config.MAX_APPLICATIONS_QUERY
+        )
 
         query = """
             SELECT user_id, job_id, endcl_cd, applied_at, created_at
             FROM user_applications
             WHERE user_id = :user_id
             ORDER BY applied_at DESC
+            LIMIT :limit
         """
 
         try:
             from sqlalchemy import text
-            result = await self.db.execute(text(query), {"user_id": user_id})
+            result = await self.db.execute(text(query), {
+                "user_id": user_id,
+                "limit": query_limit
+            })
             rows = result.fetchall()
 
             applications = []
@@ -526,7 +615,116 @@ class DuplicateControlService:
                     'created_at': row.created_at
                 })
 
+            logger.debug(f"Retrieved {len(applications)} applications for user {user_id}")
             return applications
+
         except Exception as e:
-            logger.error(f"Error fetching user applications: {e}")
+            logger.error(f"Error fetching user applications for user {user_id}: {e}")
             raise
+
+    async def get_recent_company_applications(
+        self,
+        user_id: int,
+        days: int = None
+    ) -> Set[str]:
+        """
+        Get companies user applied to within specified days.
+
+        Args:
+            user_id: User ID to check
+            days: Number of days to look back (defaults to configured window)
+
+        Returns:
+            Set of company codes (endcl_cd) with recent applications
+        """
+        days = days or self.window_days
+        cutoff_date = datetime.now() - timedelta(days=days)
+
+        if not self.db:
+            # For testing without database
+            return set()
+
+        query = """
+            SELECT DISTINCT endcl_cd
+            FROM user_applications
+            WHERE user_id = :user_id
+            AND applied_at > :cutoff_date
+            AND endcl_cd IS NOT NULL
+            LIMIT :limit
+        """
+
+        try:
+            from sqlalchemy import text
+            result = await self.db.execute(text(query), {
+                "user_id": user_id,
+                "cutoff_date": cutoff_date,
+                "limit": self.config.MAX_COMPANIES_QUERY
+            })
+            rows = result.fetchall()
+
+            excluded_companies = {row.endcl_cd for row in rows if row.endcl_cd}
+
+            logger.debug(
+                f"Found {len(excluded_companies)} companies with recent applications "
+                f"for user {user_id} in last {days} days"
+            )
+
+            return excluded_companies
+
+        except Exception as e:
+            logger.error(f"Error fetching recent company applications for user {user_id}: {e}")
+            raise
+
+    async def filter_jobs_exclude_recent_companies(
+        self,
+        jobs: List[Dict[str, Any]],
+        user_id: int,
+        exclusion_days: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Filter jobs to exclude companies user applied to recently.
+
+        Args:
+            jobs: List of jobs to filter
+            user_id: User ID to check applications for
+            exclusion_days: Days to look back (defaults to configured window)
+
+        Returns:
+            Filtered list of jobs excluding recent company applications
+        """
+        if not jobs:
+            return []
+
+        exclusion_days = exclusion_days or self.window_days
+
+        try:
+            # Get companies to exclude
+            excluded_companies = await self.get_recent_company_applications(user_id, exclusion_days)
+
+            if not excluded_companies:
+                logger.debug(f"No recent companies to exclude for user {user_id}")
+                return jobs
+
+            # Filter jobs
+            filtered_jobs = []
+            excluded_count = 0
+
+            for job in jobs:
+                job_company = job.get('endcl_cd')
+                if job_company and job_company in excluded_companies:
+                    excluded_count += 1
+                    logger.debug(f"Excluding job {job.get('job_id')} from company {job_company}")
+                else:
+                    filtered_jobs.append(job)
+
+            logger.info(
+                f"Filtered {len(jobs)} jobs -> {len(filtered_jobs)} jobs "
+                f"(excluded {excluded_count} from {len(excluded_companies)} companies)"
+            )
+
+            return filtered_jobs
+
+        except Exception as e:
+            logger.error(f"Error filtering jobs by recent companies for user {user_id}: {e}")
+            # Return original jobs if filtering fails (failsafe)
+            return jobs
