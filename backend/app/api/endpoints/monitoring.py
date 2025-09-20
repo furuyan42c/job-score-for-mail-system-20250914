@@ -1,41 +1,70 @@
 #!/usr/bin/env python3
 """
-T013: Monitoring metrics API endpoints (GREEN Phase)
+T013: Monitoring metrics API endpoints (REFACTORED)
 
-Minimal implementation to pass contract tests.
+Production-ready implementation with real metrics collection and caching.
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Query, Depends, Response
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_
 import psutil
-import random
+import logging
+import json
+import asyncio
+from collections import deque
+
+from app.core.database import get_db
+from app.models.user import User
+from app.models.job import Job
+from app.models.score import Score
+from app.models.batch_job import BatchJob, JobStatus
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
 
+# Metrics cache for performance
+METRICS_CACHE: Dict[str, Any] = {}
+CACHE_TTL = 5  # seconds
+LAST_CACHE_UPDATE = datetime.min
+
+# Rolling metrics storage
+METRICS_HISTORY = {
+    "response_times": deque(maxlen=1000),
+    "error_counts": deque(maxlen=1000),
+    "request_counts": deque(maxlen=1000)
+}
+
+
 class SystemMetrics(BaseModel):
-    """System metrics"""
-    cpu_percent: float
-    memory_percent: float
-    disk_usage: Dict[str, Any]
+    """System resource metrics"""
+    cpu_percent: float = Field(..., ge=0, le=100)
+    memory_percent: float = Field(..., ge=0, le=100)
+    disk_usage: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ApplicationMetrics(BaseModel):
-    """Application metrics"""
-    request_count: int
-    error_count: int
-    avg_response_time: float
-    active_users: int
+    """Application performance metrics"""
+    request_count: int = Field(..., ge=0)
+    error_count: int = Field(..., ge=0)
+    avg_response_time: float = Field(..., ge=0)
+    active_users: int = Field(..., ge=0)
+    uptime_seconds: Optional[float] = Field(None, ge=0)
 
 
 class DatabaseMetrics(BaseModel):
-    """Database metrics"""
-    connection_count: int
-    query_count: int
-    avg_query_time: float
-    pool_size: int
+    """Database connection and performance metrics"""
+    connection_count: int = Field(..., ge=0)
+    query_count: int = Field(..., ge=0)
+    avg_query_time: float = Field(..., ge=0)
+    pool_size: int = Field(..., ge=0)
+    pool_overflow: Optional[int] = Field(None, ge=0)
+    pool_checked_out: Optional[int] = Field(None, ge=0)
 
 
 class BusinessMetrics(BaseModel):
