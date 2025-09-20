@@ -183,7 +183,7 @@ class SupplementLogicService(BaseSupplementService):
 
     def _validate_target_count(self, target_count: Optional[int]) -> int:
         """Validate and return target count."""
-        target = target_count or self.config.target_count
+        target = target_count if target_count is not None else self.config.target_count
         if target < 1:
             raise ValueError("target_count must be positive")
         return target

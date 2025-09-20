@@ -4,52 +4,124 @@ T025: Duplicate Control Service
 
 Prevents duplicate job recommendations by filtering jobs from companies
 where the user has recently applied within a configurable time window.
+
+This service provides comprehensive duplicate detection and prevention:
+- Company-level duplicate filtering (14-day exclusion window)
+- Job-level duplicate detection
+- User application history tracking
+- Configurable duplicate resolution strategies
+- Database-backed application queries
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
+from enum import Enum
 
-from app.models.job import Job
+try:
+    from app.models.job import Job
+except ImportError:
+    # Fallback for testing environments
+    Job = None
 
 logger = logging.getLogger(__name__)
 
 
-class DuplicateControlService:
-    """Service for filtering duplicate job recommendations."""
+class DuplicateStrategy(Enum):
+    """Strategies for resolving duplicate jobs."""
+    KEEP_NEWEST = "keep_newest"
+    KEEP_OLDEST = "keep_oldest"
+    MERGE = "merge"
+    KEEP_FIRST = "keep_first"
 
-    # Configuration constants
+
+class DuplicateControlConfig:
+    """Configuration constants for duplicate control."""
+
+    # Time window configurations
     DEFAULT_WINDOW_DAYS = 14
     MIN_WINDOW_DAYS = 1
     MAX_WINDOW_DAYS = 90
 
-    def __init__(self, db=None, window_days: int = DEFAULT_WINDOW_DAYS):
+    # Similarity thresholds
+    HIGH_SIMILARITY_THRESHOLD = 0.8
+    MEDIUM_SIMILARITY_THRESHOLD = 0.6
+    LOW_SIMILARITY_THRESHOLD = 0.3
+
+    # Job comparison weights
+    COMPANY_WEIGHT = 0.3
+    TITLE_WEIGHT = 0.25
+    LOCATION_WEIGHT = 0.2
+    SALARY_WEIGHT = 0.15
+    EMPLOYMENT_TYPE_WEIGHT = 0.1
+
+    # Database query limits
+    MAX_APPLICATIONS_QUERY = 1000
+    MAX_COMPANIES_QUERY = 500
+
+
+class DuplicateControlService:
+    """
+    Service for filtering duplicate job recommendations.
+
+    Provides comprehensive duplicate detection and prevention capabilities:
+    - Company-level filtering with configurable time windows
+    - Job similarity detection and resolution
+    - User application history management
+    - Multiple duplicate resolution strategies
+    """
+
+    def __init__(
+        self,
+        db=None,
+        window_days: int = DuplicateControlConfig.DEFAULT_WINDOW_DAYS,
+        config: Optional[DuplicateControlConfig] = None
+    ):
         """
         Initialize duplicate control service.
 
         Args:
             db: Database session (optional for testing)
-            window_days: Number of days to check for duplicates (default: 14)
+            window_days: Number of days to check for duplicates
+            config: Custom configuration object (optional)
         """
         self.db = db
+        self.config = config or DuplicateControlConfig()
 
-        # Validate window_days parameter
-        if window_days < self.MIN_WINDOW_DAYS:
+        # Validate and set window_days parameter
+        self.window_days = self._validate_window_days(window_days)
+
+        logger.info(
+            "DuplicateControlService initialized with %d day window, similarity threshold %.2f",
+            self.window_days,
+            self.config.HIGH_SIMILARITY_THRESHOLD
+        )
+
+    def _validate_window_days(self, window_days: int) -> int:
+        """
+        Validate window_days parameter.
+
+        Args:
+            window_days: Requested window days
+
+        Returns:
+            Validated window days within acceptable range
+        """
+        if window_days < self.config.MIN_WINDOW_DAYS:
             logger.warning(
-                "Window days %d is below minimum (%d), using minimum",
+                "Window days %d below minimum (%d), using minimum",
                 window_days,
-                self.MIN_WINDOW_DAYS,
+                self.config.MIN_WINDOW_DAYS,
             )
-            window_days = self.MIN_WINDOW_DAYS
-        elif window_days > self.MAX_WINDOW_DAYS:
+            return self.config.MIN_WINDOW_DAYS
+        elif window_days > self.config.MAX_WINDOW_DAYS:
             logger.warning(
                 "Window days %d exceeds maximum (%d), using maximum",
                 window_days,
-                self.MAX_WINDOW_DAYS,
+                self.config.MAX_WINDOW_DAYS,
             )
-            window_days = self.MAX_WINDOW_DAYS
+            return self.config.MAX_WINDOW_DAYS
 
-        self.window_days = window_days
-        logger.info("DuplicateControlService initialized with %d day window", self.window_days)
+        return window_days
 
     async def filter_duplicates(
         self, jobs: List[Job], applications: List[Dict[str, Any]]
@@ -275,37 +347,59 @@ class DuplicateControlService:
     async def resolve_duplicates(
         self,
         duplicate_groups: List[Dict[str, Any]],
-        strategy: str = 'keep_newest'
+        strategy: str = DuplicateStrategy.KEEP_NEWEST.value
     ) -> List[Dict[str, Any]]:
         """
         Resolve duplicates using specified strategy.
-        GREEN PHASE: Basic implementation for keep_newest and keep_oldest.
+
+        Args:
+            duplicate_groups: Groups of duplicate jobs to resolve
+            strategy: Resolution strategy (keep_newest, keep_oldest, merge, keep_first)
+
+        Returns:
+            List of resolved jobs (one per group)
         """
+        if not duplicate_groups:
+            return []
+
         resolved = []
+        strategy_enum = self._parse_strategy(strategy)
 
         for group in duplicate_groups:
             jobs = group.get('jobs', [])
             if not jobs:
                 continue
 
-            if strategy == 'keep_newest':
-                # Keep job with most recent updated_at
-                newest_job = max(jobs, key=lambda j: j.get('updated_at', datetime.min))
-                resolved.append(newest_job)
-            elif strategy == 'keep_oldest':
-                # Keep job with oldest created_at
-                oldest_job = min(jobs, key=lambda j: j.get('created_at', datetime.max))
-                resolved.append(oldest_job)
-            elif strategy == 'merge':
-                # Simple merge - keep first job and mark as merged
-                merged_job = jobs[0].copy()
-                merged_job['merged_from'] = [j.get('job_id') for j in jobs[1:]]
-                resolved.append(merged_job)
-            else:
-                # Default: keep first job
-                resolved.append(jobs[0])
+            resolved_job = self._resolve_job_group(jobs, strategy_enum)
+            if resolved_job:
+                resolved.append(resolved_job)
 
         return resolved
+
+    def _parse_strategy(self, strategy: str) -> DuplicateStrategy:
+        """Parse strategy string to enum."""
+        try:
+            return DuplicateStrategy(strategy)
+        except ValueError:
+            logger.warning(f"Unknown strategy '{strategy}', using default")
+            return DuplicateStrategy.KEEP_NEWEST
+
+    def _resolve_job_group(self, jobs: List[Dict[str, Any]], strategy: DuplicateStrategy) -> Optional[Dict[str, Any]]:
+        """Resolve a single group of duplicate jobs."""
+        if not jobs:
+            return None
+
+        if strategy == DuplicateStrategy.KEEP_NEWEST:
+            return max(jobs, key=lambda j: j.get('updated_at', datetime.min))
+        elif strategy == DuplicateStrategy.KEEP_OLDEST:
+            return min(jobs, key=lambda j: j.get('created_at', datetime.max))
+        elif strategy == DuplicateStrategy.MERGE:
+            merged_job = jobs[0].copy()
+            merged_job['merged_from'] = [j.get('job_id') for j in jobs[1:]]
+            merged_job['merge_count'] = len(jobs)
+            return merged_job
+        else:  # KEEP_FIRST
+            return jobs[0]
 
     async def check_application_allowed(
         self,
