@@ -54,7 +54,7 @@ chmod +x setup.sh
 # または手動起動
 tmux new -s cc -n claude
 # セッション内で
-codex /run agent
+claude --dangerously-skip-permissions
 ```
 
 ### 3. 監視開始
@@ -106,7 +106,7 @@ Ctrl+C
 # === 基本設定 ===
 SESSION="cc"                    # tmuxセッション名
 TARGET="${SESSION}:1.0"         # 監視対象ペイン
-START_CMD="codex /run agent"    # 起動コマンド
+START_CMD="claude --dangerously-skip-permissions"    # 起動コマンド
 TASKS_PATH="$HOME/work/tasks.md" # タスクファイルパス
 
 # === 監視動作 ===

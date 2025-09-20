@@ -4,9 +4,9 @@ set -euo pipefail
 # ===== 基本設定（環境変数で上書き可）=====
 SESSION="${SESSION:-cc}"
 TARGET="${TARGET:-cc:1.0}"                # Claude Code の tmux pane
-START_CMD="${START_CMD:-codex /run agent}"# 初回起動
-RESTART_CMD="${RESTART_CMD:-$START_CMD}"   # 再起動コマンド
-TASKS_PATH="${TASKS_PATH:-$HOME/work/tasks.md}"
+START_CMD="${START_CMD:-claude --dangerously-skip-permissions}"  # Initial startup command
+RESTART_CMD="${RESTART_CMD:-$START_CMD}"   # Restart command
+TASKS_PATH="${TASKS_PATH:-/Users/furuyanaoki/Project/new.mail.score/specs/002-think-hard-ultrathink/tasks.md}"
 CONTINUE_PROMPT_FILE="${CONTINUE_PROMPT_FILE:-$(dirname "$0")/continue_prompt.txt}"
 
 # 挙動パラメータ
@@ -66,15 +66,119 @@ cap_tail(){
 
 cap_hash(){ cap_tail | shasum | awk '{print $1}'; }
 
-# tasks 完了（progress:100% / 全[x]）
+# 高度なタスク完了検知機能（TDD対応・ブロッカー検知・グループ進捗管理）
 tasks_done(){
     [[ -f "$TASKS_PATH" ]] || return 1
-    local tp dp tc dc
-    tp=$(grep -Ec 'progress:[[:space:]]*[0-9]+%' "$TASKS_PATH" || true)
-    dp=$(grep -Ec 'progress:[[:space:]]*100%\\b' "$TASKS_PATH" || true)
-    tc=$(grep -Ec '^[[:space:]]*[-*][[:space:]]*\[[ xX]\]' "$TASKS_PATH" || true)
-    dc=$(grep -Ec '^[[:space:]]*[-*][[:space:]]*\[[xX]\]' "$TASKS_PATH" || true)
-    (( (tp==0 || dp==tp) && (tc==0 || dc==tc) ))
+
+    local total_tasks completed_tasks blocked_tasks group_completion
+
+    # T形式のタスク（#### T001: タスク名 [100%] [Q:95%] [[DONE]]）を検知
+    total_tasks=$(grep -Ec '^#### T[0-9]+:' "$TASKS_PATH" || true)
+    completed_tasks=$(grep -Ec '^#### T[0-9]+:.*\[100%\].*\[\[DONE\]\]' "$TASKS_PATH" || true)
+
+    # ブロッカータスクをチェック（⚠️ブロッカー）
+    blocked_tasks=$(grep -Ec '⚠️.*ブロック|ブロック.*⚠️' "$TASKS_PATH" || true)
+
+    # 従来形式のprogress:100%とチェックボックスもサポート
+    local progress_total progress_done checkbox_total checkbox_done
+    progress_total=$(grep -Ec 'progress:[[:space:]]*[0-9]+%' "$TASKS_PATH" || true)
+    progress_done=$(grep -Ec 'progress:[[:space:]]*100%\\b' "$TASKS_PATH" || true)
+    checkbox_total=$(grep -Ec '^[[:space:]]*[-*][[:space:]]*\[[ xX]\]' "$TASKS_PATH" || true)
+    checkbox_done=$(grep -Ec '^[[:space:]]*[-*][[:space:]]*\[[xX]\]' "$TASKS_PATH" || true)
+
+    # グループ全体の完了率をチェック（ダッシュボードから）
+    group_completion=$(grep -Eo '\*\*合計\*\*.*\*\*[0-9]+%\*\*' "$TASKS_PATH" 2>/dev/null | grep -Eo '[0-9]+%' | tail -1 | tr -d '%' || echo "0")
+
+    log "Task analysis: T-tasks=$total_tasks completed=$completed_tasks blocked=$blocked_tasks group_completion=${group_completion}%"
+
+    # 完了条件の判定（複数条件で厳密にチェック）
+    local t_format_complete=false
+    local progress_complete=false
+    local checkbox_complete=false
+    local group_complete=false
+
+    # T形式タスクが100%完了かつブロッカーなし
+    if (( total_tasks > 0 && completed_tasks == total_tasks && blocked_tasks == 0 )); then
+        t_format_complete=true
+        log "T-format tasks: ALL COMPLETED ($completed_tasks/$total_tasks, no blockers)"
+    fi
+
+    # 従来のprogress形式チェック
+    if (( progress_total == 0 || progress_done == progress_total )); then
+        progress_complete=true
+        log "Progress format: completed ($progress_done/$progress_total)"
+    fi
+
+    # チェックボックス形式チェック
+    if (( checkbox_total == 0 || checkbox_done == checkbox_total )); then
+        checkbox_complete=true
+        log "Checkbox format: completed ($checkbox_done/$checkbox_total)"
+    fi
+
+    # グループ全体完了率チェック（95%以上で完了とみなす）
+    if (( group_completion >= 95 )); then
+        group_complete=true
+        log "Group completion: ${group_completion}% >= 95%"
+    fi
+
+    # 総合判定（いずれかの条件で完了）
+    if $t_format_complete || ($progress_complete && $checkbox_complete && $group_complete); then
+        log "TASKS COMPLETED: t_format=$t_format_complete progress=$progress_complete checkbox=$checkbox_complete group=$group_complete"
+        return 0
+    else
+        log "Tasks still in progress: t_format=$t_format_complete progress=$progress_complete checkbox=$checkbox_complete group=$group_complete"
+        return 1
+    fi
+}
+
+# TDDフェーズ分析機能
+analyze_tdd_phase(){
+    [[ -f "$TASKS_PATH" ]] || return 1
+
+    local red_tasks green_tasks refactor_tasks total_tdd_tasks
+
+    # TDDフェーズごとのタスク数を分析
+    red_tasks=$(grep -Ec '\[25%\].*RED|\[\[RED\]\]' "$TASKS_PATH" || true)
+    green_tasks=$(grep -Ec '\[50%\].*GREEN|\[\[GREEN\]\]' "$TASKS_PATH" || true)
+    refactor_tasks=$(grep -Ec '\[75%\].*REFACTOR|\[\[REFACTOR\]\]' "$TASKS_PATH" || true)
+    total_tdd_tasks=$(grep -Ec '^#### T[0-9]+:' "$TASKS_PATH" || true)
+
+    log "TDD Analysis: RED=$red_tasks GREEN=$green_tasks REFACTOR=$refactor_tasks TOTAL=$total_tdd_tasks"
+
+    # TDD準拠率の計算
+    local tdd_compliance=0
+    if (( total_tdd_tasks > 0 )); then
+        tdd_compliance=$(( (red_tasks + green_tasks + refactor_tasks) * 100 / total_tdd_tasks ))
+    fi
+
+    log "TDD Compliance: ${tdd_compliance}%"
+
+    # 進行中タスクの特定
+    local current_task=$(grep -E '^#### T[0-9]+:.*\[(25|50|75)%\]' "$TASKS_PATH" | head -1 | grep -Eo 'T[0-9]+' || echo "none")
+    if [[ "$current_task" != "none" ]]; then
+        log "Current TDD task: $current_task"
+    fi
+
+    return 0
+}
+
+# ブロッカー検知と報告
+check_blockers(){
+    [[ -f "$TASKS_PATH" ]] || return 1
+
+    local blockers
+    blockers=$(grep -n '⚠️.*ブロック\|ブロック.*⚠️' "$TASKS_PATH" 2>/dev/null | head -5)
+
+    if [[ -n "$blockers" ]]; then
+        log "BLOCKERS DETECTED:"
+        echo "$blockers" | while IFS=: read -r line_num content; do
+            log "  Line $line_num: $(echo "$content" | sed 's/^[[:space:]]*//')"
+        done
+        return 0
+    else
+        log "No blockers detected"
+        return 1
+    fi
 }
 
 # チェックポイント
@@ -126,12 +230,15 @@ probe_ctx(){
     echo ""; return 1
 }
 
-# カスタム /continue コマンド送信
+# カスタム /continue コマンド送信（TDD分析付き）
 send_continue(){
     if [[ -f "$CONTINUE_PROMPT_FILE" ]]; then
         log "sending custom continue prompt from: $CONTINUE_PROMPT_FILE"
+        # 送信前にTDD状況を分析
+        analyze_tdd_phase
         local content=$(cat "$CONTINUE_PROMPT_FILE")
         send_multiline "$content"
+        log "custom continue prompt sent with TDD analysis"
     else
         log "sending default /continue"
         send "/continue"
@@ -247,17 +354,37 @@ load_last
 
 # ===== メインループ =====
 log "Entering main monitoring loop..."
+LAST_TDD_ANALYSIS=$(now)
+LAST_BLOCKER_CHECK=$(now)
+
 while :; do
     sleep 5
 
     # 1) 完了 → 最終保存 & 終了
     if tasks_done; then
         log "All tasks completed! -> final /sc-save & /exit"
+        # 最終TDD分析レポート
+        analyze_tdd_phase
         save_ckpt
         send "/exit"
         sleep 2
         log "Mission accomplished! Goodbye."
         exit 0
+    fi
+
+    # 1.5) 定期TDD分析（5分毎）
+    if (( $(now) - LAST_TDD_ANALYSIS >= 300 )); then
+        log "Performing periodic TDD analysis..."
+        analyze_tdd_phase
+        LAST_TDD_ANALYSIS=$(now)
+    fi
+
+    # 1.6) 定期ブロッカーチェック（3分毎）
+    if (( $(now) - LAST_BLOCKER_CHECK >= 180 )); then
+        if check_blockers; then
+            log "Blockers detected - consider intervention"
+        fi
+        LAST_BLOCKER_CHECK=$(now)
     fi
 
     # 2) 定期オートセーブ

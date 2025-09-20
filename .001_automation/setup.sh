@@ -149,7 +149,7 @@ fi
 # デフォルト設定
 export SESSION="\${SESSION:-$SESSION}"
 export TARGET="\${TARGET:-\${SESSION}:1.0}"
-export START_CMD="\${START_CMD:-codex /run agent}"
+export START_CMD="\${START_CMD:-claude --dangerously-skip-permissions}"
 export LOG_DIR="\${LOG_DIR:-$LOG_DIR}"
 export TASKS_PATH="\${TASKS_PATH:-\$HOME/work/tasks.md}"
 
@@ -171,7 +171,7 @@ create_tmux_helper() {
 # Claude Code tmuxセッション作成・起動ヘルパー
 
 SESSION_NAME="\${1:-$SESSION}"
-START_CMD="\${2:-codex /run agent}"
+START_CMD="\${2:-claude --dangerously-skip-permissions}"
 
 echo "=== Claude Code セッション起動 ==="
 echo "セッション名: \$SESSION_NAME"
@@ -220,7 +220,7 @@ create_config() {
 # === 基本設定 ===
 SESSION="$SESSION"
 TARGET="\${SESSION}:1.0"
-START_CMD="codex /run agent"
+START_CMD="claude --dangerously-skip-permissions"
 LOG_DIR="$LOG_DIR"
 TASKS_PATH="\$HOME/work/tasks.md"
 

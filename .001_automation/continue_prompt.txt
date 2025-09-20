@@ -1,44 +1,59 @@
 自律実行モードで依頼します。全権限を委任します。
 
-【対象】specs/002-think-hard-ultrathink/tasks.md(T076〜)
+【対象】specs/002-think-hard-ultrathink/tasks.md（バイト求人マッチングシステム）
+
+【現在の状況分析】
+•Group A（インフラ）: 15/15完了✅
+•Group B（コア実装）: 進行中（T021パフォーマンス問題でブロック中⚠️）
+•TDD準拠: RED→GREEN→REFACTORサイクル厳守
 
 【自動実行コマンド】
-⏱時間ベース:
--開始時:/sc-load(存在する場合のみ)
--30分毎:/sc-checkpoint
--終了時:/sc-save
+⏱セッション管理:
+-開始時: /sc-load（存在する場合のみ）
+-30分毎: /sc-checkpoint
+-終了時: /sc-save
 
-🔄タスクベース:
--TDD実行:
-•単一:/tdd-cycle<task-id>
-•並列:/tdd-batch<task-ids>--parallel
--5タスク毎:/tdd-status+進捗報告
--グループ完了時:/verify-and-pr
--重要機能:/sc-business-panel
+🔄TDD実行:
+-単一タスク: /tdd-cycle <task-id>
+-並列実行: /tdd-batch <task-ids> --parallel
+-進捗確認: /tdd-status（5タスク毎）
+-品質確認: /tdd-report
+
+📊監視機能:
+-ブロッカー検知: T021パフォーマンス問題に重点対応
+-TDD準拠率監視: [25%]RED, [50%]GREEN, [75%]REFACTOR, [100%]DONE
+-5タスク毎進捗報告
+-グループ完了時: /verify-and-pr
 
 【実行戦略】
-•TodoWrite常時更新
-•[P]タスク並列実行（最大5並列）
-•MCP/Agent自動選択
-•gitcommit規約:"type(scope):desc[Txx-PHASE]"
-•エラー時:3回リトライ→ブロッカー報告
-•コンテキスト<75%維持
+•TodoWrite常時更新（進捗追跡）
+•[P]マーク並列実行（最大5並列）
+•MCP最適選択: --seq（分析）, --serena（実装）, --c7（ドキュメント）
+•Git規約: "type(scope): desc [Txx-PHASE]"
+•エラー対応: 3回リトライ→ブロッカー報告
 
-【品質保証】
-•TDD厳守:RED(テスト作成)→GREEN(実装)→REFACTOR(改善)
-•テスト必須実行
-•コンテキスト監視
-•各完了時git commit
+【品質保証（TDD厳守）】
+•🔴RED: テスト先行作成（必ず失敗確認）
+•🟢GREEN: 最小実装（ハードコード許容）
+•🔄REFACTOR: 品質改善（テスト保持）
+•各フェーズでgit commit必須
+
+【優先対応】
+1. T021パフォーマンス改善（10万件→5分以内）
+2. T022-T024のブロック解除
+3. T019,T020未着手タスクの開始
 
 【停止条件】
-•全タスク完了
-•ブロッカー発生（リトライ失敗）
-•コンテキスト　85%到達
+•全タスク[100%][[DONE]]到達
+•ブロッカー3回リトライ失敗
+•コンテキスト85%到達
+•グループ進捗95%到達
 
-【進捗報告】
+【進捗報告タイミング】
 •5タスク完了毎
-•エラー/ブロッカー発生時
+•ブロッカー発生・解除時
+•TDDフェーズ変更時
 •グループ完了時
 
-実行開始をお願いします。
---all-mcp--parallel-optimization--delegateauto--think-hard--seq
+実行開始をお願いします。品質とTDD準拠を最優先に。
+--all-mcp --parallel-optimization --delegate auto --think-hard --seq
