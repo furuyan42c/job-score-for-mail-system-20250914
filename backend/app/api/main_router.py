@@ -13,6 +13,7 @@ from app.api.endpoints.matching import router as matching_router
 from app.api.endpoints.email import router as email_router
 from app.api.endpoints.sql import router as sql_router
 from app.api.endpoints.monitoring import router as monitoring_router
+from app.api.endpoints.auth import router as auth_router
 
 # Create main API router
 api_router = APIRouter()
@@ -61,4 +62,9 @@ api_router.include_router(
 api_router.include_router(
     monitoring_router,
     tags=["monitoring"]
+)
+
+api_router.include_router(
+    auth_router,
+    tags=["authentication"]
 )

@@ -34,6 +34,10 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
+# Alias for compatibility
+get_password_hash = hash_password
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash
@@ -88,6 +92,23 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     return encoded_jwt
 
 
+def decode_token(token: str) -> Dict[str, Any]:
+    """
+    Decode and verify JWT token
+
+    Args:
+        token: JWT token to decode
+
+    Returns:
+        Token payload
+
+    Raises:
+        JWTError: If token is invalid
+    """
+    return jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+
+
+# Alias for compatibility
 def verify_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Verify and decode a JWT token
@@ -123,6 +144,34 @@ def is_token_expired(token: str) -> bool:
         return True
     except JWTError:
         return True
+
+
+async def verify_api_key(token: str, db) -> Optional[Any]:
+    """
+    Verify API key and return associated user
+
+    Args:
+        token: API key token
+        db: Database session
+
+    Returns:
+        User if valid, None otherwise
+    """
+    from app.models.user import User
+    from sqlalchemy import select
+
+    try:
+        payload = decode_token(token)
+        email = payload.get("sub")
+        if not email:
+            return None
+
+        result = await db.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
+    except Exception:
+        return None
 
 
 def validate_password_strength(password: str) -> Dict[str, Any]:
