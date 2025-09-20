@@ -1,6 +1,11 @@
 # タスクリスト: バイト求人マッチングシステム
 
-**作成日**: 2025-09-17（TDD対応: 2025-09-18）
+## 🚨 CRITICAL UPDATE 2025-09-20 🚨
+**ER図分析により31の重要タスクを緊急追加**
+**T100-T130: ER図完全準拠データモデル・バッチ・API実装**
+**優先度: P1-CRITICAL (即座に着手必須)**
+
+**作成日**: 2025-09-17（TDD対応: 2025-09-18）（ER図対応: 2025-09-20）
 **方法論**: TDD (Test-Driven Development) 完全準拠
 **並列戦略**: 有効（[P]マークが並列実行可能）
 **MCP活用戦略**: 統合（各タスクにMCP推奨を記載）
@@ -2210,6 +2215,503 @@ gantt
   - メールサイズ: 平均85KB
   - セクション充足率: 100%
   ```
+
+---
+
+## 🚨 CRITICAL: ER図対応データモデル実装 🚨
+
+### C1: 核心データモデル実装 🔴
+
+#### T100: SemrushKeywords モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: SEOキーワードマスタモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: Semrushキーワードデータ管理の核心モデル
+- **ファイル**: `backend/app/models/semrush_keywords.py`
+- **依存**: T001
+- **MCP**: --seq (複雑データ構造)
+- **ER図**: Lines 64-76
+- **フィールド**: keyword_id, keyword, intent, volume, keyword_difficulty, cpc_usd, serp_features, potential_traffic, personal_keyword_difficulty, positions, imported_at
+
+#### T101: KeywordScoring モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: キーワードスコアリングモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: LLM処理後キーワードとスコアリングルール
+- **ファイル**: `backend/app/models/keyword_scoring.py`
+- **依存**: T100
+- **MCP**: --seq (LLM連携)
+- **ER図**: Lines 78-88
+- **フィールド**: scoring_id, keyword_id (FK), processed_keyword, expanded_keywords, base_score, weight_factor, scoring_rules (JSONB), llm_analysis, processed_at
+
+#### T102: JobEnrichment モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 求人エンリッチメントモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 求人に対するキーワードマッチングとスコア詳細
+- **ファイル**: `backend/app/models/job_enrichment.py`
+- **依存**: T101, T016
+- **MCP**: --seq (JSONB処理)
+- **ER図**: Lines 90-99
+- **フィールド**: job_id (PK/FK), score, keyword_matches (JSONB), needs_categories, occupation_category, jobtype_detail, score_details (JSONB), updated_at
+
+#### T103: UserJobMapping モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ユーザー求人マッピングモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: ユーザーと求人のパーソナライズマッピング（配信の核心）
+- **ファイル**: `backend/app/models/user_job_mapping.py`
+- **依存**: T017, T102
+- **MCP**: --seq (UUID, JSONB処理)
+- **ER図**: Lines 101-113
+- **フィールド**: mapping_id (UUID PK), user_id (UUID FK), job_id (FK), mapping_date, personalized_score, rank_in_user, is_selected, pick_id (FK), selection_reason, match_details (JSONB), created_at
+
+#### T104: UserActions モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ユーザーアクション履歴モデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: ユーザー行動ログ（パーソナライゼーションの基盤）
+- **ファイル**: `backend/app/models/user_actions.py`
+- **依存**: T017, T016
+- **MCP**: --seq (複雑JSONB構造)
+- **ER図**: Lines 115-139
+- **フィールド**: action_id (UUID PK), user_id (UUID FK), job_id (FK), action_type, source_queue_id (FK), source_type, source_metadata (JSONB), 各種求人詳細フィールド, action_date, context (JSONB)
+
+#### T105: UserProfiles モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ユーザープロファイルモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: user_actionsから集計したユーザー嗜好プロファイル
+- **ファイル**: `backend/app/models/user_profiles.py`
+- **依存**: T104
+- **MCP**: --seq (集計処理, JSONB)
+- **ER図**: Lines 141-162
+- **フィールド**: user_id (UUID PK), applied_*_cds（各種集計）, applied_salary_stats (JSONB), total_applications, avg_applied_score, avg_applied_fee, first/last_application_at, profile_updated_at, created_at
+
+#### T106: NeedsCategoryMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ニーズカテゴリマスタモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: セクション選定で使用するニーズカテゴリ定義
+- **ファイル**: `backend/app/models/needs_category_master.py`
+- **依存**: T001
+- **MCP**: --c7 (マスタデータ)
+- **ER図**: Lines 164-171
+- **フィールド**: category_id (PK), category_name (UK), matching_type, matching_value, priority, created_at
+
+#### T107: DailyJobPicks モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 日次求人ピックモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 日次で選定された配信対象求人（メール生成の核心）
+- **ファイル**: `backend/app/models/daily_job_picks.py`
+- **依存**: T102, T106
+- **MCP**: --seq (LLM生成フィールド)
+- **ER図**: Lines 173-198
+- **フィールド**: pick_id (UUID PK), job_id (FK/UK), pick_date (UK), client_cd, endcl_cd, application_name, company_name, salary, hours, pref_cd, city_cd, station_cd, end_at, needs_category, occupation_category, jobtype_detail, keyword_id (FK), job_score, email_title, email_main_points, email_special_benefit, email_url, email_metadata (JSONB), created_at
+
+#### T108: DailyEmailQueue モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 日次メール配信キューモデル（ER図基準）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: ユーザー別メール配信キュー（メール配信の核心）
+- **ファイル**: `backend/app/models/daily_email_queue.py`
+- **依存**: T017, T107
+- **MCP**: --seq (JSONB配列処理)
+- **ER図**: Lines 200-221
+- **フィールド**: queue_id (UUID PK), user_id (UUID FK/UK), delivery_date (UK), user_name, user_location, email_subject, email_catchphrase, email_intro, top5_jobs (JSONB), area_top10_jobs (JSONB), local_top10_jobs (JSONB), special_jobs (JSONB), total_job_count, mypage_url, unsubscribe_url, delivery_status, scheduled_at, sent_at, delivery_metadata (JSONB), created_at
+
+### C2: マスタデータモデル実装 🟡
+
+#### T109: OccupationMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 職種マスタモデル（3階層分類）
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: occupation_cd1/cd2/cd3の3階層職種分類マスタ
+- **ファイル**: `backend/app/models/occupation_master.py`
+- **依存**: T001
+- **MCP**: --c7 (マスタデータ)
+- **ER図**: Lines 3-10
+- **フィールド**: occupation_cd1 (PK), occupation_cd2 (PK), occupation_cd3 (PK), occupation_name, jobtype_detail, jobtype_detail_name
+
+#### T110: PrefectureMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 都道府県マスタモデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 都道府県マスタ（地域区分含む）
+- **ファイル**: `backend/app/models/prefecture_master.py`
+- **依存**: T001
+- **MCP**: --c7 (マスタデータ)
+- **ER図**: Lines 12-18
+- **フィールド**: pref_cd (PK), url_segment, name, region, category_id
+
+#### T111: CityMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 市区町村マスタモデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 市区町村マスタ（緯度経度、政令指定都市情報含む）
+- **ファイル**: `backend/app/models/city_master.py`
+- **依存**: T110
+- **MCP**: --c7 (マスタデータ, 地理データ)
+- **ER図**: Lines 20-33
+- **フィールド**: city_cd (PK), pref_cd (FK), pref_name, name, name_with_gun, kana, latitude, longitude, is_conflicted_name, is_special_city, is_special_city_top, special_city_top_city_cd
+
+#### T112: AdjacentCities モデル実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: 隣接都市モデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 市区町村間の隣接関係と距離情報
+- **ファイル**: `backend/app/models/adjacent_cities.py`
+- **依存**: T111
+- **MCP**: --c7 (地理データ)
+- **ER図**: Lines 35-40
+- **フィールド**: city_cd (PK/FK), adjacent_city_cd (PK/FK), distance_km, created_at
+
+#### T113: EmploymentTypeMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 雇用形態マスタモデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 雇用形態マスタ（アルバイト、正社員等）
+- **ファイル**: `backend/app/models/employment_type_master.py`
+- **依存**: T001
+- **MCP**: --c7 (マスタデータ)
+- **ER図**: Lines 42-47
+- **フィールド**: employment_type_cd (PK), group_cd, json_ld_type, name
+
+#### T114: SalaryTypeMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 給与タイプマスタモデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 給与タイプマスタ（時給、日給、月給等）
+- **ファイル**: `backend/app/models/salary_type_master.py`
+- **依存**: T001
+- **MCP**: --c7 (マスタデータ)
+- **ER図**: Lines 49-53
+- **フィールド**: salary_type_cd (PK), json_ld_type, name
+
+#### T115: FeatureMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 求人特徴マスタモデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 求人特徴マスタ（学歴不問、週1OK等）
+- **ファイル**: `backend/app/models/feature_master.py`
+- **依存**: T001
+- **MCP**: --seq (キーワードマッチング)
+- **ER図**: Lines 55-62
+- **フィールド**: feature_cd (PK), name, group_name, is_enabled, match_keywords, ng_keywords
+
+### C3: 既存Jobs関連モデル拡張 🟡
+
+#### T116: JobsMatchRaw モデル実装 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 求人マッチング用簡略モデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: マッチング用に最適化された求人データ
+- **ファイル**: `backend/app/models/jobs_match_raw.py`
+- **依存**: T016
+- **MCP**: --seq (最適化)
+- **ER図**: Lines 233-253
+- **フィールド**: job_id (PK/FK), client_cd, endcl_cd, occupation_cd1-3, salary_type_cd, min/max_salary, pref_cd, city_cd, station_cd, employment_type_cd, end_at, score, fee, is_delivery, created_at, updated_at
+
+#### T117: JobsContentsRaw モデル実装 [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: 求人コンテンツ用簡略モデル
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: メール表示用に最適化された求人コンテンツ
+- **ファイル**: `backend/app/models/jobs_contents_raw.py`
+- **依存**: T016
+- **MCP**: --c7 (コンテンツ最適化)
+- **ER図**: Lines 255-262
+- **フィールド**: job_id (PK/FK), application_name, company_name, salary, hours, endcl_name
+
+### C4: ER図対応バッチ処理実装 🔴
+
+#### T118: Semrushキーワードインポートバッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: Semrushキーワードデータ定期インポート処理
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: Semrush APIからキーワードデータを定期取得・更新
+- **ファイル**: `backend/app/batch/semrush_import_batch.py`
+- **依存**: T100
+- **MCP**: --seq (API統合, 大量データ処理)
+- **処理内容**: API接続, データ差分更新, エラーハンドリング, 実行ログ
+
+#### T119: キーワードスコアリングバッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: LLMによるキーワード処理とスコアリング
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: キーワード展開、スコアリングルール適用、LLM分析
+- **ファイル**: `backend/app/batch/keyword_scoring_batch.py`
+- **依存**: T101, T118
+- **MCP**: --seq (LLM統合, 複雑ロジック)
+- **処理内容**: キーワード正規化, 展開処理, スコアリング, LLM分析結果保存
+
+#### T120: 求人エンリッチメントバッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 求人データにキーワードマッチングとスコア付与
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 求人とキーワードのマッチング処理、スコア詳細計算
+- **ファイル**: `backend/app/batch/job_enrichment_batch.py`
+- **依存**: T102, T119
+- **MCP**: --seq (大量データマッチング)
+- **処理内容**: キーワードマッチング, スコア計算, ニーズカテゴリ分類, 職種カテゴリ付与
+
+#### T121: ユーザープロファイル集計バッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ユーザーアクションからプロファイル自動更新
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: user_actionsテーブルから嗜好データを集計・プロファイル更新
+- **ファイル**: `backend/app/batch/user_profile_aggregation_batch.py`
+- **依存**: T105, T104
+- **MCP**: --seq (集計処理, 統計計算)
+- **処理内容**: アクション集計, 統計計算, 嗜好分析, プロファイル更新
+
+#### T122: 日次求人ピック生成バッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 日次配信対象求人の選定とメタデータ生成
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 求人選定、LLMメール生成、配信用メタデータ作成
+- **ファイル**: `backend/app/batch/daily_job_picks_batch.py`
+- **依存**: T107, T120
+- **MCP**: --seq (LLM生成, 選定ロジック)
+- **処理内容**: 求人スコア順選定, LLMタイトル/訴求点生成, URL生成, メタデータ構築
+
+#### T123: メール配信キュー生成バッチ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ユーザー別メール配信キューの自動生成
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: 個人別求人選定、6セクション構成、配信キュー作成
+- **ファイル**: `backend/app/batch/email_queue_generation_batch.py`
+- **依存**: T108, T122, T024
+- **MCP**: --seq (個人化処理, セクション選定統合)
+- **処理内容**: ユーザー別求人選定, セクション構成, メール件名/本文生成, 配信スケジューリング
+
+#### T124: 日次バッチ統合スケジューラ [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: ER図対応バッチの依存関係管理と実行制御
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: T118→T119→T120→T121→T122→T123の順次実行制御
+- **ファイル**: `backend/app/batch/integrated_daily_scheduler.py`
+- **依存**: T030, T118-T123
+- **MCP**: --seq (複雑依存関係, 統合制御)
+- **処理内容**: 依存関係チェック, 段階実行, エラー時リカバリ, 実行ログ統合, 完了通知
+
+### C5: ER図対応API実装 🟡
+
+#### T125: SemrushキーワードAPI [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: キーワードマスタ管理API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: GET/POST /api/keywords 関連エンドポイント
+- **ファイル**: `backend/app/routers/keywords.py`
+- **依存**: T100
+- **MCP**: --c7 (API設計)
+- **エンドポイント**: GET/POST/PUT/DELETE /api/keywords
+
+#### T126: 求人エンリッチメントAPI [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: 求人エンリッチメント管理API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: GET/POST /api/jobs/{id}/enrichment 関連エンドポイント
+- **ファイル**: `backend/app/routers/enrichment.py`
+- **依存**: T102
+- **MCP**: --c7 (API設計)
+- **エンドポイント**: GET/POST/PUT /api/jobs/{id}/enrichment
+
+#### T127: ユーザーアクションAPI [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: ユーザーアクション記録API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: POST /api/users/{id}/actions 関連エンドポイント
+- **ファイル**: `backend/app/routers/user_actions.py`
+- **依存**: T104
+- **MCP**: --c7 (リアルタイム処理)
+- **エンドポイント**: POST/GET /api/users/{id}/actions
+
+#### T128: ユーザープロファイルAPI [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: ユーザープロファイル管理API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: GET/PUT /api/users/{id}/profile 関連エンドポイント
+- **ファイル**: `backend/app/routers/user_profiles.py`
+- **依存**: T105
+- **MCP**: --c7 (プロファイル管理)
+- **エンドポイント**: GET/PUT /api/users/{id}/profile
+
+#### T129: 日次ピック管理API [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: 日次求人ピック管理API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: GET /api/daily-picks 関連エンドポイント
+- **ファイル**: `backend/app/routers/daily_picks.py`
+- **依存**: T107
+- **MCP**: --c7 (日次データ管理)
+- **エンドポイント**: GET/POST /api/daily-picks
+
+#### T130: メール配信キューAPI [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: メール配信キュー管理API
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: GET/POST /api/email-queue 関連エンドポイント
+- **ファイル**: `backend/app/routers/email_queue.py`
+- **依存**: T108
+- **MCP**: --c7 (配信管理)
+- **エンドポイント**: GET/POST/PUT /api/email-queue
 
 ---
 
