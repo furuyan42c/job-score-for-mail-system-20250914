@@ -13,6 +13,7 @@ TDD Phase: RED
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime
@@ -63,7 +64,8 @@ class TestT032GPT5NanoIntegration:
         # This will fail - service class doesn't exist yet
         service = GPT5NanoService(gpt5_config)
         await service.initialize()
-        return service
+        yield service
+        await service.cleanup()
 
     def test_gpt5_config_validation(self):
         """Test GPT-5 configuration validation - SHOULD FAIL"""

@@ -11,36 +11,105 @@ T031 Email Generator Service - GREEN Phase (TDD)
 
 import os
 import time
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
-from jinja2 import Template, FileSystemLoader, Environment
+from pathlib import Path
+from jinja2 import Template, FileSystemLoader, Environment, TemplateNotFound
+from dataclasses import dataclass, field
+
+
+@dataclass
+class EmailGenerationMetrics:
+    """メール生成メトリクス"""
+    total_generated: int = 0
+    generation_times: List[float] = field(default_factory=list)
+    cache_hits: int = 0
+    cache_misses: int = 0
+    errors: int = 0
+
+    @property
+    def average_generation_time(self) -> float:
+        """平均生成時間（ミリ秒）"""
+        return sum(self.generation_times) / len(self.generation_times) if self.generation_times else 0.0
+
+    @property
+    def cache_hit_ratio(self) -> float:
+        """キャッシュヒット率"""
+        total_requests = self.cache_hits + self.cache_misses
+        return self.cache_hits / total_requests if total_requests > 0 else 0.0
 
 
 class EmailValidationError(Exception):
     """メールバリデーションエラー"""
+    def __init__(self, message: str, error_code: str = None):
+        super().__init__(message)
+        self.error_code = error_code
+        self.timestamp = datetime.now().isoformat()
+
+
+class TemplateRenderError(EmailValidationError):
+    """テンプレートレンダリングエラー"""
+    pass
+
+
+class SectionValidationError(EmailValidationError):
+    """セクションバリデーションエラー"""
     pass
 
 
 class EmailGenerator:
     """メールテンプレート生成サービス"""
 
-    def __init__(self):
-        self.template_path = "/Users/furuyanaoki/Project/new.mail.score/backend/templates"
+    def __init__(self, template_path: Optional[str] = None, cache_size: int = 100):
+        # パスの設定
+        if template_path:
+            self.template_path = Path(template_path)
+        else:
+            self.template_path = Path(__file__).parent.parent / "templates"
+
+        # パスの検証
+        if not self.template_path.exists():
+            raise EmailValidationError(
+                f"Template directory does not exist: {self.template_path}",
+                "TEMPLATE_DIR_NOT_FOUND"
+            )
+
+        # キャッシュ設定
         self.template_cache = {}
-        self.generation_metrics = {
-            "total_generated": 0,
-            "generation_time_ms": [],
-            "cache_hits": 0,
-            "cache_misses": 0
+        self.cache_size = cache_size
+
+        # メトリクス
+        self.metrics = EmailGenerationMetrics()
+
+        # ロガー設定
+        self.logger = logging.getLogger(__name__)
+
+        # 必須セクション定義
+        self.required_sections = {
+            'editorial_picks', 'high_salary', 'nearby',
+            'popular', 'new_jobs', 'recommended'
         }
 
         # Jinja2環境の設定
-        self.env = Environment(
-            loader=FileSystemLoader(self.template_path),
-            autoescape=True
-        )
+        try:
+            self.env = Environment(
+                loader=FileSystemLoader(str(self.template_path)),
+                autoescape=True,
+                trim_blocks=True,
+                lstrip_blocks=True
+            )
+            # カスタムフィルターの追加
+            self.env.filters['currency'] = self._format_currency
+            self.env.filters['truncate_smart'] = self._truncate_smart
+        except Exception as e:
+            raise EmailValidationError(
+                f"Failed to initialize Jinja2 environment: {str(e)}",
+                "JINJA_INIT_ERROR"
+            )
 
-    def generate_email(self, user_data: Dict[str, Any], sections_data: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    def generate_email(self, user_data: Dict[str, Any], sections_data: Dict[str, List[Dict[str, Any]]],
+                      template_name: str = "email_template.html") -> Dict[str, Any]:
         """
         6セクション構造でメールを生成する
 
@@ -54,39 +123,51 @@ class EmailGenerator:
         start_time = time.time()
 
         try:
+            # 入力データのバリデーション
+            self._validate_user_data(user_data)
+            self._validate_sections_data(sections_data)
+
             # テンプレートの読み込み
-            template = self._get_template("email_template.html")
+            template = self._get_template(template_name)
+
+            # セクションデータの前処理
+            processed_sections = self._process_sections_data(sections_data)
 
             # テンプレート変数の準備
-            template_vars = {
-                "user_name": user_data.get("name", "ユーザー"),
-                "greeting": "こんにちは",
-                "user_email": user_data.get("email", ""),
-                "sections": sections_data,
-                "cta_url": "https://example.com/jobs",
-                "unsubscribe_url": "https://example.com/unsubscribe"
-            }
+            template_vars = self._prepare_template_vars(user_data, processed_sections)
 
             # HTMLレンダリング
-            html_content = template.render(template_vars)
+            html_content = self._render_template(template, template_vars)
 
-            # メールサイズ計算
-            email_size = self.calculate_email_size(html_content)
-
-            # 生成メトリクスの更新
+            # 後処理とメトリクス更新
             generation_time = (time.time() - start_time) * 1000
-            self._update_metrics(generation_time)
+            self._update_metrics(generation_time, success=True)
 
-            return {
+            # 結果の構築
+            result = {
                 "html_content": html_content,
                 "template_vars": template_vars,
-                "size_bytes": email_size,
+                "size_bytes": self.calculate_email_size(html_content),
                 "generation_time_ms": generation_time,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
+                "template_name": template_name,
+                "sections_count": {k: len(v) for k, v in sections_data.items()},
+                "quality_score": self._calculate_quality_score(html_content, sections_data)
             }
 
+            self.logger.info(f"Email generated successfully for user {user_data.get('name', 'unknown')}")
+            return result
+
+        except EmailValidationError:
+            self._update_metrics(0, success=False)
+            raise
         except Exception as e:
-            raise EmailValidationError(f"Email generation failed: {str(e)}")
+            self._update_metrics(0, success=False)
+            self.logger.error(f"Unexpected error in email generation: {str(e)}")
+            raise EmailValidationError(
+                f"Email generation failed due to unexpected error: {str(e)}",
+                "UNEXPECTED_ERROR"
+            )
 
     def insert_dynamic_content(self, template_vars: Dict[str, Any]) -> Dict[str, Any]:
         """
