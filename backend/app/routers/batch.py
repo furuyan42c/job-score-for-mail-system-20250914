@@ -17,6 +17,7 @@ from app.models.batch import (
 )
 from app.models.common import BaseResponse, PaginatedResponse
 from app.services.batch import BatchService
+from app.services.data_import_batch import DataImportBatchService
 
 router = APIRouter()
 
@@ -108,6 +109,130 @@ async def get_batch_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get batch status: {str(e)}"
+        )
+
+
+# ============================================================================
+# T027: Data Import Batch Endpoints - TDD GREEN Phase
+# ============================================================================
+
+@router.post("/import/jobs", status_code=200)
+async def import_jobs_data(
+    file: UploadFile = File(...),
+    format: str = Query(..., description="File format (csv or json)"),
+    column_mapping: Optional[str] = Query(None, description="JSON column mapping for CSV"),
+    enable_cleansing: Optional[str] = Query("false", description="Enable data cleansing"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    T027: Job data import from CSV/JSON files (TDD GREEN implementation)
+
+    Import job data with validation, deduplication, and progress tracking.
+    """
+    try:
+        import json as json_lib
+
+        # Parse optional parameters
+        column_mapping_dict = None
+        if column_mapping:
+            try:
+                column_mapping_dict = json_lib.loads(column_mapping)
+            except json_lib.JSONDecodeError:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Invalid column_mapping JSON format"
+                )
+
+        enable_cleansing_bool = enable_cleansing.lower() == "true"
+
+        # Initialize service and process import
+        import_service = DataImportBatchService(db)
+        result = await import_service.import_jobs_from_file(
+            file=file,
+            format_type=format,
+            column_mapping=column_mapping_dict,
+            enable_cleansing=enable_cleansing_bool
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Import failed: {str(e)}"
+        )
+
+
+@router.get("/import/{import_id}/status", status_code=200)
+async def get_import_status(
+    import_id: str = Path(..., description="Import ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    T027: Get import progress status (TDD GREEN implementation)
+
+    Track the progress of a data import operation.
+    """
+    try:
+        import_service = DataImportBatchService(db)
+        status_info = await import_service.get_import_status(import_id)
+        return status_info
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get import status: {str(e)}"
+        )
+
+
+@router.post("/import/{import_id}/cancel", status_code=200)
+async def cancel_import(
+    import_id: str = Path(..., description="Import ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    T027: Cancel running import (TDD GREEN implementation)
+
+    Cancel a running data import operation.
+    """
+    try:
+        import_service = DataImportBatchService(db)
+        result = await import_service.cancel_import(import_id)
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to cancel import: {str(e)}"
+        )
+
+
+@router.get("/import/history", status_code=200)
+async def get_import_history(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Page size"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    T027: Get import history (TDD GREEN implementation)
+
+    Retrieve the history of data import operations.
+    """
+    try:
+        import_service = DataImportBatchService(db)
+        history = await import_service.get_import_history(page, page_size)
+        return history
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get import history: {str(e)}"
         )
 
 
