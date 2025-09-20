@@ -42,37 +42,99 @@ ALLOWED_SQL_PATTERNS = [
     r'^\s*WITH\s+.*SELECT\s+'
 ]
 
-# 危険なSQL文のパターン（禁止）
-DANGEROUS_SQL_PATTERNS = [
+# ============================================================================
+# SECURITY PATTERN DEFINITIONS (Organized by threat category)
+# ============================================================================
+
+# Core DDL/DML attacks - Prevents data modification and structure changes
+CORE_DDL_DML_PATTERNS = [
     r'\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE|REPLACE)\b',
-    r'\b(EXEC|EXECUTE|SP_|XP_)\b',
-    r'\b(UNION\s+SELECT)\b',
     r';\s*(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE)',
-    r'--\s*$',  # SQL コメント
-    r'/\*.*\*/',  # ブロックコメント
-    r'\b(CONCAT|SUBSTRING|ASCII|CHAR)\s*\(',  # SQL injection関数
-    r"'[^']*'[^']*'",  # クォート抜けの可能性
-    r'\b(WAITFOR|SLEEP|DELAY)\b',  # 時間遅延攻撃
-    r'\b(LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE)\b',  # ファイル操作
-    # Advanced injection patterns (T039 enhancement)
-    r'\bEXISTS\s*\(',  # EXISTS subquery (blind injection)
-    r'\b0x[0-9A-Fa-f]+',  # Hex encoding
-    r'\b(BENCHMARK|EXTRACTVALUE|UPDATEXML)\s*\(',  # Advanced injection functions
-    r'\b(VERSION|USER|DATABASE|CURRENT_USER|SESSION_USER|SYSTEM_USER)\s*\(',  # Information functions
-    r'\bINFORMATION_SCHEMA\b',  # Information schema access
-    r'\b(GRANT|REVOKE)\s+',  # Privilege escalation
-    r'\bCREATE\s+USER\b',  # User creation
-    r'\b(MD5|SHA1|SHA2)\s*\(',  # Hash functions (can be used for blind injection)
-    # Encoding and evasion patterns
+]
+
+# Stored procedure and command execution attacks
+PROCEDURE_EXECUTION_PATTERNS = [
+    r'\b(EXEC|EXECUTE|SP_|XP_)\b',
+]
+
+# Union-based injection patterns
+UNION_INJECTION_PATTERNS = [
+    r'\b(UNION\s+SELECT)\b',
+]
+
+# Comment-based evasion attacks
+COMMENT_EVASION_PATTERNS = [
+    r'--\s*$',  # SQL line comments
+    r'/\*.*\*/',  # SQL block comments
+]
+
+# String manipulation injection functions
+STRING_INJECTION_PATTERNS = [
+    r'\b(CONCAT|SUBSTRING|ASCII|CHAR)\s*\(',
+    r"'[^']*'[^']*'",  # Quote escape attempts
+]
+
+# Time-based blind injection patterns
+TIME_BASED_INJECTION_PATTERNS = [
+    r'\b(WAITFOR|SLEEP|DELAY)\b',
+    r'\b(BENCHMARK|EXTRACTVALUE|UPDATEXML)\s*\(',
+]
+
+# File system access patterns
+FILE_SYSTEM_PATTERNS = [
+    r'\b(LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE)\b',
+]
+
+# Advanced blind injection patterns (T039 enhancement)
+BLIND_INJECTION_PATTERNS = [
+    r'\bEXISTS\s*\(',  # Subquery existence checks
+    r'\b(MD5|SHA1|SHA2)\s*\(',  # Hash functions for blind injection
+]
+
+# Information gathering patterns
+INFORMATION_GATHERING_PATTERNS = [
+    r'\b(VERSION|USER|DATABASE|CURRENT_USER|SESSION_USER|SYSTEM_USER)\s*\(',
+    r'\bINFORMATION_SCHEMA\b',
+    r'\bSCHEMA_NAME\b',
+    r'@@[a-zA-Z_]+',  # MySQL system variables
+]
+
+# Encoding bypass patterns
+ENCODING_BYPASS_PATTERNS = [
+    r'\b0x[0-9A-Fa-f]+',  # Hex literals
     r'%[0-9A-Fa-f]{2}',  # URL encoding
     r'\\u[0-9A-Fa-f]{4}',  # Unicode encoding
     r'\bFROM_BASE64\s*\(',  # Base64 decoding
     r'\bCONVERT\s*\(',  # Character set conversion
-    r'@@[a-zA-Z_]+',  # MySQL system variables
     r'\b(HEX|UNHEX)\s*\(',  # Hex conversion functions
-    r'\b(NOW|UNIX_TIMESTAMP|CONNECTION_ID)\s*\(',  # Time/connection functions
-    r'\bSCHEMA_NAME\b',  # Schema information
 ]
+
+# Privilege escalation patterns
+PRIVILEGE_ESCALATION_PATTERNS = [
+    r'\b(GRANT|REVOKE)\s+',
+    r'\bCREATE\s+USER\b',
+]
+
+# System function patterns
+SYSTEM_FUNCTION_PATTERNS = [
+    r'\b(NOW|UNIX_TIMESTAMP|CONNECTION_ID)\s*\(',
+]
+
+# Combined dangerous patterns (all categories)
+DANGEROUS_SQL_PATTERNS = (
+    CORE_DDL_DML_PATTERNS +
+    PROCEDURE_EXECUTION_PATTERNS +
+    UNION_INJECTION_PATTERNS +
+    COMMENT_EVASION_PATTERNS +
+    STRING_INJECTION_PATTERNS +
+    TIME_BASED_INJECTION_PATTERNS +
+    FILE_SYSTEM_PATTERNS +
+    BLIND_INJECTION_PATTERNS +
+    INFORMATION_GATHERING_PATTERNS +
+    ENCODING_BYPASS_PATTERNS +
+    PRIVILEGE_ESCALATION_PATTERNS +
+    SYSTEM_FUNCTION_PATTERNS
+)
 
 # 許可されるテーブル名パターン
 ALLOWED_TABLES = [
@@ -137,9 +199,98 @@ class SQLSecurityError(BaseModel):
 # SECURITY FUNCTIONS
 # ============================================================================
 
+# Pattern categories for better violation reporting
+PATTERN_CATEGORIES = {
+    'DDL_DML': (CORE_DDL_DML_PATTERNS, "データ変更操作が検出されました"),
+    'PROCEDURE': (PROCEDURE_EXECUTION_PATTERNS, "ストアドプロシージャ実行が検出されました"),
+    'UNION': (UNION_INJECTION_PATTERNS, "UNION インジェクションが検出されました"),
+    'COMMENTS': (COMMENT_EVASION_PATTERNS, "SQLコメント回避が検出されました"),
+    'STRING_MANIPULATION': (STRING_INJECTION_PATTERNS, "文字列操作インジェクションが検出されました"),
+    'TIME_BASED': (TIME_BASED_INJECTION_PATTERNS, "時間ベースインジェクションが検出されました"),
+    'FILE_SYSTEM': (FILE_SYSTEM_PATTERNS, "ファイルシステムアクセスが検出されました"),
+    'BLIND_INJECTION': (BLIND_INJECTION_PATTERNS, "ブラインドインジェクションが検出されました"),
+    'INFO_GATHERING': (INFORMATION_GATHERING_PATTERNS, "情報収集攻撃が検出されました"),
+    'ENCODING': (ENCODING_BYPASS_PATTERNS, "エンコーディング回避が検出されました"),
+    'PRIVILEGE': (PRIVILEGE_ESCALATION_PATTERNS, "権限昇格攻撃が検出されました"),
+    'SYSTEM_FUNCTIONS': (SYSTEM_FUNCTION_PATTERNS, "システム関数アクセスが検出されました"),
+}
+
+def _normalize_query(query: str) -> str:
+    """Normalize SQL query for security analysis"""
+    return re.sub(r'\s+', ' ', query.upper().strip())
+
+def _check_allowed_query_type(normalized_query: str) -> bool:
+    """Check if query type is allowed (read-only operations)"""
+    for pattern in ALLOWED_SQL_PATTERNS:
+        if re.match(pattern, normalized_query, re.IGNORECASE):
+            return True
+    return False
+
+def _detect_dangerous_patterns(normalized_query: str) -> List[str]:
+    """Detect dangerous SQL patterns by category"""
+    violations = []
+
+    for category, (patterns, message) in PATTERN_CATEGORIES.items():
+        for pattern in patterns:
+            if re.search(pattern, normalized_query, re.IGNORECASE):
+                violations.append(f"{message}: {pattern}")
+                break  # Only report first match per category
+
+    return violations
+
+def _validate_table_access(normalized_query: str) -> List[str]:
+    """Validate table access permissions"""
+    violations = []
+
+    # Extract CTE (Common Table Expression) names to avoid false positives
+    cte_names = set()
+    cte_pattern = r'\bWITH\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+AS'
+    cte_matches = re.findall(cte_pattern, normalized_query, re.IGNORECASE)
+    for cte_name in cte_matches:
+        cte_names.add(cte_name.lower())
+
+    # Check FROM clause tables (excluding CTEs)
+    table_pattern = r'\bFROM\s+([a-zA-Z_][a-zA-Z0-9_]*)'
+    tables = re.findall(table_pattern, normalized_query, re.IGNORECASE)
+
+    for table in tables:
+        table_lower = table.lower()
+        if table_lower not in ALLOWED_TABLES and table_lower not in cte_names:
+            violations.append(f"許可されていないテーブル: {table}")
+
+    # Check JOIN clause tables (excluding CTEs)
+    join_pattern = r'\bJOIN\s+([a-zA-Z_][a-zA-Z0-9_]*)'
+    join_tables = re.findall(join_pattern, normalized_query, re.IGNORECASE)
+
+    for table in join_tables:
+        table_lower = table.lower()
+        if table_lower not in ALLOWED_TABLES and table_lower not in cte_names:
+            violations.append(f"JOINで許可されていないテーブル: {table}")
+
+    return violations
+
+def _validate_query_complexity(normalized_query: str) -> List[str]:
+    """Validate query complexity limits"""
+    violations = []
+
+    # Subquery depth check
+    subquery_depth = normalized_query.count('(SELECT')
+    if subquery_depth > 3:
+        violations.append("サブクエリの深さが制限を超えています（最大3階層）")
+
+    # UNION count check
+    if 'UNION' in normalized_query and 'SELECT' in normalized_query:
+        union_count = normalized_query.count('UNION')
+        if union_count > 2:
+            violations.append("UNION句の使用が制限を超えています（最大2回）")
+
+    return violations
+
 def validate_sql_security(query: str) -> Tuple[bool, List[str]]:
     """
-    SQLクエリのセキュリティ検証
+    SQLクエリのセキュリティ検証（T039拡張版）
+
+    包括的なセキュリティチェックを実行し、カテゴリ別の詳細な違反情報を提供
 
     Args:
         query: 検証するSQLクエリ
@@ -149,50 +300,21 @@ def validate_sql_security(query: str) -> Tuple[bool, List[str]]:
     """
     violations = []
 
-    # 正規化（大文字小文字、余分な空白を統一）
-    normalized_query = re.sub(r'\s+', ' ', query.upper().strip())
+    # Query normalization
+    normalized_query = _normalize_query(query)
 
-    # 1. 許可されるSQL文パターンのチェック
-    allowed = False
-    for pattern in ALLOWED_SQL_PATTERNS:
-        if re.match(pattern, normalized_query, re.IGNORECASE):
-            allowed = True
-            break
+    # 1. Query type validation (read-only check)
+    if not _check_allowed_query_type(normalized_query):
+        violations.append("許可されていないSQL文タイプです（読み取り専用のみ許可）")
 
-    if not allowed:
-        violations.append("許可されていないSQL文タイプです")
+    # 2. Dangerous pattern detection
+    violations.extend(_detect_dangerous_patterns(normalized_query))
 
-    # 2. 危険なパターンのチェック
-    for pattern in DANGEROUS_SQL_PATTERNS:
-        if re.search(pattern, normalized_query, re.IGNORECASE):
-            violations.append(f"危険なSQL文が検出されました: {pattern}")
+    # 3. Table access validation
+    violations.extend(_validate_table_access(normalized_query))
 
-    # 3. テーブル名のチェック
-    table_pattern = r'\bFROM\s+([a-zA-Z_][a-zA-Z0-9_]*)'
-    tables = re.findall(table_pattern, normalized_query, re.IGNORECASE)
-
-    for table in tables:
-        if table.lower() not in ALLOWED_TABLES:
-            violations.append(f"許可されていないテーブル: {table}")
-
-    # 4. JOIN句のテーブルチェック
-    join_pattern = r'\bJOIN\s+([a-zA-Z_][a-zA-Z0-9_]*)'
-    join_tables = re.findall(join_pattern, normalized_query, re.IGNORECASE)
-
-    for table in join_tables:
-        if table.lower() not in ALLOWED_TABLES:
-            violations.append(f"JOINで許可されていないテーブル: {table}")
-
-    # 5. サブクエリの深さチェック
-    subquery_depth = normalized_query.count('(SELECT')
-    if subquery_depth > 3:
-        violations.append("サブクエリの深さが制限を超えています")
-
-    # 6. UNION句のチェック（制限的に許可）
-    if 'UNION' in normalized_query and 'SELECT' in normalized_query:
-        union_count = normalized_query.count('UNION')
-        if union_count > 2:
-            violations.append("UNION句の使用が制限を超えています")
+    # 4. Query complexity validation
+    violations.extend(_validate_query_complexity(normalized_query))
 
     is_safe = len(violations) == 0
     return is_safe, violations
