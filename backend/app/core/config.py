@@ -22,11 +22,34 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
 
-    # データベース設定（Supabase）
+    # データベース設定（環境別対応）
     DATABASE_URL: str
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
+
+    @validator('DATABASE_URL')
+    def validate_database_url(cls, v, values):
+        """環境別DATABASE_URL検証"""
+        environment = values.get('ENVIRONMENT', 'development')
+
+        if environment == 'development':
+            # 開発環境：SQLiteまたはローカルPostgreSQL許可
+            if v.startswith(('sqlite', 'postgresql://postgres:postgres@localhost')):
+                return v
+            elif v.startswith('postgresql://') and 'localhost' in v:
+                return v
+            else:
+                # 開発環境でもSupabase URLは許可
+                return v
+        elif environment in ['staging', 'production']:
+            # 本番/ステージング：PostgreSQL必須
+            if not v.startswith('postgresql://'):
+                raise ValueError(f'Production environment requires PostgreSQL URL, got: {v[:50]}...')
+            return v
+        else:
+            # その他の環境：すべて許可
+            return v
 
     # データベース接続プール設定（高並行性対応）
     DB_POOL_SIZE: int = Field(default=100, description="基本接続プール数")
@@ -116,20 +139,6 @@ class Settings(BaseSettings):
             return v
         return ["*"]  # Default fallback
 
-    @validator("DATABASE_URL")
-    def validate_database_url(cls, v, values):
-        """データベースURLの検証"""
-        # 開発環境ではSQLiteも許可
-        env = values.get("ENVIRONMENT", "development")
-        if env == "development":
-            # 開発環境では幅広いDBを許可
-            if not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://", "sqlite+aiosqlite://")):
-                raise ValueError("Invalid DATABASE_URL format")
-        else:
-            # 本番/ステージング環境ではPostgreSQL/Supabaseのみ
-            if not v.startswith(("postgresql://", "postgresql+asyncpg://")):
-                raise ValueError("DATABASE_URLはPostgreSQLのURLである必要があります")
-        return v
 
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v):

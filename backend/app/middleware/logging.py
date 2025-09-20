@@ -441,7 +441,7 @@ class ApplicationEventLogger:
             data={
                 "event_type": event_type,
                 "user_id": user_id,
-                **（data or {})
+                **(data or {})
             }
         )
 
