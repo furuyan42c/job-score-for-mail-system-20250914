@@ -28,6 +28,19 @@ class PersonalizedScoringService:
     BEHAVIOR_ANALYSIS_DAYS = 30
     MIN_HISTORY_SIZE = 5
 
+    # Score combination weights
+    SCORE_WEIGHTS = {
+        "model_prediction": 0.4,
+        "user_preferences": 0.3,
+        "skill_matching": 0.2,
+        "experience_matching": 0.1
+    }
+
+    # Performance and caching settings
+    MAX_HISTORY_ANALYSIS = 1000  # Maximum history records to analyze
+    CACHE_TTL_SECONDS = 3600     # Cache time-to-live
+    PERFORMANCE_WARNING_THRESHOLD = 2.0  # Seconds
+
     def __init__(self):
         """Initialize personalized scoring service."""
         self.factors = self.ALS_FACTORS
@@ -296,64 +309,193 @@ class PersonalizedScoringService:
         return None
 
     async def _calculate_skill_matching_score(self, user: User, job_id: str) -> float:
-        """Calculate score based on skill matching"""
+        """
+        Calculate score based on skill matching
+
+        Args:
+            user: User with search history containing skills
+            job_id: Job identifier to analyze for skill requirements
+
+        Returns:
+            Skill matching score between 0-100
+        """
         try:
             if not user.search_history:
                 return self.DEFAULT_SCORE
 
-            # Analyze skills from search history
+            # Configuration for skill scoring
+            SKILL_CATEGORIES = {
+                "programming": {
+                    "python": 25, "javascript": 20, "java": 22, "go": 18,
+                    "typescript": 20, "rust": 15, "php": 18, "ruby": 16
+                },
+                "frameworks": {
+                    "fastapi": 20, "django": 18, "react": 20, "vue": 18,
+                    "angular": 17, "flask": 15, "spring": 19, "express": 16
+                },
+                "databases": {
+                    "postgresql": 18, "mysql": 16, "mongodb": 15, "redis": 12,
+                    "elasticsearch": 14, "sqlite": 10
+                },
+                "design": {
+                    "photoshop": 15, "figma": 18, "sketch": 16, "ui": 20,
+                    "ux": 22, "design": 15, "adobe": 14
+                },
+                "devops": {
+                    "docker": 18, "kubernetes": 20, "aws": 19, "gcp": 17,
+                    "terraform": 16, "jenkins": 14
+                }
+            }
+
+            # Analyze user skill preferences
             skill_counts = Counter()
-            for record in user.search_history:
-                if "skills" in record:
-                    for skill in record["skills"]:
-                        skill_counts[skill] += 1
-
-            # Score based on job_id matching skills
-            score = self.DEFAULT_SCORE
-
-            if "python" in job_id.lower() and skill_counts.get("python", 0) > 0:
-                score += 25
-            if "javascript" in job_id.lower() and skill_counts.get("javascript", 0) > 0:
-                score += 20
-            if "design" in job_id.lower() and any(skill in ["design", "photoshop", "ui"] for skill in skill_counts):
-                score += 15
-
-            return min(100, score)
-
-        except Exception as e:
-            logger.error("Error calculating skill matching score: %s", e)
-            return self.DEFAULT_SCORE
-
-    async def _calculate_experience_matching_score(self, user: User, job_id: str) -> float:
-        """Calculate score based on experience level matching"""
-        try:
-            if not user.search_history:
-                return self.DEFAULT_SCORE
-
-            # Analyze experience levels from search history
-            experience_counts = Counter()
             interaction_weights = {"apply": 3, "save": 2, "view": 1}
 
             for record in user.search_history:
                 weight = interaction_weights.get(record.get("interaction_type", "view"), 1)
-                if "experience_level" in record:
-                    experience_counts[record["experience_level"]] += weight
+                if "skills" in record and isinstance(record["skills"], list):
+                    for skill in record["skills"]:
+                        skill_counts[skill.lower()] += weight
 
-            # Score based on job_id matching experience levels
-            score = self.DEFAULT_SCORE
+            # Extract skills from job_id
+            job_skills = self._extract_skills_from_job_id(job_id)
 
-            if "senior" in job_id.lower() and experience_counts.get("senior", 0) > 0:
-                score += 20
-            if "junior" in job_id.lower() and experience_counts.get("junior", 0) > 0:
-                score += 15
-            if "mid" in job_id.lower() and experience_counts.get("mid", 0) > 0:
-                score += 18
+            if not job_skills:
+                return self.DEFAULT_SCORE
 
-            return min(100, score)
+            # Calculate skill matching score
+            total_score = 0
+            matched_skills = 0
+
+            for job_skill in job_skills:
+                if job_skill in skill_counts:
+                    # Find skill category and base score
+                    skill_score = self._get_skill_base_score(job_skill, SKILL_CATEGORIES)
+
+                    # Apply user preference strength
+                    user_skill_strength = min(skill_counts[job_skill] / 5.0, 1.0)
+                    adjusted_score = skill_score * user_skill_strength
+
+                    total_score += adjusted_score
+                    matched_skills += 1
+
+            # Calculate final score
+            if matched_skills == 0:
+                return self.DEFAULT_SCORE
+
+            # Average the matched skills and add to base score
+            average_skill_score = total_score / matched_skills
+            final_score = self.DEFAULT_SCORE + (average_skill_score * 0.8)
+
+            return min(100.0, max(0.0, final_score))
 
         except Exception as e:
-            logger.error("Error calculating experience matching score: %s", e)
+            logger.error("Error calculating skill matching score for user %s, job %s: %s",
+                        getattr(user, 'user_id', 'unknown'), job_id, e)
             return self.DEFAULT_SCORE
+
+    def _extract_skills_from_job_id(self, job_id: str) -> List[str]:
+        """Extract skill keywords from job_id"""
+        job_lower = job_id.lower()
+        potential_skills = [
+            "python", "javascript", "java", "go", "typescript", "rust", "php", "ruby",
+            "fastapi", "django", "react", "vue", "angular", "flask", "spring", "express",
+            "postgresql", "mysql", "mongodb", "redis", "elasticsearch", "sqlite",
+            "photoshop", "figma", "sketch", "ui", "ux", "design", "adobe",
+            "docker", "kubernetes", "aws", "gcp", "terraform", "jenkins"
+        ]
+
+        found_skills = []
+        for skill in potential_skills:
+            if skill in job_lower:
+                found_skills.append(skill)
+
+        return found_skills
+
+    def _get_skill_base_score(self, skill: str, skill_categories: Dict) -> int:
+        """Get base score for a skill from categories"""
+        for category, skills in skill_categories.items():
+            if skill in skills:
+                return skills[skill]
+        return 10  # Default score for unclassified skills
+
+    async def _calculate_experience_matching_score(self, user: User, job_id: str) -> float:
+        """
+        Calculate score based on experience level matching
+
+        Args:
+            user: User with search history containing experience preferences
+            job_id: Job identifier to analyze for experience requirements
+
+        Returns:
+            Experience matching score between 0-100
+        """
+        try:
+            if not user.search_history:
+                return self.DEFAULT_SCORE
+
+            # Configuration for experience level scoring
+            EXPERIENCE_LEVELS = {
+                "entry": {"weight": 10, "aliases": ["entry", "intern", "graduate", "new"]},
+                "junior": {"weight": 15, "aliases": ["junior", "jr", "1-2", "beginner"]},
+                "mid": {"weight": 18, "aliases": ["mid", "middle", "intermediate", "3-5"]},
+                "senior": {"weight": 20, "aliases": ["senior", "sr", "lead", "5+", "expert"]},
+                "principal": {"weight": 22, "aliases": ["principal", "staff", "architect", "10+"]}
+            }
+
+            INTERACTION_WEIGHTS = {"apply": 3, "save": 2, "view": 1}
+
+            # Analyze user experience preferences
+            experience_counts = Counter()
+
+            for record in user.search_history:
+                weight = INTERACTION_WEIGHTS.get(record.get("interaction_type", "view"), 1)
+                if "experience_level" in record:
+                    exp_level = record["experience_level"].lower()
+                    # Normalize experience levels
+                    normalized_level = self._normalize_experience_level(exp_level, EXPERIENCE_LEVELS)
+                    if normalized_level:
+                        experience_counts[normalized_level] += weight
+
+            # Extract experience requirements from job_id
+            job_experience_level = self._extract_experience_from_job_id(job_id, EXPERIENCE_LEVELS)
+
+            if not job_experience_level:
+                return self.DEFAULT_SCORE
+
+            # Calculate experience matching score
+            if job_experience_level in experience_counts:
+                base_score = EXPERIENCE_LEVELS[job_experience_level]["weight"]
+                user_preference_strength = min(experience_counts[job_experience_level] / 5.0, 1.0)
+                experience_bonus = base_score * user_preference_strength
+
+                final_score = self.DEFAULT_SCORE + experience_bonus
+                return min(100.0, max(0.0, final_score))
+
+            return self.DEFAULT_SCORE
+
+        except Exception as e:
+            logger.error("Error calculating experience matching score for user %s, job %s: %s",
+                        getattr(user, 'user_id', 'unknown'), job_id, e)
+            return self.DEFAULT_SCORE
+
+    def _normalize_experience_level(self, exp_level: str, experience_levels: Dict) -> Optional[str]:
+        """Normalize experience level to standard categories"""
+        for level, config in experience_levels.items():
+            if exp_level in config["aliases"]:
+                return level
+        return None
+
+    def _extract_experience_from_job_id(self, job_id: str, experience_levels: Dict) -> Optional[str]:
+        """Extract experience level from job_id"""
+        job_lower = job_id.lower()
+
+        for level, config in experience_levels.items():
+            for alias in config["aliases"]:
+                if alias in job_lower:
+                    return level
+
+        return None
 
     async def _build_user_item_matrix(self):
         """Build user-item interaction matrix for collaborative filtering"""
