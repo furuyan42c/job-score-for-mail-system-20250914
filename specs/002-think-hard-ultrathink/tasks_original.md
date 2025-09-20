@@ -6,28 +6,6 @@
 **MCP活用戦略**: 統合（各タスクにMCP推奨を記載）
 **TDDフェーズ**: 各タスクはRED→GREEN→REFACTORの3フェーズで管理
 
-## 🤖 Claude Code 作業ガイド
-```bash
-# タスク検索
-grep "T021" tasks.md                    # 特定タスクを即座に検索
-grep "ブロック" tasks.md                # ブロッカー確認
-grep "\[0%\]" tasks.md | head -10       # 未着手タスク確認
-
-# 進捗更新
-python3 scripts/update_task_progress.py  # ダッシュボード自動更新
-python3 scripts/check_task_files.py     # ファイル存在確認
-
-# 重要: ファイル分割はしない（単一ファイルが最効率）
-```
-
-## 📍 クイックナビゲーション
-[Group A: インフラ](#group-a-インフラストラクチャ初期設定並列実行可能) | [Group B: コア実装](#group-b-コア実装group-a完了後) | [Group C: 統合](#group-c-統合最適化) | [Group D: テスト](#group-d-実装テスト統合検証) | [Group E: 本番](#group-e-実データ投入本番検証)
-
-### 🔥 最重要タスク
-- **T021** [75%]: 基礎スコア計算（パフォーマンス改善中） ⚠️ブロッカー
-- **T022-T024** [0%]: T021待ち（ブロック中）
-- **T010-T013**: 契約テスト（RED phase実施中）
-
 ## 📊 タスク進捗ダッシュボード
 
 | Group | タスク数 | 完了 | 進行中 | 未着手 | 進捗% | 品質% | 推定残時間 |
@@ -201,15 +179,7 @@ python3 scripts/check_task_files.py     # ファイル存在確認
 
 ### A2: 契約テスト（TDD - RED Phase） [P] 🔴
 
-#### T005: POST /batch/trigger 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: バッチ処理トリガーのテスト ✅ REFACTOR完了
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T005: POST /batch/trigger 契約テスト [P] 🔴 [✅COMPLETE]
 - **説明**: バッチ処理トリガーのテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_batch_trigger.py`
 - **依存**: なし
@@ -226,15 +196,7 @@ def test_batch_trigger_contract():
     assert "batch_id" in response.json()
 ```
 
-#### T006: GET /batch/status/{id} 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: バッチ状態取得のテスト ✅ REFACTOR完了
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T006: GET /batch/status/{id} 契約テスト [P] 🔴 [✅COMPLETE]
 - **説明**: バッチ状態取得のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_batch_status.py`
 - **依存**: なし
@@ -244,15 +206,7 @@ def test_batch_trigger_contract():
   - [✅GREEN]: ハードコード実装でテストパス
   - [✅REFACTOR]: BatchServiceクラス実装完了
 
-#### T007: POST /jobs/import 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: CSV インポートのテスト ✅ REFACTOR完了
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T007: POST /jobs/import 契約テスト [P] 🔴 [✅COMPLETE]
 - **説明**: CSV インポートのテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_jobs_import.py`
 - **依存**: なし
@@ -262,15 +216,7 @@ def test_batch_trigger_contract():
   - [✅GREEN]: ハードコード実装でテストパス
   - [✅REFACTOR]: データ処理サービス実装完了
 
-#### T008: POST /scoring/calculate 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: スコアリング計算のテスト ✅ REFACTOR完了
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T008: POST /scoring/calculate 契約テスト [P] 🔴 [✅COMPLETE]
 - **説明**: スコアリング計算のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_scoring_calculate.py`
 - **依存**: なし
@@ -280,15 +226,7 @@ def test_batch_trigger_contract():
   - [✅GREEN]: ハードコード実装でテストパス
   - [✅REFACTOR]: ScoringServiceクラス実装完了
 
-#### T009: POST /matching/generate 契約テスト [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: マッチング生成のテスト ✅ REFACTOR完了
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T009: POST /matching/generate 契約テスト [P] 🔴 [✅COMPLETE]
 - **説明**: マッチング生成のテスト ✅ REFACTOR完了
 - **ファイル**: `backend/tests/contract/test_matching_generate.py`
 - **依存**: なし
@@ -298,60 +236,28 @@ def test_batch_trigger_contract():
   - [✅GREEN]: ハードコード実装でテストパス
   - [✅REFACTOR]: 統合サービス層実装完了
 
-#### T010: GET /matching/user/{id} 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: ユーザー別マッチングのテスト
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T010: GET /matching/user/{id} 契約テスト [P] 🔴 [x]
 - **説明**: ユーザー別マッチングのテスト
 - **ファイル**: `backend/tests/contract/test_user_matching.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T011: POST /email/generate 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: メール生成のテスト
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T011: POST /email/generate 契約テスト [P] 🔴 [x]
 - **説明**: メール生成のテスト
 - **ファイル**: `backend/tests/contract/test_email_generate.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T012: POST /sql/execute 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: SQL実行のテスト
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T012: POST /sql/execute 契約テスト [P] 🔴 [x]
 - **説明**: SQL実行のテスト
 - **ファイル**: `backend/tests/contract/test_sql_execute.py`
 - **依存**: なし
 - **MCP**: --c7
 - **期待結果**: FAIL
 
-#### T013: GET /monitoring/metrics 契約テスト [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: メトリクス取得のテスト
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T013: GET /monitoring/metrics 契約テスト [P] 🟡 [x]
 - **説明**: メトリクス取得のテスト
 - **ファイル**: `backend/tests/contract/test_monitoring_metrics.py`
 - **依存**: なし
@@ -360,15 +266,7 @@ def test_batch_trigger_contract():
 
 ### A3: フロントエンドコンポーネント（v0完成品） [P]
 
-#### T014: SqlEditor コンポーネント作成 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: SQL入力・実行UI（v0で完成済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T014: SqlEditor コンポーネント作成 [P] 🔴 [✅COMPLETE]
 - **説明**: SQL入力・実行UI（v0で完成済み）
 - **ファイル**: `frontend/app/page.tsx` ✅ v0 SQLite管理画面として完了
 - **依存**: なし
@@ -379,15 +277,7 @@ def test_batch_trigger_contract():
   - ✅ 結果表示テーブル
   - ✅ 実行時間表示
 
-#### T015: Dashboard コンポーネント作成 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: メトリクス表示ダッシュボード（v0で完成済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T015: Dashboard コンポーネント作成 [P] 🟡 [✅COMPLETE]
 - **説明**: メトリクス表示ダッシュボード（v0で完成済み）
 - **ファイル**: `frontend/app/page.tsx` ✅ v0 SQLite管理画面として完了
 - **依存**: なし
@@ -567,15 +457,7 @@ def test_batch_trigger_contract():
   - ✅ 検索ボリュームベーススコアリング
   - ✅ keyword_scoringテーブルへの保存
 
-#### T023: パーソナライズスコア計算実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: implicit ALSによる協調フィルタリング
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T023: パーソナライズスコア計算実装 🔴 [x]
 - **説明**: implicit ALSによる協調フィルタリング
 - **ファイル**: `backend/app/services/personalized_scoring.py` ✅ 実装完了
 - **依存**: T021
@@ -589,15 +471,7 @@ def test_batch_trigger_contract():
 
 ### B3: マッチングサービス実装 🔴
 
-#### T024: 6セクション選定ロジック実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: editorial_picks, top5等の選定
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T024: 6セクション選定ロジック実装 🔴 [x]
 - **説明**: editorial_picks, top5等の選定
 - **ファイル**: `backend/app/services/job_selector.py` ✅ 実装済み
 - **依存**: T021-T023
@@ -609,30 +483,14 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
     return selected[:5]
 ```
 
-#### T025: 重複制御実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: 2週間以内応募企業の除外
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T025: 重複制御実装 🔴 [x]
 - **説明**: 2週間以内応募企業の除外
 - **ファイル**: `backend/src/services/duplicate_control.py`
 - **依存**: T024
 - **MCP**: --serena
 - **TDD**: 統合テスト作成
 
-#### T026: 40件補充ロジック実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: 不足時の補充処理
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T026: 40件補充ロジック実装 🟡 [x]
 - **説明**: 不足時の補充処理
 - **ファイル**: `backend/src/services/job_supplement.py`
 - **依存**: T024
@@ -641,15 +499,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B4: バッチ処理実装 🔴
 
-#### T027: データインポートバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: CSV→DB の並列インポート
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T027: データインポートバッチ実装 🔴 [x]
 - **説明**: CSV→DB の並列インポート
 - **ファイル**: `backend/app/batch/daily_batch.py` ✅ 実装済み
 - **依存**: T016
@@ -657,15 +507,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T007のテストをパス
 - **パフォーマンス目標**: 10万件を5分以内
 
-#### T028: スコアリングバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: 並列スコアリング処理
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T028: スコアリングバッチ実装 🔴 [x]
 - **説明**: 並列スコアリング処理
 - **ファイル**: `backend/src/batch/scoring_batch.py`
 - **依存**: T021-T023
@@ -673,15 +515,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T008のテストをパス
 - **パフォーマンス目標**: 1万人を10分以内
 
-#### T029: マッチングバッチ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: 並列マッチング処理
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T029: マッチングバッチ実装 🔴 [x]
 - **説明**: 並列マッチング処理
 - **ファイル**: `backend/src/batch/matching_batch.py`
 - **依存**: T024-T026
@@ -689,15 +523,7 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 - **TDD**: T009のテストをパス
 - **パフォーマンス目標**: 1万人×40件を10分以内
 
-#### T030: バッチスケジューラ実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: APSchedulerによる定期実行
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T030: バッチスケジューラ実装 🟡 [x]
 - **説明**: APSchedulerによる定期実行
 - **ファイル**: `backend/src/batch/scheduler.py`
 - **依存**: T027-T029
@@ -706,30 +532,14 @@ def select_editorial_picks(jobs: List[Job], user: User) -> List[Job]:
 
 ### B5: メール生成サービス 🔴
 
-#### T031: HTMLテンプレート作成 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 6セクション構成のメールテンプレート
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T031: HTMLテンプレート作成 🟡 [ ]
 - **説明**: 6セクション構成のメールテンプレート
 - **ファイル**: `backend/src/templates/email_template.html`
 - **依存**: T019
 - **MCP**: --magic (HTMLテンプレート)
 - **TDD**: スナップショットテスト
 
-#### T032: GPT-5 nano 統合実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 件名・本文の自動生成
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T032: GPT-5 nano 統合実装 🟡 [ ]
 - **説明**: 件名・本文の自動生成
 - **ファイル**: `backend/src/services/gpt5_integration.py`
 - **依存**: T031
@@ -740,15 +550,7 @@ from openai import OpenAI
 client = OpenAI(model="gpt-5-nano")
 ```
 
-#### T033: フォールバック実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: GPT-5エラー時のテンプレート処理
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T033: フォールバック実装 🟢 [ ]
 - **説明**: GPT-5エラー時のテンプレート処理
 - **ファイル**: `backend/src/services/email_fallback.py`
 - **依存**: T032
@@ -757,90 +559,42 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B6: API実装（GREEN Phase） 🔴
 
-#### T034: バッチAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: /batch/* エンドポイント
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T034: バッチAPIエンドポイント実装 🔴 [x]
 - **説明**: /batch/* エンドポイント
 - **ファイル**: `backend/src/api/batch_routes.py`
 - **依存**: T027-T030
 - **MCP**: --serena
 - **TDD**: T005-T006をパス
 
-#### T035: スコアリングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: /scoring/* エンドポイント
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T035: スコアリングAPIエンドポイント実装 🔴 [x]
 - **説明**: /scoring/* エンドポイント
 - **ファイル**: `backend/src/api/scoring_routes.py`
 - **依存**: T021-T023
 - **MCP**: --serena
 - **TDD**: T008をパス
 
-#### T036: マッチングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: /matching/* エンドポイント
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T036: マッチングAPIエンドポイント実装 🔴 [x]
 - **説明**: /matching/* エンドポイント
 - **ファイル**: `backend/src/api/matching_routes.py`
 - **依存**: T024-T026
 - **MCP**: --serena
 - **TDD**: T009-T010をパス
 
-#### T037: メールAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: /email/* エンドポイント
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T037: メールAPIエンドポイント実装 🔴 [x]
 - **説明**: /email/* エンドポイント
 - **ファイル**: `backend/src/api/email_routes.py`
 - **依存**: T031-T033
 - **MCP**: --serena
 - **TDD**: T011をパス
 
-#### T038: モニタリングAPIエンドポイント実装 [25%] [Q:50%] [🔴RED] [🔴P1]
-
-📝 **タスク内容**: /monitoring/* エンドポイント
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T038: モニタリングAPIエンドポイント実装 🟡 [x]
 - **説明**: /monitoring/* エンドポイント
 - **ファイル**: `backend/src/api/monitoring_routes.py`
 - **依存**: T001
 - **MCP**: --serena
 - **TDD**: T013をパス
 
-#### T039: SQL実行APIエンドポイント実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: /sql/execute エンドポイント（読み取り専用）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T039: SQL実行APIエンドポイント実装 🔴 [ ]
 - **説明**: /sql/execute エンドポイント（読み取り専用）
 - **ファイル**: `backend/src/api/sql_routes.py`
 - **依存**: T001
@@ -850,30 +604,14 @@ client = OpenAI(model="gpt-5-nano")
 
 ### B7: フロントエンド実装（v0完成） [P]
 
-#### T040: APIクライアント実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: バックエンドAPI呼び出しラッパー（v0システムでは独立動作のため不要）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T040: APIクライアント実装 [P] 🔴 [🟢DEPRECATED]
 - **説明**: バックエンドAPI呼び出しラッパー（v0システムでは独立動作のため不要）
 - **ファイル**: 不要（v0はモック実装で完結）
 - **依存**: T034-T039
 - **MCP**: なし
 - **状態**: v0 SQLite管理画面は独立したモック実装のため非対象
 
-#### T041: SQL実行画面実装 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: SQL実行画面（v0で完成済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T041: SQL実行画面実装 🔴 [✅COMPLETE]
 - **説明**: SQL実行画面（v0で完成済み）
 - **ファイル**: `frontend/app/page.tsx` ✅ メインページとして完了
 - **依存**: T014（完了済み）
@@ -884,15 +622,7 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ クエリ実行とリアルタイム結果表示
   - ✅ シンタックスハイライト
 
-#### T042: モニタリング画面実装 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: モニタリング画面（v0で完成済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T042: モニタリング画面実装 🟡 [✅COMPLETE]
 - **説明**: モニタリング画面（v0で完成済み）
 - **ファイル**: `frontend/app/page.tsx` ✅ ダッシュボードタブとして完了
 - **依存**: T015（完了済み）
@@ -903,30 +633,14 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ テーブル構造表示
   - ✅ リアルタイムデータブラウザ
 
-#### T043: メールプレビュー実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: EmailPreview コンポーネント（現在のv0システムでは対象外）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T043: メールプレビュー実装 [P] 🟢 [🟢DEPRECATED]
 - **説明**: EmailPreview コンポーネント（現在のv0システムでは対象外）
 - **ファイル**: 不要（v0はSQLite管理画面特化）
 - **依存**: T040
 - **MCP**: なし
 - **状態**: SQLite管理画面には不要な機能
 
-#### T044: エラーハンドリング実装 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: エラーハンドリング（v0で実装済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T044: エラーハンドリング実装 [P] 🟡 [✅COMPLETE]
 - **説明**: エラーハンドリング（v0で実装済み）
 - **ファイル**: `frontend/app/page.tsx` ✅ 組み込み済み
 - **依存**: なし
@@ -936,15 +650,7 @@ client = OpenAI(model="gpt-5-nano")
   - ✅ ユーザーフレンドリーなエラー表示
   - ✅ ローディング状態管理
 
-#### T045: スタイリング実装 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: UI/UXデザイン（v0で完成済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T045: スタイリング実装 [P] 🟢 [✅COMPLETE]
 - **説明**: UI/UXデザイン（v0で完成済み）
 - **ファイル**: `frontend/app/page.tsx` + shadcn/ui ✅ 完了
 - **依存**: なし
@@ -961,60 +667,28 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C1: 統合テスト 🔴
 
-#### T046: データフロー統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: CSV→スコアリング→マッチング→メール
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T046: データフロー統合テスト 🔴
 - **説明**: CSV→スコアリング→マッチング→メール
 - **ファイル**: `backend/tests/integration/test_data_flow.py`
 - **依存**: T027-T029
 - **MCP**: --seq (複雑なフロー)
 - **期待結果**: 30分以内完了
 
-#### T047: 6セクション選定統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 各セクションの正確な選定確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T047: 6セクション選定統合テスト 🔴
 - **説明**: 各セクションの正確な選定確認
 - **ファイル**: `backend/tests/integration/test_section_selection.py`
 - **依存**: T024-T026
 - **MCP**: --seq
 - **チェックポイント**: 40件の正確な分配
 
-#### T048: 重複制御統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 2週間以内応募企業の除外確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T048: 重複制御統合テスト 🔴
 - **説明**: 2週間以内応募企業の除外確認
 - **ファイル**: `backend/tests/integration/test_duplicate_control.py`
 - **依存**: T025
 - **MCP**: なし
 - **チェックポイント**: endcl_cdの重複なし
 
-#### T049: パフォーマンス統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 処理時間の測定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T049: パフォーマンス統合テスト 🟡
 - **説明**: 処理時間の測定
 - **ファイル**: `backend/tests/integration/test_performance.py`
 - **依存**: T046
@@ -1023,15 +697,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C2: E2Eテスト（v0対応） 🔴
 
-#### T050: SQL実行E2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: ブラウザからのSQL実行フロー（v0システム対応）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T050: SQL実行E2Eテスト 🔴 [⏳PENDING]
 - **説明**: ブラウザからのSQL実行フロー（v0システム対応）
 - **ファイル**: `frontend/tests/e2e/sql-execution.spec.ts`
 - **依存**: T041（完了済み）
@@ -1041,15 +707,7 @@ client = OpenAI(model="gpt-5-nano")
   - ⏳ SQLクエリ入力→実行→結果表示
   - ⏳ 3タブ切り替え（SQLクエリ、データ閲覧、テーブル構造）
 
-#### T051: ダッシュボードE2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: データベース管理画面の確認フロー（v0システム対応）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T051: ダッシュボードE2Eテスト 🟡 [⏳PENDING]
 - **説明**: データベース管理画面の確認フロー（v0システム対応）
 - **ファイル**: `frontend/tests/e2e/dashboard.spec.ts`
 - **依存**: T042（完了済み）
@@ -1059,15 +717,7 @@ client = OpenAI(model="gpt-5-nano")
   - ⏳ データ閲覧タブでのページング機能
   - ⏳ 検索機能（テーブル名・説明での絞り込み）
 
-#### T052: UIレスポンシブE2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: レスポンシブデザインの確認フロー
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T052: UIレスポンシブE2Eテスト 🟢 [⏳PENDING]
 - **説明**: レスポンシブデザインの確認フロー
 - **ファイル**: `frontend/tests/e2e/responsive.spec.ts`
 - **依存**: T045（完了済み）
@@ -1079,60 +729,28 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C3: 最適化 🟡
 
-#### T053: データベースクエリ最適化 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: EXPLAIN分析とクエリ改善
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T053: データベースクエリ最適化 🟡
 - **説明**: EXPLAIN分析とクエリ改善
 - **ファイル**: `backend/src/optimizations/query_optimizer.py`
 - **依存**: T046
 - **MCP**: --seq (パフォーマンス分析)
 - **目標**: 各クエリ3秒以内
 
-#### T054: 並列処理最適化 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: ProcessPoolExecutor の調整
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T054: 並列処理最適化 🟡
 - **説明**: ProcessPoolExecutor の調整
 - **ファイル**: `backend/src/optimizations/parallel_processor.py`
 - **依存**: T027-T029
 - **MCP**: --seq
 - **目標**: CPU使用率80%以上
 
-#### T055: キャッシュ実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Redis/インメモリキャッシュ
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T055: キャッシュ実装 🟢
 - **説明**: Redis/インメモリキャッシュ
 - **ファイル**: `backend/src/services/cache_service.py`
 - **依存**: T053
 - **MCP**: --serena
 - **目標**: 2回目以降のクエリ50%高速化
 
-#### T056: フロントエンド最適化 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: バンドルサイズ削減、遅延ロード（v0で最適化済み）
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T056: フロントエンド最適化 🟢 [✅COMPLETE]
 - **説明**: バンドルサイズ削減、遅延ロード（v0で最適化済み）
 - **ファイル**: `frontend/next.config.js` + 最適化されたv0コード ✅ 完了
 - **依存**: T041-T043（完了済み）
@@ -1146,75 +764,35 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C4: セキュリティ・監視 🔴
 
-#### T057: SQLインジェクション対策テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 悪意のあるクエリのブロック確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T057: SQLインジェクション対策テスト 🔴
 - **説明**: 悪意のあるクエリのブロック確認
 - **ファイル**: `backend/tests/security/test_sql_injection.py`
 - **依存**: T039
 - **MCP**: なし
 - **チェックポイント**: DROP, UPDATE等のブロック
 
-#### T058: API認証実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: X-API-Key認証の実装
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T058: API認証実装 🔴
 - **説明**: X-API-Key認証の実装
 - **ファイル**: `backend/src/middleware/auth.py`
 - **依存**: T034-T039
 - **MCP**: --serena
 - **テストファイル**: `backend/tests/unit/test_auth.py`
 
-#### T059: レート制限実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: API呼び出し制限（50req/s）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T059: レート制限実装 🟡
 - **説明**: API呼び出し制限（50req/s）
 - **ファイル**: `backend/src/middleware/rate_limiter.py`
 - **依存**: T058
 - **MCP**: --serena
 - **テストファイル**: `backend/tests/unit/test_rate_limiter.py`
 
-#### T060: ログ実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 構造化ログ（JSON形式）
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T060: ログ実装 🟡
 - **説明**: 構造化ログ（JSON形式）
 - **ファイル**: `backend/src/utils/logger.py`
 - **依存**: なし
 - **MCP**: --serena
 - **形式**: `{"timestamp": "", "level": "", "message": ""}`
 
-#### T061: エラー監視実装 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Sentry統合
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T061: エラー監視実装 🟢
 - **説明**: Sentry統合
 - **ファイル**: `backend/src/utils/error_tracker.py`
 - **依存**: T060
@@ -1223,60 +801,28 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C5: ドキュメント・デプロイ準備 🟢
 
-#### T062: API ドキュメント生成 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: OpenAPI UIの設定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T062: API ドキュメント生成 🟢
 - **説明**: OpenAPI UIの設定
 - **ファイル**: `backend/src/main.py`
 - **依存**: T034-T039
 - **MCP**: なし
 - **URL**: http://localhost:8000/docs
 
-#### T063: デプロイメント設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Docker/docker-compose設定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T063: デプロイメント設定 🟢
 - **説明**: Docker/docker-compose設定
 - **ファイル**: `docker-compose.yml`
 - **依存**: すべてのタスク
 - **MCP**: --serena
 - **チェックポイント**: 1コマンドで起動
 
-#### T064: CI/CD パイプライン設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: GitHub Actions設定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T064: CI/CD パイプライン設定 🟢
 - **説明**: GitHub Actions設定
 - **ファイル**: `.github/workflows/ci.yml`
 - **依存**: T046-T052
 - **MCP**: --serena
 - **トリガー**: PR時にテスト自動実行
 
-#### T065: 運用マニュアル作成 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 運用手順書の作成
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T065: 運用マニュアル作成 🟢
 - **説明**: 運用手順書の作成
 - **ファイル**: `docs/operations.md`
 - **依存**: すべてのタスク
@@ -1285,15 +831,7 @@ client = OpenAI(model="gpt-5-nano")
 
 ### C6: Supabase統合（TDD駆動） 🔴
 
-#### T066: Supabase環境セットアップ [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Supabaseローカル開発環境の起動とDB初期化
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T066: Supabase環境セットアップ [P] 🔴 [🔴RED]
 - **説明**: Supabaseローカル開発環境の起動とDB初期化
 - **ファイル**: `supabase/migrations/20250917000000_init.sql`
 - **依存**: T001（既存DBスキーマ）
@@ -1305,15 +843,7 @@ client = OpenAI(model="gpt-5-nano")
 - **テストファイル**: `backend/tests/unit/test_supabase_connection.py`
 - **コマンド**: `supabase start`（localhost:54321で起動）
 
-#### T067: Supabaseスキーマ移行 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 既存PostgreSQLスキーマをSupabaseに移行
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T067: Supabaseスキーマ移行 [P] 🔴 [🔴RED]
 - **説明**: 既存PostgreSQLスキーマをSupabaseに移行
 - **ファイル**: `supabase/migrations/20250917000001_job_matching_schema.sql`
 - **依存**: T066
@@ -1325,15 +855,7 @@ client = OpenAI(model="gpt-5-nano")
 - **テストファイル**: `backend/tests/integration/test_supabase_schema.py`
 - **チェックポイント**: `SELECT count(*) FROM information_schema.tables;` = 20
 
-#### T068: v0フロントエンドSupabase統合 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: v0 管理画面にSupabaseクライアント追加
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T068: v0フロントエンドSupabase統合 [P] 🔴 [🔴RED]
 - **説明**: v0 管理画面にSupabaseクライアント追加
 - **ファイル**: `frontend/lib/supabase.ts`, `frontend/package.json`
 - **依存**: T067, T041（v0 SQL実行画面）
@@ -1345,15 +867,7 @@ client = OpenAI(model="gpt-5-nano")
 - **テストファイル**: `frontend/tests/e2e/supabase-integration.spec.ts`
 - **依存関係追加**: `@supabase/supabase-js`, `@supabase/ssr`
 
-#### T069: リアルタイムクエリ実行機能 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: v0画面から実際のSupabaseへのクエリ実行
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T069: リアルタイムクエリ実行機能 🔴 [🔴RED]
 - **説明**: v0画面から実際のSupabaseへのクエリ実行
 - **ファイル**: `frontend/app/page.tsx` (既存v0コードの拡張)
 - **依存**: T068
@@ -1365,15 +879,7 @@ client = OpenAI(model="gpt-5-nano")
 - **テストファイル**: `frontend/tests/integration/test_real_sql_execution.py`
 - **セキュリティ**: SELECT専用、DDL/DML制限
 
-#### T070: Supabaseリアルタイム機能統合 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: データベース変更のリアルタイム更新
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T070: Supabaseリアルタイム機能統合 🟡 [🔴RED]
 - **説明**: データベース変更のリアルタイム更新
 - **ファイル**: `frontend/hooks/useRealtimeQuery.ts`
 - **依存**: T069
@@ -1385,15 +891,7 @@ client = OpenAI(model="gpt-5-nano")
 - **テストファイル**: `frontend/tests/integration/test_realtime_updates.py`
 - **機能**: INSERT/UPDATE/DELETE の即座反映
 
-#### T071: Supabase統合E2Eテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 完全なSupabase統合フローの検証
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T071: Supabase統合E2Eテスト 🔴 [🔴RED]
 - **説明**: 完全なSupabase統合フローの検証
 - **ファイル**: `tests/e2e/supabase-full-integration.spec.ts`
 - **依存**: T066-T070
@@ -1407,15 +905,7 @@ client = OpenAI(model="gpt-5-nano")
   - セキュリティ制限テスト
   - 複数ユーザー同時接続テスト
 
-#### T074: Supabaseデプロイメント設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 本番環境向けSupabase設定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T074: Supabaseデプロイメント設定 🟢 [🔴RED]
 - **説明**: 本番環境向けSupabase設定
 - **ファイル**: `supabase/config.toml`, `.env.production`
 - **依存**: T073
@@ -1546,15 +1036,7 @@ gantt
 
 ### D1: 環境準備 [P] 🔴
 
-#### T075: Supabaseプロジェクト設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Supabaseプロジェクト　確認と認証情報取得
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T075: Supabaseプロジェクト設定 [P] 🔴 [⏳PENDING]
 - **説明**: Supabaseプロジェクト　確認と認証情報取得
 - **作業内容**:
   - Supabaseログイン
@@ -1571,15 +1053,7 @@ gantt
   # Expected: 実際のSupabase URLが設定されている
   ```
 
-#### T076: Backend設定調整 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: PostgreSQL/Supabase接続設定の最適化
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T076: Backend設定調整 [P] 🔴 [⏳PENDING]
 - **説明**: PostgreSQL/Supabase接続設定の最適化
 - **ファイル**: `backend/app/core/config.py`, `backend/.env`
 - **作業内容**:
@@ -1595,15 +1069,7 @@ gantt
   import os; os.environ['ENVIRONMENT'] = 'development'
   ```
 
-#### T077: データベースマイグレーション [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Supabaseデータベースへのスキーマ適用
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T077: データベースマイグレーション 🔴 [⏳PENDING]
 - **説明**: Supabaseデータベースへのスキーマ適用
 - **コマンド**:
   ```bash
@@ -1624,15 +1090,7 @@ gantt
 
 ### D2: サービス起動確認 🔴
 
-#### T078: Backend起動テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: FastAPIサーバーの起動と基本動作確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T078: Backend起動テスト 🔴 [⏳PENDING]
 - **説明**: FastAPIサーバーの起動と基本動作確認
 - **コマンド**:
   ```bash
@@ -1647,15 +1105,7 @@ gantt
   - http://localhost:8000/docs → Swagger UI表示
   - http://localhost:8000/health → 正常レスポンス
 
-#### T079: Frontend起動確認 [100%] [Q:90%] [✅DONE] [🟢P3]
-
-📝 **タスク内容**: Next.jsサーバーの起動と表示確認
-
-📊 **進捗状況**:
-- ✅ RED (25%): テスト作成完了 - 2025-09-18
-- ✅ GREEN (50%): 最小実装完了 - 2025-09-18
-- ✅ REFACTOR (75%): 改善完了 - 2025-09-19
-- ✅ DONE (100%): 完了 - 2025-09-19
+#### T079: Frontend起動確認 [P] 🟡 [✅COMPLETE]
 - **説明**: Next.jsサーバーの起動と表示確認
 - **コマンド**:
   ```bash
@@ -1670,15 +1120,7 @@ gantt
 
 ### D3: API統合テスト [P] 🔴
 
-#### T080: 基本APIエンドポイントテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 主要APIエンドポイントの動作確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T080: 基本APIエンドポイントテスト [P] 🔴 [⏳PENDING]
 - **説明**: 主要APIエンドポイントの動作確認
 - **テスト対象**:
   ```bash
@@ -1701,15 +1143,7 @@ gantt
   - [⏳REFACTOR]: エラーハンドリング改善
 - **テストファイル**: `backend/tests/integration/test_api_endpoints.py`
 
-#### T081: Supabase Auth統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Supabase認証機能の動作確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T081: Supabase Auth統合テスト [P] 🔴 [⏳PENDING]
 - **説明**: Supabase認証機能の動作確認
 - **テスト内容**:
   - ユーザー登録フロー
@@ -1727,15 +1161,7 @@ gantt
 
 ### D4: Frontend-Backend接続 🔴
 
-#### T082: API接続設定 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Frontend環境変数とAPI接続設定
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T082: API接続設定 🔴 [⏳PENDING]
 - **説明**: Frontend環境変数とAPI接続設定
 - **ファイル**: `frontend/.env.local`
 - **設定内容**:
@@ -1753,15 +1179,7 @@ gantt
   # Expected: Backend URLが正しく設定
   ```
 
-#### T083: データフロー統合テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: Frontend→Backend→DB→Frontendの完全なデータフロー確認
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T083: データフロー統合テスト 🔴 [⏳PENDING]
 - **説明**: Frontend→Backend→DB→Frontendの完全なデータフロー確認
 - **テストシナリオ**:
   1. 求人一覧ページ表示
@@ -1778,15 +1196,7 @@ gantt
 
 ### D5: E2Eシナリオテスト 🟡
 
-#### T084: ユーザージャーニーテスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 実際のユーザー操作シナリオの完全テスト
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T084: ユーザージャーニーテスト 🟡 [⏳PENDING]
 - **説明**: 実際のユーザー操作シナリオの完全テスト
 - **シナリオ**:
   ```gherkin
@@ -1807,15 +1217,7 @@ gantt
   - [⏳REFACTOR]: テスト安定性向上
 - **テストファイル**: `frontend/tests/e2e/test_user_journey.spec.ts`
 
-#### T085: パフォーマンス・負荷テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: システム全体のパフォーマンス検証
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T085: パフォーマンス・負荷テスト [P] 🟢 [⏳PENDING]
 - **説明**: システム全体のパフォーマンス検証
 - **テスト項目**:
   - 10万件求人データのインポート時間（目標: 5分以内）
@@ -1837,15 +1239,7 @@ gantt
 
 ### E1: マスタデータ投入 [P] 🔴
 
-#### T086: マスタデータ投入 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 既存のマスタデータCSVをデータベースに投入
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T086: マスタデータ投入 [P] 🔴 [⏳PENDING]
 - **説明**: 既存のマスタデータCSVをデータベースに投入
 - **対象ファイル**:
   - `data/prefecture_view.csv` (50件)
@@ -1872,15 +1266,7 @@ gantt
   SELECT COUNT(*) FROM occupations; -- Expected: 173
   ```
 
-#### T087: SEOキーワードデータ投入 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: SEMRushキーワードデータの投入とインデックス作成
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T087: SEOキーワードデータ投入 [P] 🟡 [⏳PENDING]
 - **説明**: SEMRushキーワードデータの投入とインデックス作成
 - **対象ファイル**: `data/semrush_kw20250824_sample.csv` (1,001件)
 - **作業内容**:
@@ -1897,15 +1283,7 @@ gantt
 
 ### E2: 求人データ大量投入 🔴
 
-#### T088: 求人データインポート [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 19万件の実求人データをデータベースに投入
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T088: 求人データインポート 🔴 [⏳PENDING]
 - **説明**: 19万件の実求人データをデータベースに投入
 - **対象ファイル**: `data/sample_job_data.csv` (195,683件)
 - **作業内容**:
@@ -1934,15 +1312,7 @@ gantt
   SELECT COUNT(DISTINCT company_id) FROM jobs;
   ```
 
-#### T089: データ整合性検証 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 投入されたデータの整合性と品質チェック
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T089: データ整合性検証 [P] 🔴 [⏳PENDING]
 - **説明**: 投入されたデータの整合性と品質チェック
 - **検証項目**:
   - 外部キー制約の確認
@@ -1960,15 +1330,7 @@ gantt
 
 ### E3: スコアリング実行 🔴
 
-#### T090: 基礎スコア計算 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 全求人データに対する基礎スコア計算
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T090: 基礎スコア計算 🔴 [⏳PENDING]
 - **説明**: 全求人データに対する基礎スコア計算
 - **処理内容**:
   - 給与スコア計算
@@ -1993,15 +1355,7 @@ gantt
   SELECT AVG(base_score), MIN(base_score), MAX(base_score) FROM job_scores;
   ```
 
-#### T091: SEOスコア計算 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: キーワードマッチングによるSEOスコア計算
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T091: SEOスコア計算 [P] 🟡 [⏳PENDING]
 - **説明**: キーワードマッチングによるSEOスコア計算
 - **処理内容**:
   - 求人タイトル・説明文のキーワード抽出
@@ -2018,15 +1372,7 @@ gantt
 
 ### E4: マッチング実行 🔴
 
-#### T092: ユーザー×求人マッチング [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: サンプルユーザーに対する実求人マッチング
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T092: ユーザー×求人マッチング 🔴 [⏳PENDING]
 - **説明**: サンプルユーザーに対する実求人マッチング
 - **処理内容**:
   - 100人のテストユーザー生成
@@ -2054,15 +1400,7 @@ gantt
   GROUP BY user_id HAVING COUNT(*) = 40;
   ```
 
-#### T093: メール生成テスト [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: マッチング結果からのメール生成
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T093: メール生成テスト 🟡 [⏳PENDING]
 - **説明**: マッチング結果からのメール生成
 - **処理内容**:
   - HTMLメールテンプレート適用
@@ -2083,15 +1421,7 @@ gantt
 
 ### E5: メール配信シミュレーション 🔴
 
-#### T094: 配信リスト生成 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 1万人分の配信リスト作成と検証
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T094: 配信リスト生成 🔴 [⏳PENDING]
 - **説明**: 1万人分の配信リスト作成と検証
 - **処理内容**:
   - テストユーザー1万人の生成
@@ -2120,15 +1450,7 @@ gantt
   SELECT COUNT(*) FROM mailing_list WHERE email_verified = true;
   ```
 
-#### T095: バッチ配信シミュレーション [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 1万通のメール配信をシミュレーション
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T095: バッチ配信シミュレーション 🔴 [⏳PENDING]
 - **説明**: 1万通のメール配信をシミュレーション
 - **処理内容**:
   - 配信キューへの登録（1000件/バッチ）
@@ -2163,15 +1485,7 @@ gantt
   └── performance_metrics.json
   ```
 
-#### T096: 配信結果分析 [0%] [Q:0%] [⏳TODO] [🟡P2]
-
-📝 **タスク内容**: 配信シミュレーション結果の詳細分析
-
-📊 **進捗状況**:
-- ⏳ RED (0%): 未着手
-- ⏳ GREEN (0%): 未着手
-- ⏳ REFACTOR (0%): 未着手
-- ⏳ DONE (0%): 未完了
+#### T096: 配信結果分析 [P] 🟢 [⏳PENDING]
 - **説明**: 配信シミュレーション結果の詳細分析
 - **分析項目**:
   - 配信成功率の統計
