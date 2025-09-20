@@ -543,6 +543,12 @@ def test_batch_trigger_contract():
 ブロック中: T022, T024
 変更時要確認: T028(スコアリングバッチ), T035(API)
 
+📚 **参考資料**:
+- **要件定義**: `specs/001-job-matching-system/answers.md` スコア計算仕様
+- **実装コード**: `backend/app/services/basic_scoring.py` (完成済み実装)
+- **テストコード**: `tests/integration/test_basic_scoring_t021.py` (実装済みテスト)
+- **関連仕様**: `specs/002-think-hard-ultrathink/spec.md` スコアリングアルゴリズム
+
 ⚠️ **ブロッカー/課題**:
 - 🔴 パフォーマンス: 10万件処理に15分 (目標: 5分)
 - 🟡 メモリ使用量: ピーク時8GB (目標: 4GB)
@@ -598,6 +604,12 @@ def test_batch_trigger_contract():
 - **依存**: T021
 - **MCP**: --seq (MLアルゴリズム) 使用済み
 - **TDD**: 統合テスト作成 ✅ `tests/integration/test_seo_personalized_scoring_t022_t023.py`
+
+📚 **参考資料**:
+- **ALSアルゴリズム**: `specs/002-think-hard-ultrathink/spec.md` 協調フィルタリング仕様
+- **実装コード**: `backend/app/services/personalized_scoring.py` (完成済み実装)
+- **テストコード**: `tests/integration/test_seo_personalized_scoring_t022_t023.py` (統合テスト)
+- **機械学習要件**: `specs/001-job-matching-system/comprehensive_integrated_specification_final_v5.0.md` ML仕様
 - **実装内容**:
   - ✅ ALS model (factors=50, regularization=0.01, iterations=15)
   - ✅ ユーザー行動履歴分析
@@ -2240,6 +2252,10 @@ gantt
 - **MCP**: --seq (複雑データ構造)
 - **ER図**: Lines 64-76
 - **フィールド**: keyword_id, keyword, intent, volume, keyword_difficulty, cpc_usd, serp_features, potential_traffic, personal_keyword_difficulty, positions, imported_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 64-76
+  - **機能仕様**: `specs/002-think-hard-ultrathink/research.md` SEOキーワード管理
+  - **実装例**: `backend/app/models/job.py` (モデルパターン参考)
 
 #### T101: KeywordScoring モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2256,6 +2272,11 @@ gantt
 - **MCP**: --seq (LLM連携)
 - **ER図**: Lines 78-88
 - **フィールド**: scoring_id, keyword_id (FK), processed_keyword, expanded_keywords, base_score, weight_factor, scoring_rules (JSONB), llm_analysis, processed_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 78-88 (keyword_scoring entity)
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` キーワードスコアリング要件
+  - **実装例**: `backend/app/services/personalized_scoring.py` (スコアリングパターン)
+  - **LLM統合**: `backend/app/services/ai_service.py` (LLM処理パターン)
 
 #### T102: JobEnrichment モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2272,6 +2293,11 @@ gantt
 - **MCP**: --seq (JSONB処理)
 - **ER図**: Lines 90-99
 - **フィールド**: job_id (PK/FK), score, keyword_matches (JSONB), needs_categories, occupation_category, jobtype_detail, score_details (JSONB), updated_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 90-99 (job_enrichment entity)
+  - **スコア仕様**: `specs/002-think-hard-ultrathink/spec.md` マッチングスコア算出
+  - **実装例**: `backend/app/services/personalized_scoring.py` (スコア計算パターン)
+  - **JSONB処理**: `backend/app/models/user.py` (JSONB fieldパターン)
 
 #### T103: UserJobMapping モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2288,6 +2314,11 @@ gantt
 - **MCP**: --seq (UUID, JSONB処理)
 - **ER図**: Lines 101-113
 - **フィールド**: mapping_id (UUID PK), user_id (UUID FK), job_id (FK), mapping_date, personalized_score, rank_in_user, is_selected, pick_id (FK), selection_reason, match_details (JSONB), created_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 101-113
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` ユーザーマッチング仕様
+  - **API仕様**: `specs/002-think-hard-ultrathink/contracts/api-spec.yaml` matchingエンドポイント
+  - **関連実装**: `backend/app/services/matching_service.py` (マッチングロジック)
 
 #### T104: UserActions モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2304,6 +2335,11 @@ gantt
 - **MCP**: --seq (複雑JSONB構造)
 - **ER図**: Lines 115-139
 - **フィールド**: action_id (UUID PK), user_id (UUID FK), job_id (FK), action_type, source_queue_id (FK), source_type, source_metadata (JSONB), 各種求人詳細フィールド, action_date, context (JSONB)
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 115-139 (user_actions entity)
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` ユーザー行動追跡要件
+  - **実装例**: `backend/app/models/user.py` (User model pattern)
+  - **JSONB設計**: `backend/app/models/email_queue.py` (metadata処理パターン)
 
 #### T105: UserProfiles モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2320,6 +2356,11 @@ gantt
 - **MCP**: --seq (集計処理, JSONB)
 - **ER図**: Lines 141-162
 - **フィールド**: user_id (UUID PK), applied_*_cds（各種集計）, applied_salary_stats (JSONB), total_applications, avg_applied_score, avg_applied_fee, first/last_application_at, profile_updated_at, created_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 141-162 (user_profiles entity)
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` プロファイル集計要件
+  - **実装例**: `backend/app/services/personalized_scoring.py` (ユーザー嗜好分析)
+  - **集計処理**: `backend/app/services/batch_processing.py` (データ集計パターン)
 
 #### T106: NeedsCategoryMaster モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2336,6 +2377,11 @@ gantt
 - **MCP**: --c7 (マスタデータ)
 - **ER図**: Lines 164-171
 - **フィールド**: category_id (PK), category_name (UK), matching_type, matching_value, priority, created_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 164-171 (needs_category_master entity)
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` セクション選定ロジック
+  - **実装例**: `backend/app/services/section_selection.py` (ニーズカテゴリ活用)
+  - **マスタ管理**: `backend/app/models/user.py` (マスタデータパターン)
 
 #### T107: DailyJobPicks モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2352,6 +2398,11 @@ gantt
 - **MCP**: --seq (LLM生成フィールド)
 - **ER図**: Lines 173-198
 - **フィールド**: pick_id (UUID PK), job_id (FK/UK), pick_date (UK), client_cd, endcl_cd, application_name, company_name, salary, hours, pref_cd, city_cd, station_cd, end_at, needs_category, occupation_category, jobtype_detail, keyword_id (FK), job_score, email_title, email_main_points, email_special_benefit, email_url, email_metadata (JSONB), created_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 173-198 (daily_job_picks entity)
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` 日次求人選定アルゴリズム
+  - **実装例**: `backend/app/services/email_generation.py` (メール用データ生成)
+  - **選定ロジック**: `backend/app/services/section_selection.py` (求人選定パターン)
 
 #### T108: DailyEmailQueue モデル実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2368,6 +2419,11 @@ gantt
 - **MCP**: --seq (JSONB配列処理)
 - **ER図**: Lines 200-221
 - **フィールド**: queue_id (UUID PK), user_id (UUID FK/UK), delivery_date (UK), user_name, user_location, email_subject, email_catchphrase, email_intro, top5_jobs (JSONB), area_top10_jobs (JSONB), local_top10_jobs (JSONB), special_jobs (JSONB), total_job_count, mypage_url, unsubscribe_url, delivery_status, scheduled_at, sent_at, delivery_metadata (JSONB), created_at
+- **📚 参考資料**:
+  - **ER図**: `specs/001-job-matching-system/20250904_er_complete_v2.0.mmd` Lines 200-221
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` メール配信仕様
+  - **メール仕様**: `specs/001-job-matching-system/comprehensive_integrated_specification_final_v5.0.md` 6セクションメール詳細
+  - **実装例**: `backend/app/services/email_generation.py` (メール生成ロジック)
 
 ### C2: マスタデータモデル実装 🟡
 
@@ -2732,6 +2788,11 @@ gantt
 - **依存**: T011, T108
 - **MCP**: --seq (LLM統合, APIコール最適化)
 - **仕様書**: asks.md Line 45-60, spec.md 件名生成要件
+- **📚 参考資料**:
+  - **要件定義**: `specs/001-job-matching-system/asks.md` GPT-5 nano統合要求
+  - **機能仕様**: `specs/002-think-hard-ultrathink/spec.md` 件名生成仕様
+  - **実装例**: `backend/app/services/email_generation.py` (メール生成パターン)
+  - **API統合**: `backend/app/services/ai_service.py` (LLM統合パターン)
 
 #### T135: リアルタイムパフォーマンスアラート [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
@@ -2747,6 +2808,11 @@ gantt
 - **依存**: T038
 - **MCP**: --seq (監視システム, アラート統合)
 - **仕様書**: spec.md 監視要件, comprehensive_spec パフォーマンス監視
+- **📚 参考資料**:
+  - **監視仕様**: `specs/002-think-hard-ultrathink/spec.md` パフォーマンス監視要件
+  - **機能要件**: `specs/001-job-matching-system/comprehensive_integrated_specification_final_v5.0.md` アラート機能
+  - **実装例**: `backend/app/services/monitoring.py` (監視サービスパターン)
+  - **依存関係**: `backend/app/monitoring/metrics_collector.py` (メトリクス収集)
 
 #### T147: 保存データ暗号化実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
 
