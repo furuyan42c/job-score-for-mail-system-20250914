@@ -5,6 +5,15 @@
 **並列戦略**: 有効（[P]マークが並列実行可能）
 **MCP活用戦略**: 統合（各タスクにMCP推奨を記載）
 **TDDフェーズ**: 各タスクはRED→GREEN→REFACTORの3フェーズで管理
+**参照ファイル**: 
+初期仕様書：
+specs/001-job-matching-system/answers.md
+specs/001-job-matching-system/asks.md
+specs/001-job-matching-system/comprehensive_integrated_specification_final_v5.0.md
+ER図：
+specs/001-job-matching-system/20250904_er_complete_v2.0.mmd
+作業中ドキュメント：
+specs/002-think-hard-ultrathink
 
 ## 🤖 Claude Code 作業ガイド
 ```bash
