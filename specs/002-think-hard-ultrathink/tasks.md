@@ -3,6 +3,9 @@
 ## 🚨 CRITICAL UPDATE 2025-09-20 🚨
 **ER図分析により31の重要タスクを緊急追加**
 **T100-T130: ER図完全準拠データモデル・バッチ・API実装**
+
+**仕様書分析により13の追加タスクを緊急追加**
+**T131-T143: 仕様書ギャップ対応（セキュリティ・監視・運用）**
 **優先度: P1-CRITICAL (即座に着手必須)**
 
 **作成日**: 2025-09-17（TDD対応: 2025-09-18）（ER図対応: 2025-09-20）
@@ -2712,6 +2715,145 @@ gantt
 - **依存**: T108
 - **MCP**: --c7 (配信管理)
 - **エンドポイント**: GET/POST/PUT /api/email-queue
+
+### C6: 仕様書ギャップ対応 - Critical Tasks 🚨
+
+#### T131: GPT-5 nano 件名生成統合 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: GPT-5 nano APIを使用したメール件名自動生成
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: asks.mdで言及されたGPT-5 nano統合によるパーソナライズ件名生成
+- **ファイル**: `backend/app/services/gpt5_subject_generation.py`
+- **依存**: T011, T108
+- **MCP**: --seq (LLM統合, APIコール最適化)
+- **仕様書**: asks.md Line 45-60, spec.md 件名生成要件
+
+#### T135: リアルタイムパフォーマンスアラート [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 性能劣化時の自動アラートシステム
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: spec.mdで要求されたリアルタイム監視とアラート機能
+- **ファイル**: `backend/app/monitoring/performance_alerts.py`
+- **依存**: T038
+- **MCP**: --seq (監視システム, アラート統合)
+- **仕様書**: spec.md 監視要件, comprehensive_spec パフォーマンス監視
+
+#### T147: 保存データ暗号化実装 [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: データベース暗号化とPII保護
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: research.mdで要求された保存データ暗号化
+- **ファイル**: `backend/app/security/data_encryption.py`
+- **依存**: T001, T104, T105
+- **MCP**: --seq (暗号化ライブラリ, セキュリティ実装)
+- **仕様書**: research.md セキュリティ要件, comprehensive_spec データ保護
+
+#### T148: 包括的監査ログシステム [0%] [Q:0%] [[TODO]] [[P1-CRITICAL]]
+
+📝 **タスク内容**: 全ユーザーアクションの監査ログ記録
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: comprehensive_specで要求された監査ログ機能
+- **ファイル**: `backend/app/audit/audit_logging.py`
+- **依存**: T104, T017
+- **MCP**: --seq (ログ管理, セキュリティ監査)
+- **仕様書**: comprehensive_spec.md 監査要件, セキュリティログ仕様
+
+### C7: 仕様書ギャップ対応 - High Priority Tasks 🟡
+
+#### T136: バッチ処理自動スケーリング [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 負荷に応じたバッチ処理リソース自動調整
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: plan.mdで要求されたスケーラブルバッチ処理
+- **ファイル**: `backend/app/scaling/batch_autoscaler.py`
+- **依存**: T030, T124
+- **MCP**: --seq (リソース管理, 自動スケーリング)
+- **仕様書**: plan.md スケーリング戦略, performance要件
+
+#### T138: APIレート制限・スロットリング [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: API保護とDDoS対策
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: api-spec.yamlで仕様化されたレート制限機能
+- **ファイル**: `backend/app/middleware/rate_limiting.py`
+- **依存**: T034-T039
+- **MCP**: --c7 (レート制限ミドルウェア)
+- **仕様書**: contracts/api-spec.yaml レート制限仕様
+
+#### T149: ロールベースアクセス制御 [0%] [Q:0%] [[TODO]] [[P1-HIGH]]
+
+📝 **タスク内容**: 管理機能のアクセス権限管理
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: comprehensive_specで要求された権限管理
+- **ファイル**: `backend/app/auth/rbac_system.py`
+- **依存**: T017, T058
+- **MCP**: --seq (認証・認可システム)
+- **仕様書**: comprehensive_spec.md 権限管理仕様
+
+#### T132: メールA/Bテストフレームワーク [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: メール配信の効果測定・最適化システム
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: asks.mdで言及されたメール最適化機能
+- **ファイル**: `backend/app/email/ab_testing.py`
+- **依存**: T108, T131
+- **MCP**: --seq (統計分析, テスト管理)
+- **仕様書**: asks.md メール最適化要件
+
+#### T143: バックアップ・災害復旧 [0%] [Q:0%] [[TODO]] [[P2-MED]]
+
+📝 **タスク内容**: データバックアップと災害復旧手順自動化
+
+📊 **進捗状況**:
+- ⏳ RED (0%): 未着手
+- ⏳ GREEN (0%): 未着手
+- ⏳ REFACTOR (0%): 未着手
+- ⏳ DONE (0%): 未完了
+- **説明**: comprehensive_specで要求された運用要件
+- **ファイル**: `backend/app/operations/backup_system.py`
+- **依存**: T001, T147
+- **MCP**: --c7 (バックアップツール, 自動化)
+- **仕様書**: comprehensive_spec.md 運用要件
 
 ---
 
