@@ -1,28 +1,160 @@
 #!/usr/bin/env python3
-"""T022: SEO Scoring Service"""
-from typing import List, Dict, Any
+"""
+T022: SEO Scoring Service
+
+Provides keyword-based scoring functionality using SEMrush keyword data.
+Calculates scores based on keyword matching in job fields with weighted priorities.
+"""
+import logging
+from typing import List, Dict, Any, Optional
 from app.models.job import Job
 
+logger = logging.getLogger(__name__)
+
 class SEOScoringService:
+    """Service for calculating SEO-based job scores."""
+
+    # Field weight constants for SEO scoring
+    FIELD_WEIGHTS = {
+        "application_name": 1.5,  # Highest priority
+        "title": 1.2,              # High priority
+        "description": 1.0,         # Normal priority
+        "company": 0.8              # Lower priority
+    }
+
+    # Scoring parameters
+    DEFAULT_SEARCH_VOLUME = 1000
+    VOLUME_NORMALIZATION_FACTOR = 10000
+    SCORE_MULTIPLIER = 100
+    MAX_SCORE = 100
+
     def __init__(self):
-        self.field_weights = {"application_name": 1.5, "title": 1.2, "description": 1.0, "company": 0.8}
+        """Initialize SEO scoring service."""
+        self.field_weights = self.FIELD_WEIGHTS.copy()
+        logger.info("SEOScoringService initialized with field weights: %s", self.field_weights)
 
     async def normalize_keywords(self, keywords: List[str]) -> List[str]:
-        return [k.lower().replace("-", " ").replace("_", " ") for k in keywords]
+        """
+        Normalize keywords for consistent matching.
+
+        Args:
+            keywords: List of raw keywords
+
+        Returns:
+            List of normalized keywords
+        """
+        try:
+            normalized = []
+            for keyword in keywords:
+                if keyword:
+                    normalized_keyword = keyword.lower().replace("-", " ").replace("_", " ").strip()
+                    if normalized_keyword:
+                        normalized.append(normalized_keyword)
+            return normalized
+        except Exception as e:
+            logger.error("Error normalizing keywords: %s", e)
+            return []
 
     async def generate_variations(self, keyword: str) -> List[str]:
-        return [keyword, keyword.replace(" ", "-"), keyword.replace(" ", "_"), keyword.replace(" ", "")]
+        """
+        Generate keyword variations for broader matching.
+
+        Args:
+            keyword: Base keyword
+
+        Returns:
+            List of keyword variations
+        """
+        if not keyword:
+            return []
+
+        try:
+            variations = [keyword]
+
+            # Add common variations
+            if " " in keyword:
+                variations.extend([
+                    keyword.replace(" ", "-"),
+                    keyword.replace(" ", "_"),
+                    keyword.replace(" ", "")
+                ])
+
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_variations = []
+            for var in variations:
+                if var not in seen:
+                    seen.add(var)
+                    unique_variations.append(var)
+
+            return unique_variations
+        except Exception as e:
+            logger.error("Error generating keyword variations: %s", e)
+            return [keyword]
 
     async def calculate_seo_score(self, job: Job, semrush_keywords: List[Dict[str, Any]]) -> float:
-        total_score = 0.0
-        for kw_data in semrush_keywords:
-            keyword = kw_data["keyword"].lower()
-            volume = kw_data.get("search_volume", 1000)
-            scores = []
-            if hasattr(job, "application_name") and job.application_name and keyword in job.application_name.lower():
-                scores.append(self.field_weights["application_name"])
-            if hasattr(job, "title") and job.title and keyword in job.title.lower():
-                scores.append(self.field_weights["title"])
-            if scores:
-                total_score += max(scores) * min(volume / 10000, 1.0) * 100
-        return min(100, total_score)
+        """
+        Calculate SEO score for a job based on keyword matching.
+
+        Args:
+            job: Job object to score
+            semrush_keywords: List of SEMrush keyword data with 'keyword' and 'search_volume'
+
+        Returns:
+            SEO score between 0 and 100
+        """
+        if not semrush_keywords:
+            logger.debug("No SEMrush keywords provided for job %s", getattr(job, 'job_id', 'unknown'))
+            return 0.0
+
+        try:
+            total_score = 0.0
+
+            for kw_data in semrush_keywords:
+                if not isinstance(kw_data, dict):
+                    continue
+
+                keyword = kw_data.get("keyword", "")
+                if not keyword:
+                    continue
+
+                keyword = keyword.lower()
+                search_volume = kw_data.get("search_volume", self.DEFAULT_SEARCH_VOLUME)
+
+                # Calculate field scores
+                field_scores = []
+
+                # Check application name
+                if hasattr(job, "application_name") and job.application_name:
+                    if keyword in job.application_name.lower():
+                        field_scores.append(self.field_weights["application_name"])
+
+                # Check title
+                if hasattr(job, "title") and job.title:
+                    if keyword in job.title.lower():
+                        field_scores.append(self.field_weights["title"])
+
+                # Check description
+                if hasattr(job, "description") and job.description:
+                    if keyword in job.description.lower():
+                        field_scores.append(self.field_weights["description"])
+
+                # Check company
+                if hasattr(job, "company") and job.company:
+                    if keyword in job.company.lower():
+                        field_scores.append(self.field_weights["company"])
+
+                # Apply highest matching score
+                if field_scores:
+                    volume_factor = min(search_volume / self.VOLUME_NORMALIZATION_FACTOR, 1.0)
+                    keyword_score = max(field_scores) * volume_factor * self.SCORE_MULTIPLIER
+                    total_score += keyword_score
+                    logger.debug("Keyword '%s' matched with score %.2f", keyword, keyword_score)
+
+            final_score = min(self.MAX_SCORE, total_score)
+            logger.info("SEO score for job %s: %.2f", getattr(job, 'job_id', 'unknown'), final_score)
+            return final_score
+
+        except Exception as e:
+            logger.error("Error calculating SEO score: %s", e)
+            return 0.0
