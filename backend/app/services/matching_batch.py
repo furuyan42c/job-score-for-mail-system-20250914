@@ -240,3 +240,46 @@ class MatchingBatchService:
         results['processing_time'] = (end_time - start_time).total_seconds()
 
         return results
+
+    # Mock services for testing environments
+    def _create_mock_section_service(self):
+        """Create mock section service for testing."""
+        class MockSectionService:
+            async def select_sections(self, jobs, user_preferences, total_jobs_required=40):
+                # GREEN PHASE: Simple mock implementation
+                return {
+                    'editorial_picks': jobs[:8] if len(jobs) >= 8 else jobs,
+                    'high_salary': jobs[8:15] if len(jobs) >= 15 else [],
+                    'experience_match': jobs[15:22] if len(jobs) >= 22 else [],
+                    'location_convenient': jobs[22:28] if len(jobs) >= 28 else [],
+                    'weekend_short': jobs[28:34] if len(jobs) >= 34 else [],
+                    'other_recommendations': jobs[34:40] if len(jobs) >= 40 else []
+                }
+        return MockSectionService()
+
+    def _create_mock_duplicate_service(self):
+        """Create mock duplicate service for testing."""
+        class MockDuplicateService:
+            async def filter_duplicates(self, jobs, applications):
+                # GREEN PHASE: Return all jobs (no filtering)
+                return jobs
+        return MockDuplicateService()
+
+    def _create_mock_supplement_service(self):
+        """Create mock supplement service for testing."""
+        class MockSupplementService:
+            async def ensure_minimum_items(self, jobs, user, target_count=40):
+                # GREEN PHASE: Simple supplementation
+                if len(jobs) >= target_count:
+                    return jobs[:target_count]
+
+                # Add fallback jobs to reach target
+                supplemented = jobs.copy()
+                for i in range(target_count - len(jobs)):
+                    fallback_job = type('MockJob', (), {})()
+                    fallback_job.job_id = f'fallback_{i:03d}'
+                    fallback_job.company_id = f'fallback_company_{i}'
+                    supplemented.append(fallback_job)
+
+                return supplemented
+        return MockSupplementService()

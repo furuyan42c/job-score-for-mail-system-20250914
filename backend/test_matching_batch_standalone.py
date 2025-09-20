@@ -18,7 +18,14 @@ async def test_green_phase():
     try:
         # Test 1: Import the service
         print("1. Testing import...")
-        from app.services.matching_batch import MatchingBatchService
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'matching_batch',
+            '/Users/furuyanaoki/Project/new.mail.score/backend/app/services/matching_batch.py'
+        )
+        matching_batch_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(matching_batch_module)
+        MatchingBatchService = matching_batch_module.MatchingBatchService
         print("   ✓ MatchingBatchService imported successfully")
 
         # Test 2: Initialize the service
