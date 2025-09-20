@@ -12,7 +12,7 @@
 """
 
 from app.services.scoring import ScoringEngine
-from app.services.basic_scoring import BasicScoringEngine
+from app.services.basic_scoring import BasicScoringService
 from app.services.scoring_service import ScoringService
 from app.services.gpt5_integration import (
     EmailGenerationService,
@@ -35,7 +35,7 @@ from app.services.email_fallback import (
 
 __all__ = [
     "ScoringEngine",
-    "BasicScoringEngine",
+    "BasicScoringService",
     "ScoringService",
     "EmailGenerationService",
     "create_email_generation_service",

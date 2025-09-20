@@ -21,9 +21,9 @@ from app.models.matching import MatchingScore, ScoringConfiguration
 from app.models.jobs import Job
 from app.models.users import User, UserProfile
 from app.core.config import settings
-from app.services.basic_scoring import BasicScoringEngine  # T021統合
-from app.services.seo_scoring import SEOScoringEngine  # T022統合
-from app.services.personalized_scoring import PersonalizedScoringEngine  # T023統合
+from app.services.basic_scoring import BasicScoringService  # T021統合
+from app.services.seo_scoring import SEOScoringService  # T022統合
+from app.services.personalized_scoring import PersonalizedScoringService  # T023統合
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,16 +41,16 @@ class ScoringEngine:
         self.db = db
         self.config = config or self._get_default_config()
 
-        # T021統合: BasicScoringEngineの初期化
-        self._basic_engine = BasicScoringEngine(db)
+        # T021統合: BasicScoringServiceの初期化
+        self._basic_engine = BasicScoringService()
         self._use_t021_scoring = getattr(config, 'use_t021_basic_scoring', True) if config else True
         self._t021_fallback_enabled = getattr(config, 't021_fallback_enabled', True) if config else True
 
-        # T022統合: SEOScoringEngineの初期化
-        self._seo_engine = SEOScoringEngine(db)
+        # T022統合: SEOScoringServiceの初期化
+        self._seo_engine = SEOScoringService()
 
-        # T023統合: PersonalizedScoringEngineの初期化
-        self._personalized_engine = PersonalizedScoringEngine(db)
+        # T023統合: PersonalizedScoringServiceの初期化
+        self._personalized_engine = PersonalizedScoringService()
         # ALSモデルの初期化
         asyncio.create_task(self._init_personalized_model())
 

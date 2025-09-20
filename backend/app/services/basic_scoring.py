@@ -1,155 +1,165 @@
 #!/usr/bin/env python3
 """
-T021: Basic Scoring Service (GREEN Phase)
-Implements fee, hourly_wage, and company_popularity scoring
+T021: Basic Scoring Service
+
+Provides basic scoring functionality for job listings including:
+- Fee-based scoring
+- Hourly wage scoring
+- Company popularity scoring
 """
 
 import logging
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
-import numpy as np
-
+from typing import Optional
 from app.models.job import Job
 
 logger = logging.getLogger(__name__)
 
 
 class BasicScoringService:
-    """Service for calculating basic job scoring components"""
+    """Service for calculating basic job scores."""
+
+    # Default configuration
+    FEE_THRESHOLD = 1000
+    WAGE_THRESHOLD = 1500
+    MAX_SCORE = 100.0
+    Z_SCORE_WEIGHT = 0.8
 
     def __init__(self):
-        """Initialize the basic scoring service"""
-        self.fee_threshold = 500
-        self.wage_weight = 0.3
-        self.fee_weight = 0.4
-        self.popularity_weight = 0.3
+        """Initialize basic scoring service."""
+        self.fee_threshold = self.FEE_THRESHOLD
+        self.wage_threshold = self.WAGE_THRESHOLD
+        logger.info("BasicScoringService initialized")
 
     async def calculate_fee_score(self, job: Job) -> float:
         """
-        Calculate fee score (fee > 500 check)
+        Calculate score based on job fee.
 
         Args:
-            job: Job object with fee information
+            job: Job object containing fee information
 
         Returns:
-            Score from 0 to 100
+            Score between 0 and 100 based on fee
         """
-        if not job.fee or job.fee <= self.fee_threshold:
+        try:
+            fee = getattr(job, 'fee', None)
+
+            if not fee or fee <= self.fee_threshold:
+                return 0.0
+
+            # Linear scaling from threshold to max
+            score = min(((fee - self.fee_threshold) / 10000) * self.MAX_SCORE, self.MAX_SCORE)
+
+            logger.debug(f"Fee score for job {getattr(job, 'job_id', 'unknown')}: {score:.2f} (fee: {fee})")
+            return score
+
+        except Exception as e:
+            logger.error(f"Error calculating fee score: {e}")
             return 0.0
 
-        # Linear scaling from 500 to 1000+
-        # 600 -> 80, 700 -> 85, 800 -> 90, 900 -> 95, 1000+ -> 100
-        normalized_fee = min((job.fee - self.fee_threshold) / 500, 1.0)
-        score = 80 + (normalized_fee * 20)
-
-        return min(score, 100.0)
-
-    async def calculate_hourly_wage_score(
-        self,
-        job: Job,
-        area_stats: Optional[Dict[str, Any]] = None
-    ) -> float:
+    async def calculate_hourly_wage_score(self, job: Job) -> float:
         """
-        Calculate hourly wage score using Z-score normalization
+        Calculate score based on hourly wage.
 
         Args:
-            job: Job object with hourly_wage
-            area_stats: Area statistics (mean, std_dev, prefecture_cd)
+            job: Job object containing hourly wage information
 
         Returns:
-            Score from 0 to 100
+            Score between 0 and 100 based on hourly wage
         """
-        if not job.hourly_wage:
+        try:
+            hourly_wage = getattr(job, 'hourly_wage', None)
+
+            if not hourly_wage or hourly_wage <= self.wage_threshold:
+                return 0.0
+
+            # Linear scaling from threshold to max
+            score = min(((hourly_wage - self.wage_threshold) / 3500) * self.MAX_SCORE, self.MAX_SCORE)
+
+            logger.debug(f"Wage score for job {getattr(job, 'job_id', 'unknown')}: {score:.2f} (wage: {hourly_wage})")
+            return score
+
+        except Exception as e:
+            logger.error(f"Error calculating hourly wage score: {e}")
             return 0.0
 
-        if not area_stats:
-            # Fallback to simple normalization
-            # Assume typical wage range 1000-5000
-            normalized = min((job.hourly_wage - 1000) / 4000, 1.0)
-            return max(0, normalized * 100)
-
-        mean = area_stats.get("mean", 2000)
-        std_dev = area_stats.get("std_dev", 500)
-
-        # Handle edge case of zero standard deviation
-        if std_dev == 0:
-            return 50.0
-
-        # Calculate Z-score
-        z_score = (job.hourly_wage - mean) / std_dev
-
-        # Convert Z-score to 0-100 scale
-        # Z-score of -2 -> 0, 0 -> 50, +2 -> 100
-        score = 50 + (z_score * 25)
-
-        return max(0, min(score, 100))
-
-    async def calculate_company_popularity_score(
-        self,
-        company_data: Optional[Dict[str, Any]] = None
-    ) -> float:
+    async def calculate_company_popularity_score(self, job: Job, mean_applications: float, std_applications: float) -> float:
         """
-        Calculate company popularity based on 360-day metrics
+        Calculate score based on company popularity using Z-score normalization.
 
         Args:
-            company_data: Dictionary with application_count_360d and view_count_360d
+            job: Job object containing application clicks
+            mean_applications: Mean number of applications across all jobs
+            std_applications: Standard deviation of applications
 
         Returns:
-            Score from 0 to 100
+            Score between 0 and 100 based on normalized popularity
         """
-        if not company_data:
+        try:
+            application_clicks = getattr(job, 'application_clicks', None)
+
+            if application_clicks is None or application_clicks <= 0:
+                return 0.0
+
+            # Handle edge case where std is 0
+            if std_applications == 0:
+                return 50.0  # Return middle score if no variation
+
+            # Calculate Z-score
+            z_score = (application_clicks - mean_applications) / std_applications
+
+            # Convert Z-score to 0-100 scale
+            # Z-score typically ranges from -3 to 3, map to 0-100
+            normalized_score = ((z_score + 3) / 6) * self.MAX_SCORE
+
+            # Apply weight and clamp to valid range
+            score = max(0.0, min(self.MAX_SCORE, normalized_score * self.Z_SCORE_WEIGHT))
+
+            logger.debug(f"Popularity score for job {getattr(job, 'job_id', 'unknown')}: {score:.2f} "
+                        f"(clicks: {application_clicks}, z-score: {z_score:.2f})")
+            return score
+
+        except Exception as e:
+            logger.error(f"Error calculating company popularity score: {e}")
             return 0.0
 
-        applications = company_data.get("application_count_360d", 0)
-        views = company_data.get("view_count_360d", 0)
-
-        # Weight applications more heavily (70/30 split)
-        application_weight = 0.7
-        view_weight = 0.3
-
-        # Normalize applications (assume 0-2000 range)
-        app_score = min(applications / 1000, 1.0) * 100
-
-        # Normalize views (assume 0-10000 range)
-        view_score = min(views / 5000, 1.0) * 100
-
-        # Weighted average
-        total_score = (app_score * application_weight) + (view_score * view_weight)
-
-        return min(total_score, 100.0)
-
-    async def calculate_basic_score(
-        self,
-        job: Job,
-        area_stats: Optional[Dict[str, Any]] = None,
-        company_data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, float]:
+    async def calculate_combined_score(self, job: Job, mean_applications: float = 100, std_applications: float = 50) -> float:
         """
-        Calculate combined basic score from all components
+        Calculate combined basic score for a job.
 
         Args:
-            job: Job object
-            area_stats: Area wage statistics
-            company_data: Company popularity data
+            job: Job object to score
+            mean_applications: Mean number of applications
+            std_applications: Standard deviation of applications
 
         Returns:
-            Dictionary with individual scores and total
+            Combined score between 0 and 100
         """
-        # Calculate individual scores
-        fee_score = await self.calculate_fee_score(job)
-        hourly_wage_score = await self.calculate_hourly_wage_score(job, area_stats)
-        company_popularity_score = await self.calculate_company_popularity_score(company_data)
+        try:
+            # Calculate individual scores
+            fee_score = await self.calculate_fee_score(job)
+            wage_score = await self.calculate_hourly_wage_score(job)
+            popularity_score = await self.calculate_company_popularity_score(job, mean_applications, std_applications)
 
-        # Calculate weighted total
-        total_basic_score = (
-            fee_score * self.fee_weight +
-            hourly_wage_score * self.wage_weight +
-            company_popularity_score * self.popularity_weight
-        )
+            # Weight the scores (can be adjusted)
+            weights = {
+                'fee': 0.4,
+                'wage': 0.3,
+                'popularity': 0.3
+            }
 
-        return {
-            "fee_score": fee_score,
-            "hourly_wage_score": hourly_wage_score,
-            "company_popularity_score": company_popularity_score,
-            "total_basic_score": total_basic_score
-        }
+            combined = (
+                fee_score * weights['fee'] +
+                wage_score * weights['wage'] +
+                popularity_score * weights['popularity']
+            )
+
+            score = min(self.MAX_SCORE, combined)
+
+            logger.info(f"Combined basic score for job {getattr(job, 'job_id', 'unknown')}: {score:.2f} "
+                       f"(fee: {fee_score:.2f}, wage: {wage_score:.2f}, popularity: {popularity_score:.2f})")
+
+            return score
+
+        except Exception as e:
+            logger.error(f"Error calculating combined score: {e}")
+            return 0.0
