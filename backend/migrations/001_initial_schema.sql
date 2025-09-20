@@ -283,11 +283,10 @@ CREATE TABLE IF NOT EXISTS user_actions (
     -- 追加データ
     action_metadata JSONB DEFAULT '{}',
 
-    -- パーティションキーを含む複合PRIMARY KEY
-    PRIMARY KEY (action_id, action_timestamp)
-) PARTITION BY RANGE (action_timestamp);  -- 月単位パーティション
+    PRIMARY KEY (action_id)
+);
 
--- インデックス（パーティションテーブル用）
+-- インデックス
 CREATE INDEX idx_actions_user ON user_actions(user_id, action_timestamp DESC);
 CREATE INDEX idx_actions_job ON user_actions(job_id, action_type);
 CREATE INDEX idx_actions_endcl ON user_actions(endcl_cd, action_type, action_timestamp DESC);
@@ -454,9 +453,8 @@ CREATE TABLE IF NOT EXISTS user_job_mapping (
     batch_date DATE NOT NULL DEFAULT CURRENT_DATE,
     calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    -- パーティションキーを含む複合PRIMARY KEY
-    PRIMARY KEY (mapping_id, batch_date)
-) PARTITION BY RANGE (batch_date);  -- 日次パーティション
+    PRIMARY KEY (mapping_id)
+);
 
 -- インデックス
 CREATE INDEX idx_map_batch ON user_job_mapping(batch_id, user_id);
@@ -487,12 +485,11 @@ CREATE TABLE IF NOT EXISTS daily_job_picks (
     pick_date DATE NOT NULL DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    -- パーティションキーを含む複合PRIMARY KEY
-    PRIMARY KEY (pick_id, pick_date),
+    PRIMARY KEY (pick_id),
 
     -- ユニーク制約
     UNIQUE (user_id, job_id, pick_date)
-) PARTITION BY RANGE (pick_date);
+);
 
 -- インデックス
 CREATE INDEX idx_pick_user_date ON daily_job_picks(user_id, pick_date DESC);
