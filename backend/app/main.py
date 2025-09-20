@@ -29,8 +29,10 @@ from app.dependencies import (
 )
 from app.utils.error_tracker import init_error_tracking, error_tracker, ErrorCategory, ErrorSeverity
 from app.utils.openapi import custom_openapi
-from app.routers import jobs, users, matching, analytics, batch, scores, actions, health, tdd_endpoints, sql_routes, auth, rate_limit_admin, performance
+from app.routers import jobs, users, matching, analytics, batch, scores, actions, health, tdd_endpoints, sql_routes, auth, rate_limit_admin, performance, supabase_auth
 
+# ORM Models import - SQLAlchemyのメタデータに全テーブルを登録
+import app.models.orm_models
 
 # ログ設定
 logging.basicConfig(
@@ -583,6 +585,12 @@ app.include_router(
     auth.router,
     prefix="/api/v1/auth",
     tags=["authentication"]
+)
+
+# T081: Supabase認証エンドポイント（REFACTOR Phase統合）
+app.include_router(
+    supabase_auth.router,
+    tags=["Supabase Authentication"]
 )
 
 app.include_router(
